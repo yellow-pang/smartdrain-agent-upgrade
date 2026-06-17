@@ -1,7 +1,10 @@
 // Mock data layer for the city flood management dashboard.
 // Designed to be easy to swap with a real API later.
 
-export type RiskStatus = "danger" | "warning" | "normal" | "unknown";
+import { RISK_RANK, STATUS_META, type RiskLevel } from "@/lib/risk";
+
+export type RiskStatus = RiskLevel;
+export { RISK_RANK, STATUS_META };
 
 export interface DrainFacility {
     id: string;
@@ -31,46 +34,6 @@ export interface SensorPoint {
     flow: number; // 유량 (m³/min)
 }
 
-export const STATUS_META: Record<
-    RiskStatus,
-    {
-        label: string;
-        dot: string;
-        badgeClass: string;
-        bar: string;
-        text: string;
-    }
-> = {
-    danger: {
-        label: "위험",
-        dot: "bg-red-500",
-        badgeClass: "bg-red-50 text-red-600 border-red-200",
-        bar: "bg-red-500",
-        text: "text-red-600",
-    },
-    warning: {
-        label: "주의",
-        dot: "bg-amber-500",
-        badgeClass: "bg-amber-50 text-amber-600 border-amber-200",
-        bar: "bg-amber-500",
-        text: "text-amber-600",
-    },
-    normal: {
-        label: "정상",
-        dot: "bg-emerald-500",
-        badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-200",
-        bar: "bg-emerald-500",
-        text: "text-emerald-600",
-    },
-    unknown: {
-        label: "판단불가",
-        dot: "bg-slate-400",
-        badgeClass: "bg-slate-100 text-slate-500 border-slate-200",
-        bar: "bg-slate-400",
-        text: "text-slate-500",
-    },
-};
-
 export const DRAINS: DrainFacility[] = [
     {
         id: "DR-004",
@@ -90,7 +53,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-011",
         road: "역삼로 88",
         fullAddress: "서울특별시 강남구 역삼로 88",
-        status: "warning",
+        status: "caution",
         blockage: 52,
         waterLevelPct: 48,
         waterLevelM: 0.78,
@@ -104,7 +67,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-015",
         road: "삼성로 45",
         fullAddress: "서울특별시 강남구 삼성로 45",
-        status: "warning",
+        status: "caution",
         blockage: 41,
         waterLevelPct: 36,
         waterLevelM: 0.62,
@@ -118,7 +81,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-018",
         road: "선릉로 52",
         fullAddress: "서울특별시 강남구 선릉로 52",
-        status: "normal",
+        status: "good",
         blockage: 18,
         waterLevelPct: 22,
         waterLevelM: 0.38,
@@ -132,7 +95,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-027",
         road: "삼성로 101",
         fullAddress: "서울특별시 강남구 삼성로 101",
-        status: "normal",
+        status: "good",
         blockage: 12,
         waterLevelPct: 15,
         waterLevelM: 0.26,
@@ -146,7 +109,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-033",
         road: "학동로 77",
         fullAddress: "서울특별시 강남구 학동로 77",
-        status: "normal",
+        status: "good",
         blockage: 9,
         waterLevelPct: 10,
         waterLevelM: 0.18,
@@ -160,7 +123,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-041",
         road: "도곡로 12",
         fullAddress: "서울특별시 강남구 도곡로 12",
-        status: "normal",
+        status: "good",
         blockage: 14,
         waterLevelPct: 17,
         waterLevelM: 0.29,
@@ -174,7 +137,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-052",
         road: "언주로 200",
         fullAddress: "서울특별시 강남구 언주로 200",
-        status: "warning",
+        status: "caution",
         blockage: 38,
         waterLevelPct: 33,
         waterLevelM: 0.57,
@@ -188,7 +151,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-066",
         road: "봉은사로 50",
         fullAddress: "서울특별시 강남구 봉은사로 50",
-        status: "normal",
+        status: "good",
         blockage: 11,
         waterLevelPct: 13,
         waterLevelM: 0.22,
@@ -202,7 +165,7 @@ export const DRAINS: DrainFacility[] = [
         id: "DR-070",
         road: "테헤란로 411",
         fullAddress: "서울특별시 강남구 테헤란로 411",
-        status: "normal",
+        status: "good",
         blockage: 16,
         waterLevelPct: 19,
         waterLevelM: 0.33,
@@ -218,13 +181,6 @@ export function getDrainById(id: string): DrainFacility | undefined {
     return DRAINS.find((d) => d.id === id);
 }
 
-export const RISK_RANK: Record<RiskStatus, number> = {
-    danger: 3,
-    warning: 2,
-    unknown: 1,
-    normal: 0,
-};
-
 export function sortByRisk(drains: DrainFacility[]): DrainFacility[] {
     return [...drains].sort((a, b) => {
         const r = RISK_RANK[b.status] - RISK_RANK[a.status];
@@ -235,18 +191,19 @@ export function sortByRisk(drains: DrainFacility[]): DrainFacility[] {
 
 export const LEGEND_COUNTS = {
     danger: DRAINS.filter((d) => d.status === "danger").length,
-    warning: DRAINS.filter((d) => d.status === "warning").length,
-    normal: DRAINS.filter((d) => d.status === "normal").length,
+    caution: DRAINS.filter((d) => d.status === "caution").length,
+    good: DRAINS.filter((d) => d.status === "good").length,
+    unknown: DRAINS.filter((d) => d.status === "unknown").length,
 };
 
 export const RISK_HISTORY: RiskHistoryItem[] = [
     { time: "2024-05-23 14:20", status: "danger", score: 82 },
-    { time: "2024-05-23 09:10", status: "warning", score: 46 },
-    { time: "2024-05-22 18:40", status: "normal", score: 18 },
-    { time: "2024-05-22 12:20", status: "warning", score: 42 },
-    { time: "2024-05-21 08:30", status: "normal", score: 15 },
-    { time: "2024-05-20 17:50", status: "normal", score: 12 },
-    { time: "2024-05-20 09:20", status: "normal", score: 10 },
+    { time: "2024-05-23 09:10", status: "caution", score: 46 },
+    { time: "2024-05-22 18:40", status: "good", score: 18 },
+    { time: "2024-05-22 12:20", status: "caution", score: 42 },
+    { time: "2024-05-21 08:30", status: "good", score: 15 },
+    { time: "2024-05-20 17:50", status: "good", score: 12 },
+    { time: "2024-05-20 09:20", status: "good", score: 10 },
 ];
 
 export const SENSOR_THRESHOLDS = {

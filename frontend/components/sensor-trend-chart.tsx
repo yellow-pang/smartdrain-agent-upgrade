@@ -173,7 +173,7 @@ export function SensorTrendChart() {
                 <SummaryCard
                     label="현재 유량"
                     value={`${SENSOR_SUMMARY.currentFlow} m³/min`}
-                    badge="warning"
+                    badge="caution"
                 />
                 <SummaryCard
                     label="최고 수위 (24h)"
@@ -220,7 +220,7 @@ function SummaryCard({
 }: {
     label: string;
     value: string;
-    badge?: "danger" | "warning";
+    badge?: "danger" | "caution";
     sub?: string;
 }) {
     return (
