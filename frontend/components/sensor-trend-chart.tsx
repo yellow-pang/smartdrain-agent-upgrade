@@ -1,220 +1,260 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Info } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Info } from "lucide-react";
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
-import { cn } from "@/lib/utils"
+    CartesianGrid,
+    Line,
+    LineChart,
+    ReferenceLine,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from "recharts";
+import { cn } from "@/lib/utils";
 import {
-  generate24hSeries,
-  generate7dSeries,
-  SENSOR_SUMMARY,
-  SENSOR_THRESHOLDS,
-  type SensorPoint,
-} from "@/lib/mock-data"
-import { StatusBadge } from "@/components/status-badge"
+    generate24hSeries,
+    generate7dSeries,
+    SENSOR_SUMMARY,
+    SENSOR_THRESHOLDS,
+    type SensorPoint,
+} from "@/lib/mock-data";
+import { StatusBadge } from "@/components/status-badge";
 
-type RangeKey = "24h" | "7d"
+type RangeKey = "24h" | "7d";
 
 export function SensorTrendChart() {
-  const [range, setRange] = useState<RangeKey>("24h")
-  const base24h = useMemo(() => generate24hSeries(), [])
-  const series7d = useMemo(() => generate7dSeries(), [])
-  const [live24h, setLive24h] = useState<SensorPoint[]>(base24h)
-  const tick = useRef(0)
+    const [range, setRange] = useState<RangeKey>("24h");
+    const base24h = useMemo(() => generate24hSeries(), []);
+    const series7d = useMemo(() => generate7dSeries(), []);
+    const [live24h, setLive24h] = useState<SensorPoint[]>(base24h);
+    const tick = useRef(0);
 
-  // Simulated live update: nudge the last few points slightly every 2s
-  // so the chart feels like a live control-room feed. No real socket.
-  useEffect(() => {
-    if (range !== "24h") return
-    const interval = setInterval(() => {
-      tick.current += 1
-      setLive24h((prev) =>
-        prev.map((p, i) => {
-          if (i < prev.length - 4) return p
-          const wobble = Math.sin((tick.current + i) * 0.9) * 0.06
-          return {
-            ...p,
-            level: +Math.max(0, p.level + wobble).toFixed(2),
-            flow: +Math.max(0, p.flow + wobble * 1.1).toFixed(2),
-          }
-        }),
-      )
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [range])
+    // Simulated live update: nudge the last few points slightly every 2s
+    // so the chart feels like a live control-room feed. No real socket.
+    useEffect(() => {
+        if (range !== "24h") return;
+        const interval = setInterval(() => {
+            tick.current += 1;
+            setLive24h((prev) =>
+                prev.map((p, i) => {
+                    if (i < prev.length - 4) return p;
+                    const wobble = Math.sin((tick.current + i) * 0.9) * 0.06;
+                    return {
+                        ...p,
+                        level: +Math.max(0, p.level + wobble).toFixed(2),
+                        flow: +Math.max(0, p.flow + wobble * 1.1).toFixed(2),
+                    };
+                }),
+            );
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [range]);
 
-  const data = range === "24h" ? live24h : series7d
+    const data = range === "24h" ? live24h : series7d;
 
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <h2 className="text-base font-bold text-slate-900">센서 데이터 추세</h2>
-          <Info className="size-3.5 text-slate-400" />
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                    <h2 className="text-base font-bold text-slate-900">
+                        센서 데이터 추세
+                    </h2>
+                    <Info className="size-3.5 text-slate-400" />
+                </div>
+                <div className="flex rounded-lg border border-slate-200 p-0.5">
+                    {(["24h", "7d"] as RangeKey[]).map((key) => (
+                        <button
+                            key={key}
+                            onClick={() => setRange(key)}
+                            className={cn(
+                                "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
+                                range === key
+                                    ? "bg-cyan-700 text-white"
+                                    : "text-slate-500 hover:text-slate-700",
+                            )}
+                        >
+                            {key === "24h" ? "24시간" : "7일"}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* legend */}
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                <LegendItem color="#0e7490" label="수위 (m)" />
+                <LegendItem color="#059669" label="유량 (m³/min)" />
+                <LegendItem
+                    color="#dc2626"
+                    dashed
+                    label={`위험 수위 ${SENSOR_THRESHOLDS.dangerLevel.toFixed(2)}m`}
+                />
+                <LegendItem
+                    color="#d97706"
+                    dashed
+                    label={`주의 수위 ${SENSOR_THRESHOLDS.warningLevel.toFixed(2)}m`}
+                />
+            </div>
+
+            <div className="mt-2 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                        data={data}
+                        margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
+                    >
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f1f5f9"
+                            vertical={false}
+                        />
+                        <XAxis
+                            dataKey="time"
+                            tick={{ fontSize: 11, fill: "#94a3b8" }}
+                            tickLine={false}
+                            axisLine={{ stroke: "#e2e8f0" }}
+                            interval={range === "24h" ? 7 : 0}
+                        />
+                        <YAxis
+                            tick={{ fontSize: 11, fill: "#94a3b8" }}
+                            tickLine={false}
+                            axisLine={false}
+                            domain={[0, 2.5]}
+                        />
+                        <Tooltip content={<ChartTooltip />} />
+                        <ReferenceLine
+                            y={SENSOR_THRESHOLDS.dangerLevel}
+                            stroke="#dc2626"
+                            strokeDasharray="5 4"
+                            strokeWidth={1.5}
+                        />
+                        <ReferenceLine
+                            y={SENSOR_THRESHOLDS.warningLevel}
+                            stroke="#d97706"
+                            strokeDasharray="5 4"
+                            strokeWidth={1.5}
+                        />
+                        {range === "24h" && (
+                            <ReferenceLine
+                                x="14:30"
+                                stroke="#64748b"
+                                strokeWidth={1.5}
+                            />
+                        )}
+                        <Line
+                            type="monotone"
+                            dataKey="level"
+                            name="수위"
+                            stroke="#0e7490"
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="flow"
+                            name="유량"
+                            stroke="#059669"
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                        />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* Summary cards */}
+            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <SummaryCard
+                    label="현재 수위"
+                    value={`${SENSOR_SUMMARY.currentLevel} m`}
+                    badge="danger"
+                />
+                <SummaryCard
+                    label="현재 유량"
+                    value={`${SENSOR_SUMMARY.currentFlow} m³/min`}
+                    badge="warning"
+                />
+                <SummaryCard
+                    label="최고 수위 (24h)"
+                    value={`${SENSOR_SUMMARY.maxLevel} m`}
+                    sub={SENSOR_SUMMARY.maxLevelTime}
+                />
+                <SummaryCard
+                    label="최고 유량 (24h)"
+                    value={`${SENSOR_SUMMARY.maxFlow} m³/min`}
+                    sub={SENSOR_SUMMARY.maxFlowTime}
+                />
+            </div>
         </div>
-        <div className="flex rounded-lg border border-slate-200 p-0.5">
-          {(["24h", "7d"] as RangeKey[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setRange(key)}
-              className={cn(
-                "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
-                range === key ? "bg-cyan-700 text-white" : "text-slate-500 hover:text-slate-700",
-              )}
-            >
-              {key === "24h" ? "24시간" : "7일"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* legend */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-        <LegendItem color="#0e7490" label="수위 (m)" />
-        <LegendItem color="#059669" label="유량 (m³/min)" />
-        <LegendItem color="#dc2626" dashed label={`위험 수위 ${SENSOR_THRESHOLDS.dangerLevel.toFixed(2)}m`} />
-        <LegendItem color="#d97706" dashed label={`주의 수위 ${SENSOR_THRESHOLDS.warningLevel.toFixed(2)}m`} />
-      </div>
-
-      <div className="mt-2 h-[280px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
-              tickLine={false}
-              axisLine={{ stroke: "#e2e8f0" }}
-              interval={range === "24h" ? 7 : 0}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
-              tickLine={false}
-              axisLine={false}
-              domain={[0, 2.5]}
-            />
-            <Tooltip content={<ChartTooltip />} />
-            <ReferenceLine
-              y={SENSOR_THRESHOLDS.dangerLevel}
-              stroke="#dc2626"
-              strokeDasharray="5 4"
-              strokeWidth={1.5}
-            />
-            <ReferenceLine
-              y={SENSOR_THRESHOLDS.warningLevel}
-              stroke="#d97706"
-              strokeDasharray="5 4"
-              strokeWidth={1.5}
-            />
-            {range === "24h" && (
-              <ReferenceLine x="14:30" stroke="#64748b" strokeWidth={1.5} />
-            )}
-            <Line
-              type="monotone"
-              dataKey="level"
-              name="수위"
-              stroke="#0e7490"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="flow"
-              name="유량"
-              stroke="#059669"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Summary cards */}
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <SummaryCard
-          label="현재 수위"
-          value={`${SENSOR_SUMMARY.currentLevel} m`}
-          badge="danger"
-        />
-        <SummaryCard
-          label="현재 유량"
-          value={`${SENSOR_SUMMARY.currentFlow} m³/min`}
-          badge="warning"
-        />
-        <SummaryCard
-          label="최고 수위 (24h)"
-          value={`${SENSOR_SUMMARY.maxLevel} m`}
-          sub={SENSOR_SUMMARY.maxLevelTime}
-        />
-        <SummaryCard
-          label="최고 유량 (24h)"
-          value={`${SENSOR_SUMMARY.maxFlow} m³/min`}
-          sub={SENSOR_SUMMARY.maxFlowTime}
-        />
-      </div>
-    </div>
-  )
+    );
 }
 
-function LegendItem({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className="inline-block h-0 w-4"
-        style={{
-          borderTop: `2px ${dashed ? "dashed" : "solid"} ${color}`,
-        }}
-      />
-      {label}
-    </span>
-  )
+function LegendItem({
+    color,
+    label,
+    dashed,
+}: {
+    color: string;
+    label: string;
+    dashed?: boolean;
+}) {
+    return (
+        <span className="flex items-center gap-1.5">
+            <span
+                className="inline-block h-0 w-4"
+                style={{
+                    borderTop: `2px ${dashed ? "dashed" : "solid"} ${color}`,
+                }}
+            />
+            {label}
+        </span>
+    );
 }
 
 function SummaryCard({
-  label,
-  value,
-  badge,
-  sub,
+    label,
+    value,
+    badge,
+    sub,
 }: {
-  label: string
-  value: string
-  badge?: "danger" | "warning"
-  sub?: string
+    label: string;
+    value: string;
+    badge?: "danger" | "warning";
+    sub?: string;
 }) {
-  return (
-    <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5">
-      <p className="text-xs text-slate-500">{label}</p>
-      <div className="mt-1 flex items-center gap-2">
-        <span className="text-lg font-bold text-slate-900">{value}</span>
-        {badge && <StatusBadge status={badge} />}
-      </div>
-      {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
-    </div>
-  )
+    return (
+        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5">
+            <p className="text-xs text-slate-500">{label}</p>
+            <div className="mt-1 flex items-center gap-2">
+                <span className="text-lg font-bold text-slate-900">
+                    {value}
+                </span>
+                {badge && <StatusBadge status={badge} />}
+            </div>
+            {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+        </div>
+    );
 }
 
 function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md">
-      <p className="mb-1 text-xs font-semibold text-slate-700">{label}</p>
-      {payload.map((entry: any) => (
-        <p key={entry.dataKey} className="flex items-center gap-1.5 text-xs text-slate-600">
-          <span className="size-2 rounded-full" style={{ background: entry.color }} />
-          {entry.name}: <span className="font-semibold">{entry.value}</span>
-        </p>
-      ))}
-    </div>
-  )
+    if (!active || !payload?.length) return null;
+    return (
+        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md">
+            <p className="mb-1 text-xs font-semibold text-slate-700">{label}</p>
+            {payload.map((entry: any) => (
+                <p
+                    key={entry.dataKey}
+                    className="flex items-center gap-1.5 text-xs text-slate-600"
+                >
+                    <span
+                        className="size-2 rounded-full"
+                        style={{ background: entry.color }}
+                    />
+                    {entry.name}:{" "}
+                    <span className="font-semibold">{entry.value}</span>
+                </p>
+            ))}
+        </div>
+    );
 }
