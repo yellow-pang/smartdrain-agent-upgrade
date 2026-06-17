@@ -1,0 +1,16 @@
+# --- AI 학습 및 분석 ---
+ultralytics         # YOLOv8
+opencv-python       # 전처리
+xgboost             # 위험도 판단
+pandas              # 데이터 처리
+numpy               # 수치 연산
+
+# --- 대시보드(Streamlit) ---
+streamlit           # 웹 대시보드 프레임워크
+streamlit-folium    # 지도 구현용
+folium              # 지도 시각화 라이브러리
+plotly              # 그래프 시각화 (Recharts 대신 사용 권장)
+
+# --- 데이터베이스 및 기타 ---
+sqlalchemy
+psycopg2-binary
