@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+psycopg[binary]
+pydantic
+pydantic-settings
+python-dotenv
+python-multipart
+opencv-python
+ultralytics
+xgboost
+numpy
+pandas
