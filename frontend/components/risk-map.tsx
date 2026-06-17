@@ -39,14 +39,19 @@ export function RiskMap({
                         count={LEGEND_COUNTS.danger}
                     />
                     <LegendRow
-                        color={STATUS_META.warning.dot}
+                        color={STATUS_META.caution.dot}
                         label="주의"
-                        count={LEGEND_COUNTS.warning}
+                        count={LEGEND_COUNTS.caution}
                     />
                     <LegendRow
-                        color={STATUS_META.normal.dot}
-                        label="정상"
-                        count={LEGEND_COUNTS.normal}
+                        color={STATUS_META.good.dot}
+                        label="양호"
+                        count={LEGEND_COUNTS.good}
+                    />
+                    <LegendRow
+                        color={STATUS_META.unknown.dot}
+                        label="판단불가"
+                        count={LEGEND_COUNTS.unknown}
                     />
                 </ul>
             </div>

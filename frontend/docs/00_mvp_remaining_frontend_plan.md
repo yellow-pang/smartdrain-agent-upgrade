@@ -10,6 +10,8 @@
 
 MVP 구현 마감 기준은 2026-06-21이며, 2026-06-22에는 구현 상태를 확인할 예정이다. 따라서 2026-06-21까지는 실제 백엔드가 늦어지더라도 mock adapter 기반으로 대시보드, 상세 화면, 지도, 실시간 갱신 흐름을 설명 가능한 상태로 만들어야 한다.
 
+분석 로직은 프론트엔드가 직접 수행하지 않는다. 백엔드가 센서 데이터와 빗물받이 이미지 기반 YOLO 결과를 XGBoost에 입력해 최종 위험도와 판단 결과를 만들고, 프론트엔드는 그 결과를 API 또는 WebSocket으로 받아 표시한다.
+
 ---
 
 ## 2. 현재 상태 요약
@@ -40,7 +42,7 @@ MVP 구현 마감 기준은 2026-06-21이며, 2026-06-22에는 구현 상태를 
 
 | 작업                      | 내용                                                                   | 우선순위 |
 | ------------------------- | ---------------------------------------------------------------------- | -------- |
-| API 타입 초안 작성        | 빗물받이, 센서, YOLO, XGBoost, 위험 이력 타입을 frontend 기준으로 정리 | 필수     |
+| API 타입 초안 작성        | 백엔드가 내려주는 빗물받이, 센서, YOLO 결과, XGBoost 최종 판단, 위험 이력 타입을 frontend 기준으로 정리 | 필수     |
 | mock data와 API 타입 분리 | `mock-data.ts`의 화면용 구조와 실제 API 응답 후보 구조를 분리          | 필수     |
 | adapter 함수 준비         | API 응답 후보를 현재 UI에서 쓰는 형태로 변환하는 함수 작성             | 필수     |
 | axios client 껍데기 준비  | 실제 endpoint 없이 axios instance, 함수 이름, 반환 타입을 먼저 설계    | 권장     |
@@ -58,7 +60,7 @@ frontend/lib/api/adapters.ts
 
 단, 실제 파일 생성은 백엔드 API 방향이 어느 정도 보이면 진행한다.
 
-axios를 사용할 예정이므로 API client는 다음 기준으로 준비한다.
+axios 설치는 완료되었으므로 API client는 다음 기준으로 준비한다.
 
 ```ts
 import axios from "axios";
@@ -145,7 +147,7 @@ type RiskChangedEvent = {
 
 ### 3.5 상태 코드 정리
 
-문서 기준 위험도 내부 코드는 `good / caution / danger / unknown`이다. 현재 frontend mock은 `normal / warning / danger / unknown`을 사용한다.
+문서 기준 위험도 내부 코드는 `good / caution / danger / unknown`이다. 기존 frontend mock은 `normal / warning / danger / unknown`을 사용했지만, 이번 데이터 계층 정리에서 `good / caution / danger / unknown`으로 맞춘다.
 
 백엔드와 맞추기 전 frontend에서 다음 중 하나를 선택해야 한다.
 
@@ -331,7 +333,7 @@ export async function getDrainDetail(id: string) {
 
 | 작업                        | 상세 내용                                                   | 완료 기준                     |
 | --------------------------- | ----------------------------------------------------------- | ----------------------------- |
-| 위험도 코드 정리            | `good / caution / danger / unknown` 기준으로 타입 후보 정리 | mock 또는 adapter 기준 결정   |
+| 위험도 코드 정리            | `good / caution / danger / unknown` 기준으로 타입과 mock 데이터 정리 | 설계 문서와 코드 기준 일치 |
 | API 타입 초안 작성          | DTO 타입, 공통 응답 타입, 이벤트 타입 초안 작성             | 타입 파일 또는 문서 기준 준비 |
 | axios client 구조 정리      | `apiClient`, API 함수 파일, adapter 파일 역할 정리          | axios 기준 연동 방향 확정     |
 | mock adapter 설계           | mock 데이터를 API 응답처럼 변환하거나 UI 타입으로 변환      | UI가 데이터 출처와 분리됨     |
