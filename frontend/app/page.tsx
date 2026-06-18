@@ -6,11 +6,13 @@ import { AppHeader } from "@/components/app-header";
 import { RiskMap } from "@/components/risk-map";
 import { DrainRiskList } from "@/components/drain-risk-list";
 import { DrainSummaryPanel } from "@/components/drain-summary-panel";
+import { PlaceholderState } from "@/components/placeholder-state";
 import {
     loadDashboardData,
     type DashboardData,
 } from "@/lib/api/drain-data";
 import type { DashboardSummaryDto } from "@/lib/api/types";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 export default function DashboardPage() {
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(
@@ -65,12 +67,19 @@ export default function DashboardPage() {
                                     </span>
                                 )}
                             </div>
-                            {dashboardData ? (
+                            {dashboardData?.source === "api" ? (
                                 <RiskMap
                                     drains={dashboardData.drains}
                                     selectedId={selectedId}
                                     onSelect={setSelectedId}
                                     labelLocation={selected?.road}
+                                />
+                            ) : dashboardData?.source === "mock" ? (
+                                <PlaceholderState
+                                    image={PLACEHOLDER_IMAGES.map}
+                                    title="지도 API 연결 대기"
+                                    description="실제 백엔드 데이터가 도착하면 지도 마커가 표시됩니다."
+                                    statusLabel="mock fallback"
                                 />
                             ) : (
                                 <MapLoadingState />

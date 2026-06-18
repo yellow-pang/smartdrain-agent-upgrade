@@ -28,6 +28,7 @@ API 또는 API 명세형 mock 응답
 | 상세 페이지 | 주소, 업데이트 시간, 센서 차트, 위험 이력, CCTV, YOLO/XGBoost 표시를 상세 데이터 기반으로 변경 |
 | 지도 | 범례 개수를 전역 mock 상수가 아니라 전달받은 `drains` 기준으로 계산 |
 | 센서 차트 | 내부 생성 데이터 대신 props로 받은 센서 이력과 요약값 표시 |
+| placeholder fallback | API 미연결 또는 호출 실패 시 지도, CCTV, 센서 차트 영역에 placeholder 이미지와 `mock fallback` 배지 표시 |
 
 ## 3. 변경 전/후
 
@@ -38,6 +39,7 @@ API 또는 API 명세형 mock 응답
 | CCTV | 컴포넌트 내부 상수 timestamp와 이미지 사용 | 상세 분석 결과의 `imageUrl`, `analyzedAt` 사용 |
 | 센서 차트 | 컴포넌트 내부에서 mock series 생성 | API 센서 이력 DTO를 adapter로 변환한 `SensorPoint[]` 사용 |
 | 분석 표시 | YOLO/XGBoost 결과 화면 없음 | 최신 분석 결과 카드 추가 |
+| fallback 시각화 | mock 데이터가 실제 API 데이터처럼 보일 수 있음 | placeholder 이미지로 API 미수신 상태를 구분 |
 
 ## 4. 검증 결과
 
@@ -55,6 +57,7 @@ API 또는 API 명세형 mock 응답
 | mock 지도 좌표 | Kakao Maps SDK 제외 범위라 실제 위도/경도는 mock map 위치로 임시 변환한다. |
 | WebSocket 미연결 | 실시간 갱신은 제외 범위라 현재는 초기 REST 조회와 fallback 흐름만 구성했다. |
 | 이미지 최적화 warning | 기존 `<img>` 사용 warning이 남아 있으며 별도 `next/image` 전환 작업으로 분리 가능하다. |
+| fallback 판별 | placeholder가 보이면 실제 API가 아니라 fallback 상태로 판단한다. 실제 API 응답이 오면 지도/차트/이미지가 데이터 UI로 바뀌어야 한다. |
 
 ## 6. 추천 커밋 메시지
 

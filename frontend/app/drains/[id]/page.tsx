@@ -21,6 +21,7 @@ import { SensorTrendChart } from "@/components/sensor-trend-chart";
 import { StatusBadge } from "@/components/status-badge";
 import { MetricProgress } from "@/components/metric-progress";
 import { RiskMap } from "@/components/risk-map";
+import { PlaceholderState } from "@/components/placeholder-state";
 import { STATUS_META, type RiskStatus } from "@/lib/mock-data";
 import {
     loadDrainDetailData,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/api/drain-data";
 import { cn } from "@/lib/utils";
 import type { AnalysisResultDto, YoloStatus } from "@/lib/api/types";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 export default function DrainDetailPage({
     params,
@@ -108,6 +110,7 @@ export default function DrainDetailPage({
                             drain={drain}
                             fullAddress={drain.fullAddress}
                             road={drain.road}
+                            source={detailData.source}
                         />
                     </div>
 
@@ -116,6 +119,7 @@ export default function DrainDetailPage({
                         <SensorTrendChart
                             points={detailData.sensorHistory}
                             summary={sensorSummary}
+                            isFallback={detailData.source === "mock"}
                         />
                         <CurrentRiskCard drain={drain} meta={meta} />
                         <AnalysisResultCard analysis={detailData.analysis} />
@@ -136,10 +140,12 @@ function LocationMapCard({
     drain,
     fullAddress,
     road,
+    source,
 }: {
     drain: DrainDetailData["drain"];
     fullAddress: string;
     road: string;
+    source: DrainDetailData["source"];
 }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -150,11 +156,21 @@ function LocationMapCard({
                 </span>
             </h2>
             <div className="h-[260px]">
-                <RiskMap
-                    drains={[{ ...drain, x: 50, y: 48 }]}
-                    selectedId={drain.id}
-                    labelLocation={road}
-                />
+                {source === "api" ? (
+                    <RiskMap
+                        drains={[{ ...drain, x: 50, y: 48 }]}
+                        selectedId={drain.id}
+                        labelLocation={road}
+                    />
+                ) : (
+                    <PlaceholderState
+                        image={PLACEHOLDER_IMAGES.map}
+                        title="위치 지도 연결 대기"
+                        description="실제 위치 데이터가 도착하면 지도 영역이 표시됩니다."
+                        statusLabel="mock fallback"
+                        className="h-full min-h-0"
+                    />
+                )}
             </div>
             <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
                 <MapPin className="size-3.5 text-slate-400" />
@@ -515,7 +531,7 @@ function getSnapshots(detailData: DrainDetailData) {
     const imageUrl =
         detailData.analysis?.yoloResult?.imageUrl ??
         detailData.detail.imageUrl ??
-        "/cctv-drain.png";
+        PLACEHOLDER_IMAGES.cctv;
     const capturedAt =
         detailData.analysis?.yoloResult?.analyzedAt ??
         detailData.drain.updatedAt;

@@ -17,11 +17,12 @@ import { StatusBadge } from "@/components/status-badge";
 import { MetricProgress } from "@/components/metric-progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 export function DrainSummaryPanel({
     drain,
     onClose,
-    imageUrl = "/cctv-drain.png",
+    imageUrl = PLACEHOLDER_IMAGES.facility,
 }: {
     drain: DrainFacility;
     onClose?: () => void;

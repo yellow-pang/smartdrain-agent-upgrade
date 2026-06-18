@@ -13,11 +13,10 @@ import {
     YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import {
-    SENSOR_THRESHOLDS,
-    type SensorPoint,
-} from "@/lib/mock-data";
+import { SENSOR_THRESHOLDS, type SensorPoint } from "@/lib/mock-data";
 import { StatusBadge } from "@/components/status-badge";
+import { PlaceholderState } from "@/components/placeholder-state";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 type RangeKey = "24h" | "7d";
 
@@ -33,9 +32,11 @@ type SensorSummary = {
 export function SensorTrendChart({
     points,
     summary,
+    isFallback = false,
 }: {
     points: SensorPoint[];
     summary: SensorSummary;
+    isFallback?: boolean;
 }) {
     const [range, setRange] = useState<RangeKey>("24h");
     const chartData = useMemo(() => {
@@ -86,71 +87,81 @@ export function SensorTrendChart({
                 />
             </div>
 
-            <div className="mt-2 h-[280px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                        data={chartData}
-                        margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
-                    >
-                        <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="#f1f5f9"
-                            vertical={false}
-                        />
-                        <XAxis
-                            dataKey="time"
-                            tick={{ fontSize: 11, fill: "#94a3b8" }}
-                            tickLine={false}
-                            axisLine={{ stroke: "#e2e8f0" }}
-                            interval={range === "24h" ? 2 : 0}
-                        />
-                        <YAxis
-                            tick={{ fontSize: 11, fill: "#94a3b8" }}
-                            tickLine={false}
-                            axisLine={false}
-                            domain={[0, 2.5]}
-                        />
-                        <Tooltip content={<ChartTooltip />} />
-                        <ReferenceLine
-                            y={SENSOR_THRESHOLDS.dangerLevel}
-                            stroke="#dc2626"
-                            strokeDasharray="5 4"
-                            strokeWidth={1.5}
-                        />
-                        <ReferenceLine
-                            y={SENSOR_THRESHOLDS.warningLevel}
-                            stroke="#d97706"
-                            strokeDasharray="5 4"
-                            strokeWidth={1.5}
-                        />
-                        {range === "24h" && (
+            {isFallback ? (
+                <PlaceholderState
+                    image={PLACEHOLDER_IMAGES.chart}
+                    title="실시간 센서 데이터 연결 대기"
+                    description="백엔드 센서 이력이 도착하면 수위와 유량 차트가 표시됩니다."
+                    statusLabel="mock fallback"
+                    className="mt-2 h-[280px]"
+                />
+            ) : (
+                <div className="mt-2 h-[280px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                            data={chartData}
+                            margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
+                        >
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#f1f5f9"
+                                vertical={false}
+                            />
+                            <XAxis
+                                dataKey="time"
+                                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                tickLine={false}
+                                axisLine={{ stroke: "#e2e8f0" }}
+                                interval={range === "24h" ? 2 : 0}
+                            />
+                            <YAxis
+                                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                tickLine={false}
+                                axisLine={false}
+                                domain={[0, 2.5]}
+                            />
+                            <Tooltip content={<ChartTooltip />} />
                             <ReferenceLine
-                                x="14:30"
-                                stroke="#64748b"
+                                y={SENSOR_THRESHOLDS.dangerLevel}
+                                stroke="#dc2626"
+                                strokeDasharray="5 4"
                                 strokeWidth={1.5}
                             />
-                        )}
-                        <Line
-                            type="monotone"
-                            dataKey="level"
-                            name="수위"
-                            stroke="#0e7490"
-                            strokeWidth={2}
-                            dot={false}
-                            isAnimationActive={false}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="flow"
-                            name="유량"
-                            stroke="#059669"
-                            strokeWidth={2}
-                            dot={false}
-                            isAnimationActive={false}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
-            </div>
+                            <ReferenceLine
+                                y={SENSOR_THRESHOLDS.warningLevel}
+                                stroke="#d97706"
+                                strokeDasharray="5 4"
+                                strokeWidth={1.5}
+                            />
+                            {range === "24h" && (
+                                <ReferenceLine
+                                    x="14:30"
+                                    stroke="#64748b"
+                                    strokeWidth={1.5}
+                                />
+                            )}
+                            <Line
+                                type="monotone"
+                                dataKey="level"
+                                name="수위"
+                                stroke="#0e7490"
+                                strokeWidth={2}
+                                dot={false}
+                                isAnimationActive={false}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="flow"
+                                name="유량"
+                                stroke="#059669"
+                                strokeWidth={2}
+                                dot={false}
+                                isAnimationActive={false}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
 
             {/* Summary cards */}
             <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

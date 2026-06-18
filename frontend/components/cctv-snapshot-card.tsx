@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 type Snapshot = {
     imageUrl: string;
@@ -20,7 +21,12 @@ export function CctvSnapshotCard({
     const safeSnapshots =
         snapshots.length > 0
             ? snapshots
-            : [{ imageUrl: "/cctv-drain.png", capturedAt: "분석 데이터 없음" }];
+            : [
+                  {
+                      imageUrl: PLACEHOLDER_IMAGES.cctv,
+                      capturedAt: "분석 데이터 없음",
+                  },
+              ];
     const current = safeSnapshots[Math.min(active, safeSnapshots.length - 1)];
 
     return (

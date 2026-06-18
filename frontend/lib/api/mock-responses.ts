@@ -10,9 +10,10 @@ import type {
     YoloStatus,
 } from "@/lib/api/types";
 import { DRAINS, type DrainFacility } from "@/lib/mock-data";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 const BASE_DATE = "2026-06-18";
-const CCTV_IMAGE_URL = "/cctv-drain.png";
+const CCTV_IMAGE_URL = PLACEHOLDER_IMAGES.cctv;
 
 export function createMockDrainListResponse(): ApiListResponse<DrainListItemDto> {
     const items = DRAINS.map(facilityToListItemDto);
