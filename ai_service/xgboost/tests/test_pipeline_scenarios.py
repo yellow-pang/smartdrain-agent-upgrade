@@ -7,7 +7,7 @@ from flood_risk_xgb.config import Settings
 from flood_risk_xgb.service import build_default_service
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _read_jsonl(path: Path) -> list[dict]:

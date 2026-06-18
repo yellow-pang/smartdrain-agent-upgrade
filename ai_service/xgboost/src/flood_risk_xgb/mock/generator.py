@@ -178,7 +178,7 @@ def generate_mock_fixtures(mock_data_dir: Path) -> None:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[4]
+    root = Path(__file__).resolve().parents[3]
     generate_mock_fixtures(root / "mock_data")
     print(f"Mock fixtures generated under: {root / 'mock_data'}")
 

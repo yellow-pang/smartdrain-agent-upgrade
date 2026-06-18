@@ -38,7 +38,7 @@ class Settings:
 
     @classmethod
     def from_env(cls, project_root: Path | None = None) -> "Settings":
-        root = project_root or Path(__file__).resolve().parents[3]
+        root = project_root or Path(__file__).resolve().parents[2]
         load_dotenv(root / ".env", override=False)
 
         return cls(
@@ -47,11 +47,11 @@ class Settings:
             mock_data_dir=_resolve_path(root, os.getenv("MOCK_DATA_DIR", "mock_data")),
             model_path=_resolve_path(
                 root,
-                os.getenv("MODEL_PATH", "xgboost/models/xgb_mock_baseline.json"),
+                os.getenv("MODEL_PATH", "models/xgb_mock_baseline.json"),
             ),
             model_metadata_path=_resolve_path(
                 root,
-                os.getenv("MODEL_METADATA_PATH", "xgboost/models/model_metadata.json"),
+                os.getenv("MODEL_METADATA_PATH", "models/model_metadata.json"),
             ),
             sensor_lookback_minutes=int(os.getenv("SENSOR_LOOKBACK_MINUTES", "30")),
             sensor_short_window_minutes=int(

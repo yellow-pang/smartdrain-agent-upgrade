@@ -92,8 +92,8 @@ def train_and_save(output_dir: Path, seed: int = 42) -> dict:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[4]
-    evaluation = train_and_save(root / "xgboost" / "models")
+    root = Path(__file__).resolve().parents[3]
+    evaluation = train_and_save(root / "models")
     print(json.dumps(evaluation, indent=2))
 
 

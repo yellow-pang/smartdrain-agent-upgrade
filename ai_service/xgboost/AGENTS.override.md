@@ -1,17 +1,22 @@
-# XGBoost area override
+# XGBoost Area Override
 
 This is the active implementation scope.
 
-## Allowed changes
+## Allowed Changes
 
-- `xgboost/src/flood_risk_xgb/**`
-- `xgboost/tests/**`
-- `xgboost/models/**` when retraining the mock baseline intentionally
-- XGBoost-specific scripts, mock fixtures, and documentation
+- `src/flood_risk_xgb/**`
+- `tests/**`
+- `scripts/**`
+- `mock_data/**`
+- `shared/contracts/**`
+- `docs/**`
+- `models/**` only when retraining the mock baseline intentionally
+- `requirements.txt`
 
-## Required invariants
+## Required Invariants
 
-- Never import from `yolo/`.
+- Do not import or execute YOLO implementation code.
+- Treat `yolo_result` as an external input record contract only.
 - Read YOLO and sensor data through repository interfaces.
 - Use only sensor records with `measured_at <= captured_at`.
 - Keep `unknown` outside the trained XGBoost class set.
@@ -20,11 +25,11 @@ This is the active implementation scope.
 - Preserve public risk codes, decision codes, state codes, and data-quality semantics.
 - Do not claim synthetic-model metrics are operational performance.
 
-## Completion checks
+## Completion Checks
 
-Run the following after behavior changes:
+Run after behavior changes from `ai_service` root:
 
-```bash
+```powershell
+python xgboost\scripts\verify_setup.py
 python -m pytest
-python scripts/verify_setup.py
 ```

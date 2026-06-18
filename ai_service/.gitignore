@@ -37,9 +37,9 @@ htmlcov/
 Thumbs.db
 
 # Runtime outputs generated from mock analysis
-mock_data/runtime/*.jsonl
-mock_data/runtime/*.log
-!mock_data/runtime/.gitkeep
+xgboost/mock_data/runtime/*.jsonl
+xgboost/mock_data/runtime/*.log
+!xgboost/mock_data/runtime/.gitkeep
 
 # Logs and temporary files
 logs/
@@ -47,11 +47,6 @@ logs/
 tmp/
 .cache/
 .codex-log/
-
-# YOLO runtime output directories
-runs/
-yolo/runs/
-yolo/output/
 
 # Training scratch outputs (tracked baseline models under xgboost/models are not ignored)
 xgboost/training_output/
