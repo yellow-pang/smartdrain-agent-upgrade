@@ -13,45 +13,51 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.xgboost_result import XgboostResultCreate, XgboostResultResponse
-from app.schemas.yolo_result import YoloResultCreate, YoloResultResponse
+from app.schemas.api_response import (
+    api_list_response,
+    api_response,
+    drain_status_event_payload,
+    xgboost_result_dto,
+    yolo_result_dto,
+)
+from app.schemas.xgboost_result import XgboostResultCreate
+from app.schemas.yolo_result import YoloResultCreate
 from app.services import xgboost_service, yolo_service
+from app.services.drain_service import get_drain_by_identifier
 from app.websocket.manager import manager
 
 router = APIRouter(prefix="/api", tags=["analysis"])
 
 
-@router.post("/analysis/yolo", response_model=YoloResultResponse, status_code=201)
+@router.post("/analysis/yolo", status_code=201)
 def create_yolo_result(payload: YoloResultCreate, db: Session = Depends(get_db)):
-    return yolo_service.create_yolo_result(db, payload)
+    result = yolo_service.create_yolo_result(db, payload)
+    return api_response(yolo_result_dto(result), message="YOLO analysis result created")
 
 
-@router.post("/analysis/xgboost", response_model=XgboostResultResponse, status_code=201)
+@router.post("/analysis/xgboost", status_code=201)
 async def create_xgboost_result(payload: XgboostResultCreate, db: Session = Depends(get_db)):
     result = xgboost_service.evaluate_risk(db, payload)
-    await manager.broadcast(
-        json.dumps(
-            {
-                "type": "risk_update",
-                "drain_id": result.drain_id,
-                "risk_score": result.risk_score,
-                "risk_level": result.risk_level,
-            }
-        )
-    )
-    return result
+    await manager.broadcast(json.dumps(drain_status_event_payload(db, result.drain, result)))
+    return api_response(xgboost_result_dto(result), message="Risk analysis result created")
 
 
-@router.get("/drains/{drain_id}/yolo-results", response_model=list[YoloResultResponse])
-def list_yolo_results(drain_id: int, db: Session = Depends(get_db)):
-    return yolo_service.get_yolo_results_by_drain(db, drain_id)
+@router.get("/drains/{drain_id}/yolo-results")
+def list_yolo_results(drain_id: str, db: Session = Depends(get_db)):
+    drain = get_drain_by_identifier(db, drain_id)
+    results = yolo_service.get_yolo_results_by_drain(db, drain.id)
+    return api_list_response([yolo_result_dto(result) for result in results])
 
 
-@router.get("/drains/{drain_id}/risk-history", response_model=list[XgboostResultResponse])
-def risk_history(drain_id: int, db: Session = Depends(get_db)):
-    return xgboost_service.get_risk_history(db, drain_id)
+@router.get("/drains/{drain_id}/risk-history")
+def risk_history(drain_id: str, db: Session = Depends(get_db)):
+    drain = get_drain_by_identifier(db, drain_id)
+    results = xgboost_service.get_risk_history(db, drain.id)
+    return api_list_response([xgboost_result_dto(result) for result in results])
 
 
-@router.get("/drains/{drain_id}/risk/latest", response_model=XgboostResultResponse)
-def latest_risk(drain_id: int, db: Session = Depends(get_db)):
-    return xgboost_service.get_latest_risk(db, drain_id)
+@router.get("/drains/{drain_id}/risk/latest")
+def latest_risk(drain_id: str, db: Session = Depends(get_db)):
+    drain = get_drain_by_identifier(db, drain_id)
+    result = xgboost_service.get_latest_risk(db, drain.id)
+    return api_response(xgboost_result_dto(result))

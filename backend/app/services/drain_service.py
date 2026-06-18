@@ -8,6 +8,7 @@
 """
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.drain import Drain
@@ -20,6 +21,16 @@ def get_drains(db: Session) -> list[Drain]:
 
 def get_drain(db: Session, drain_id: int) -> Drain:
     drain = db.get(Drain, drain_id)
+    if not drain:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Drain not found")
+    return drain
+
+
+def get_drain_by_identifier(db: Session, drain_identifier: str) -> Drain:
+    if drain_identifier.isdigit():
+        drain = db.get(Drain, int(drain_identifier))
+    else:
+        drain = db.scalars(select(Drain).where(Drain.drain_code == drain_identifier)).first()
     if not drain:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Drain not found")
     return drain

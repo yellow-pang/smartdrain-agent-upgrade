@@ -24,11 +24,11 @@ from app.services.yolo_service import get_latest_yolo_result
 
 def _decision_text(risk_level: str) -> str:
     return {
-        "danger": "Immediate field inspection is recommended.",
-        "caution": "Monitor closely and schedule preventive maintenance.",
-        "good": "No urgent action is required.",
-        "unknown": "Risk could not be determined with current confidence.",
-    }.get(risk_level, "Risk level is unavailable.")
+        "danger": "막힘률과 수위가 높아 침수 위험이 큽니다.",
+        "caution": "상태를 주의 깊게 모니터링하고 예방 점검이 필요합니다.",
+        "good": "현재 긴급 조치가 필요한 위험은 낮습니다.",
+        "unknown": "현재 데이터 신뢰도로는 위험도를 판단하기 어렵습니다.",
+    }.get(risk_level if risk_level in {"good", "caution", "danger", "unknown"} else "unknown")
 
 
 def evaluate_risk(db: Session, payload: XgboostResultCreate) -> XgboostResult:

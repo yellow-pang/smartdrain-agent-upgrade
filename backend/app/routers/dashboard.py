@@ -11,17 +11,33 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.dashboard import DashboardDrainStatus, DashboardSummary
+from app.models.drain import Drain
+from app.models.xgboost_result import XgboostResult
+from app.schemas.api_response import api_list_response, api_response, drain_list_item_dto, format_datetime
 from app.services import dashboard_service
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
-@router.get("/summary", response_model=DashboardSummary)
+@router.get("/summary")
 def dashboard_summary(db: Session = Depends(get_db)):
-    return dashboard_service.get_dashboard_summary(db)
+    summary = dashboard_service.get_dashboard_summary(db)
+    latest_risk = db.query(XgboostResult).order_by(XgboostResult.evaluated_at.desc()).first()
+    latest_drain = db.query(Drain).order_by(Drain.updated_at.desc()).first()
+    latest_updated_at = latest_risk.evaluated_at if latest_risk else latest_drain.updated_at if latest_drain else None
+    return api_response(
+        {
+            "totalCount": summary.total_drains,
+            "goodCount": summary.good_count,
+            "cautionCount": summary.caution_count,
+            "dangerCount": summary.danger_count,
+            "unknownCount": summary.unknown_count,
+            "latestUpdatedAt": format_datetime(latest_updated_at),
+        }
+    )
 
 
-@router.get("/drain-status", response_model=list[DashboardDrainStatus])
+@router.get("/drain-status")
 def dashboard_drain_status(db: Session = Depends(get_db)):
-    return dashboard_service.get_drain_status(db)
+    drains = db.query(Drain).order_by(Drain.id).all()
+    return api_list_response([drain_list_item_dto(db, drain) for drain in drains])

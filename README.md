@@ -57,21 +57,69 @@ alembic upgrade head
 
 ## API List
 
-- `GET /`
+REST API는 프론트엔드 명세에 맞춰 공통 wrapper 형식으로 응답합니다.
+
+단건 응답:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": null,
+  "error": null,
+  "timestamp": "2026-06-18T09:30:00+09:00"
+}
+```
+
+목록 응답:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [],
+    "totalCount": 0
+  },
+  "message": null,
+  "error": null,
+  "timestamp": "2026-06-18T09:30:00+09:00"
+}
+```
+
+프론트 명세 기준 주요 API:
+
 - `GET /api/drains`
-- `GET /api/drains/{drain_id}`
+  - `ApiListResponse<DrainListItemDto>`
+  - 각 item은 `id`, `roadAddress`, `fullAddress`, `latitude`, `longitude`, `riskLevel`, `riskScore`, `obstructionRatio`, `waterLevelCm`, `flowVelocityMps`, `finalDecision`, `updatedAt` 포함
+- `GET /api/drains/{id}`
+  - `ApiResponse<DrainDetailDto>`
+  - 기본 하수구 필드와 `imageUrl`, `sensorSummary`, `sensorHistory`, `yoloResult`, `xgboostResult`, `riskHistory` 포함
+- `GET /api/drains/{id}/sensors`
+  - `ApiListResponse<SensorDataDto>`
+  - 기존 `GET /api/drains/{id}/sensor-data`도 alias로 유지
+- `GET /api/drains/{id}/risk-history`
+  - `ApiListResponse<XgboostResultDto>`
+- `GET /api/dashboard/summary`
+  - `ApiResponse<DashboardSummaryDto>`
+  - `totalCount`, `goodCount`, `cautionCount`, `dangerCount`, `unknownCount`, `latestUpdatedAt` 포함
+- `GET /api/drains/{id}/analysis/latest`
+  - `ApiResponse<AnalysisLatestDto>`
+- `WS /ws/drains/status`
+  - 이벤트 타입: `DRAIN_STATUS_UPDATED`
+  - payload는 `drainId`, `riskLevel`, `riskScore`, `waterLevelCm`, `flowVelocityMps`, `obstructionRatio`, `finalDecision`, `updatedAt` 포함
+
+기존 호환 API:
+
+- `GET /`
 - `POST /api/drains`
 - `POST /api/sensor-data`
-- `GET /api/drains/{drain_id}/sensor-data`
-- `GET /api/drains/{drain_id}/sensor-data/latest`
+- `GET /api/drains/{id}/sensor-data`
+- `GET /api/drains/{id}/sensor-data/latest`
 - `POST /api/analysis/yolo`
 - `POST /api/analysis/xgboost`
-- `GET /api/drains/{drain_id}/yolo-results`
-- `GET /api/drains/{drain_id}/risk-history`
-- `GET /api/drains/{drain_id}/risk/latest`
-- `GET /api/dashboard/summary`
+- `GET /api/drains/{id}/yolo-results`
+- `GET /api/drains/{id}/risk/latest`
 - `GET /api/dashboard/drain-status`
-- `WS /ws/drains/status`
 
 ## AI Stubs
 
