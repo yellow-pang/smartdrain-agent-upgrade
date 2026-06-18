@@ -9,7 +9,7 @@
 
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -17,6 +17,7 @@ from app.schemas.api_response import (
     api_list_response,
     api_response,
     drain_status_event_payload,
+    risk_history_dto,
     xgboost_result_dto,
     yolo_result_dto,
 )
@@ -50,10 +51,16 @@ def list_yolo_results(drain_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/drains/{drain_id}/risk-history")
-def risk_history(drain_id: str, db: Session = Depends(get_db)):
+def risk_history(
+    drain_id: str,
+    limit: int | None = Query(default=None, ge=1),
+    days: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+):
+    # TODO: MVP 이후 days query를 기간 필터링에 반영합니다.
     drain = get_drain_by_identifier(db, drain_id)
-    results = xgboost_service.get_risk_history(db, drain.id)
-    return api_list_response([xgboost_result_dto(result) for result in results])
+    results = xgboost_service.get_risk_history(db, drain.id, limit=limit)
+    return api_list_response([risk_history_dto(result) for result in results])
 
 
 @router.get("/drains/{drain_id}/risk/latest")

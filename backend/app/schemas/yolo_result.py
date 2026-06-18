@@ -9,16 +9,18 @@ YOLO 분석 결과 API 요청과 응답 구조를 정의하는 Pydantic 스키�
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class YoloResultBase(BaseModel):
-    drain_id: int
-    image_url: str | None = None
-    obstruction_ratio: float | None = None
-    confidence_score: float | None = None
-    yolo_status: str = "unknown"  # good, caution, danger, unknown
-    captured_at: datetime | None = None
+    drain_id: int = Field(alias="drainId")
+    image_url: str | None = Field(default=None, alias="imageUrl")
+    obstruction_ratio: float | None = Field(default=None, alias="obstructionRatio")
+    confidence_score: float | None = Field(default=None, alias="confidenceScore")
+    yolo_status: str = Field(default="unknown", alias="yoloStatus")  # clear, partially_blocked, blocked, unknown
+    captured_at: datetime | None = Field(default=None, alias="capturedAt")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class YoloResultCreate(YoloResultBase):

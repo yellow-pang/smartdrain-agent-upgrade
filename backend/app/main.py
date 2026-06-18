@@ -9,12 +9,13 @@ FastAPI 애플리케이션을 생성하고 라우터를 등록하는 진입점 �
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.routers import analysis, dashboard, drains, sensor_data, websocket
-from app.schemas.api_response import api_response
+from app.schemas.api_response import api_error_response, api_response
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -33,11 +34,31 @@ def health_check() -> dict[str, object]:
     return api_response({"status": "ok", "service": settings.PROJECT_NAME})
 
 
+def _error_code(status_code: int, detail: object) -> str:
+    detail_text = detail if isinstance(detail, str) else ""
+    if status_code == 404 and detail_text == "Drain not found":
+        return "DRAIN_NOT_FOUND"
+    if status_code == 404 and detail_text == "Sensor data not found":
+        return "SENSOR_DATA_UNAVAILABLE"
+    if status_code == 404 and detail_text in {"YOLO result not found", "Risk result not found"}:
+        return "ANALYSIS_UNAVAILABLE"
+    if status_code == 422:
+        return "VALIDATION_ERROR"
+    if status_code >= 500:
+        return "INTERNAL_SERVER_ERROR"
+    return "INVALID_REQUEST"
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    message = exc.detail if isinstance(exc.detail, str) else "Invalid request"
     return JSONResponse(
         status_code=exc.status_code,
-        content=api_response(data=None, error=exc.detail, success=False),
+        content=api_error_response(
+            code=_error_code(exc.status_code, exc.detail),
+            message=message,
+            detail={} if isinstance(exc.detail, str) else exc.detail,
+        ),
     )
 
 
@@ -45,7 +66,22 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         status_code=422,
-        content=api_response(data=None, error=exc.errors(), success=False),
+        content=api_error_response(
+            code="VALIDATION_ERROR",
+            message="Validation error",
+            detail={"errors": jsonable_encoder(exc.errors())},
+        ),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=500,
+        content=api_error_response(
+            code="INTERNAL_SERVER_ERROR",
+            message="Internal server error",
+        ),
     )
 
 

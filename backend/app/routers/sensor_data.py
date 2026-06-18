@@ -7,7 +7,7 @@
 - 하수구별 최신 센서 데이터 조회 API 정의
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -27,9 +27,15 @@ def create_sensor_data(payload: SensorDataCreate, db: Session = Depends(get_db))
 
 @router.get("/drains/{drain_id}/sensors")
 @router.get("/drains/{drain_id}/sensor-data")
-def list_sensor_data(drain_id: str, db: Session = Depends(get_db)):
+def list_sensor_data(
+    drain_id: str,
+    limit: int | None = Query(default=None, ge=1),
+    range_param: str | None = Query(default=None, alias="range"),
+    db: Session = Depends(get_db),
+):
+    # TODO: MVP 이후 range query를 기간 필터링에 반영합니다.
     drain = get_drain_by_identifier(db, drain_id)
-    sensor_data = sensor_service.get_sensor_data_by_drain(db, drain.id)
+    sensor_data = sensor_service.get_sensor_data_by_drain(db, drain.id, limit=limit)
     return api_list_response([sensor_data_dto(item) for item in sensor_data])
 
 

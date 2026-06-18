@@ -9,14 +9,16 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SensorDataBase(BaseModel):
-    drain_id: int
-    water_level_cm: float
-    flow_velocity_mps: float
-    measured_at: datetime | None = None
+    drain_id: int = Field(alias="drainId")
+    water_level_cm: float = Field(alias="waterLevelCm")
+    flow_velocity_mps: float = Field(alias="flowVelocityMps")
+    measured_at: datetime | None = Field(default=None, alias="measuredAt")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class SensorDataCreate(SensorDataBase):

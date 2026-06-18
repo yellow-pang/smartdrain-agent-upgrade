@@ -65,14 +65,16 @@ def evaluate_risk(db: Session, payload: XgboostResultCreate) -> XgboostResult:
     return result
 
 
-def get_risk_history(db: Session, drain_id: int) -> list[XgboostResult]:
+def get_risk_history(db: Session, drain_id: int, limit: int | None = None) -> list[XgboostResult]:
     get_drain(db, drain_id)
-    return (
+    query = (
         db.query(XgboostResult)
         .filter(XgboostResult.drain_id == drain_id)
         .order_by(XgboostResult.evaluated_at.desc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 def get_latest_risk(db: Session, drain_id: int) -> XgboostResult:

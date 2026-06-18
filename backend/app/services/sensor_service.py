@@ -28,14 +28,16 @@ def create_sensor_data(db: Session, payload: SensorDataCreate) -> SensorData:
     return sensor_data
 
 
-def get_sensor_data_by_drain(db: Session, drain_id: int) -> list[SensorData]:
+def get_sensor_data_by_drain(db: Session, drain_id: int, limit: int | None = None) -> list[SensorData]:
     get_drain(db, drain_id)
-    return (
+    query = (
         db.query(SensorData)
         .filter(SensorData.drain_id == drain_id)
         .order_by(SensorData.measured_at.desc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 def get_latest_sensor_data(db: Session, drain_id: int) -> SensorData:

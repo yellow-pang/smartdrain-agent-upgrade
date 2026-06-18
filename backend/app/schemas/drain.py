@@ -9,16 +9,18 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DrainBase(BaseModel):
-    drain_code: str
+    drain_code: str = Field(alias="drainCode")
     name: str
     address: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     status: str = "unknown"  # good, caution, danger, unknown
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class DrainCreate(DrainBase):

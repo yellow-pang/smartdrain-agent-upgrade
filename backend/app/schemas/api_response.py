@@ -19,6 +19,7 @@ from app.models.yolo_result import YoloResult
 
 KST = timezone(timedelta(hours=9))
 RISK_LEVELS = {"good", "caution", "danger", "unknown"}
+YOLO_STATUSES = {"clear", "partially_blocked", "blocked", "unknown"}
 
 
 def now_timestamp() -> str:
@@ -37,6 +38,10 @@ def normalize_risk_level(value: str | None) -> str:
     return value if value in RISK_LEVELS else "unknown"
 
 
+def normalize_yolo_status(value: str | None) -> str:
+    return value if value in YOLO_STATUSES else "unknown"
+
+
 def api_response(data: Any, message: str | None = None, error: Any = None, success: bool = True) -> dict[str, Any]:
     return {
         "success": success,
@@ -47,20 +52,50 @@ def api_response(data: Any, message: str | None = None, error: Any = None, succe
     }
 
 
+def api_error_response(code: str, message: str, detail: Any | None = None) -> dict[str, Any]:
+    return api_response(
+        data=None,
+        message="요청 처리 중 오류가 발생했습니다.",
+        error={"code": code, "message": message, "detail": detail or {}},
+        success=False,
+    )
+
+
 def api_list_response(items: list[dict[str, Any]], message: str | None = None) -> dict[str, Any]:
     return api_response(data={"items": items, "totalCount": len(items)}, message=message)
+
+
+def sensor_summary_dto(sensor_data: SensorData | None) -> dict[str, Any] | None:
+    if sensor_data is None:
+        return None
+    return {
+        "waterLevelCm": sensor_data.water_level_cm,
+        "flowVelocityMps": sensor_data.flow_velocity_mps,
+        "measuredAt": format_datetime(sensor_data.measured_at),
+    }
 
 
 def sensor_data_dto(sensor_data: SensorData | None) -> dict[str, Any] | None:
     if sensor_data is None:
         return None
+    data = sensor_summary_dto(sensor_data) or {}
+    data.update(
+        {
+            "id": sensor_data.id,
+            "drainId": sensor_data.drain.drain_code if sensor_data.drain else sensor_data.drain_id,
+            "createdAt": format_datetime(sensor_data.created_at),
+        }
+    )
+    return data
+
+
+def sensor_history_dto(sensor_data: SensorData | None) -> dict[str, Any] | None:
+    if sensor_data is None:
+        return None
     return {
-        "id": sensor_data.id,
-        "drainId": sensor_data.drain.drain_code if sensor_data.drain else sensor_data.drain_id,
+        "measuredAt": format_datetime(sensor_data.measured_at),
         "waterLevelCm": sensor_data.water_level_cm,
         "flowVelocityMps": sensor_data.flow_velocity_mps,
-        "measuredAt": format_datetime(sensor_data.measured_at),
-        "createdAt": format_datetime(sensor_data.created_at),
     }
 
 
@@ -73,7 +108,8 @@ def yolo_result_dto(yolo_result: YoloResult | None) -> dict[str, Any] | None:
         "imageUrl": yolo_result.image_url,
         "obstructionRatio": yolo_result.obstruction_ratio,
         "confidenceScore": yolo_result.confidence_score,
-        "yoloStatus": normalize_risk_level(yolo_result.yolo_status),
+        "yoloStatus": normalize_yolo_status(yolo_result.yolo_status),
+        "analyzedAt": format_datetime(yolo_result.captured_at),
         "capturedAt": format_datetime(yolo_result.captured_at),
         "createdAt": format_datetime(yolo_result.created_at),
     }
@@ -90,8 +126,19 @@ def xgboost_result_dto(result: XgboostResult | None) -> dict[str, Any] | None:
         "riskScore": result.risk_score,
         "riskLevel": normalize_risk_level(result.risk_level),
         "finalDecision": result.final_decision,
+        "predictedAt": format_datetime(result.evaluated_at),
         "evaluatedAt": format_datetime(result.evaluated_at),
         "createdAt": format_datetime(result.created_at),
+    }
+
+
+def risk_history_dto(result: XgboostResult | None) -> dict[str, Any] | None:
+    if result is None:
+        return None
+    return {
+        "changedAt": format_datetime(result.evaluated_at),
+        "riskLevel": normalize_risk_level(result.risk_level),
+        "riskScore": result.risk_score,
     }
 
 
@@ -163,11 +210,11 @@ def drain_detail_dto(db: Session, drain: Drain) -> dict[str, Any]:
     detail.update(
         {
             "imageUrl": latest_yolo.image_url if latest_yolo else None,
-            "sensorSummary": sensor_data_dto(latest_sensor),
-            "sensorHistory": [sensor_data_dto(item) for item in sensor_history],
+            "sensorSummary": sensor_summary_dto(latest_sensor),
+            "sensorHistory": [sensor_history_dto(item) for item in sensor_history],
             "yoloResult": yolo_result_dto(latest_yolo),
             "xgboostResult": xgboost_result_dto(latest_xgboost),
-            "riskHistory": [xgboost_result_dto(item) for item in risk_history],
+            "riskHistory": [risk_history_dto(item) for item in risk_history],
         }
     )
     return detail
@@ -178,6 +225,10 @@ def analysis_latest_dto(db: Session, drain: Drain) -> dict[str, Any]:
     yolo_result = latest_yolo_result(db, drain.id)
     xgboost_result = latest_xgboost_result(db, drain.id)
     return {
+        "sensorSummary": sensor_summary_dto(sensor_data),
+        "yoloResult": yolo_result_dto(yolo_result),
+        "xgboostResult": xgboost_result_dto(xgboost_result),
+        "updatedAt": format_datetime(xgboost_result.evaluated_at if xgboost_result else drain.updated_at),
         "drainId": drain.drain_code,
         "riskLevel": normalize_risk_level(xgboost_result.risk_level if xgboost_result else drain.status),
         "riskScore": xgboost_result.risk_score if xgboost_result else None,
@@ -185,10 +236,7 @@ def analysis_latest_dto(db: Session, drain: Drain) -> dict[str, Any]:
         "flowVelocityMps": sensor_data.flow_velocity_mps if sensor_data else None,
         "obstructionRatio": yolo_result.obstruction_ratio if yolo_result else None,
         "finalDecision": xgboost_result.final_decision if xgboost_result else None,
-        "updatedAt": format_datetime(xgboost_result.evaluated_at if xgboost_result else drain.updated_at),
         "sensorData": sensor_data_dto(sensor_data),
-        "yoloResult": yolo_result_dto(yolo_result),
-        "xgboostResult": xgboost_result_dto(xgboost_result),
     }
 
 
