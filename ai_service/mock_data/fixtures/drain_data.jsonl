@@ -1,0 +1,18 @@
+{"drain_id": 101, "drain_code": "DR-101", "address": "정상 배수", "latitude": 37.55, "longitude": 126.95, "status": "active"}
+{"drain_id": 102, "drain_code": "DR-102", "address": "상부만 막힘·배수 정상", "latitude": 37.552, "longitude": 126.952, "status": "active"}
+{"drain_id": 103, "drain_code": "DR-103", "address": "건조 상태 상부 이물질", "latitude": 37.554, "longitude": 126.954, "status": "active"}
+{"drain_id": 104, "drain_code": "DR-104", "address": "상부·내부 복합 막힘", "latitude": 37.556, "longitude": 126.956, "status": "active"}
+{"drain_id": 105, "drain_code": "DR-105", "address": "심각한 완전 막힘", "latitude": 37.558, "longitude": 126.958, "status": "active"}
+{"drain_id": 106, "drain_code": "DR-106", "address": "YOLO 정상이나 내부·하류 막힘", "latitude": 37.56, "longitude": 126.96, "status": "active"}
+{"drain_id": 107, "drain_code": "DR-107", "address": "과도한 유입", "latitude": 37.562, "longitude": 126.962, "status": "active"}
+{"drain_id": 108, "drain_code": "DR-108", "address": "과도한 유입 + 상부 막힘", "latitude": 37.564, "longitude": 126.964, "status": "active"}
+{"drain_id": 109, "drain_code": "DR-109", "address": "용량 근접 안정 상태", "latitude": 37.566, "longitude": 126.966, "status": "active"}
+{"drain_id": 110, "drain_code": "DR-110", "address": "위험 상태 회복 중", "latitude": 37.568, "longitude": 126.968, "status": "active"}
+{"drain_id": 111, "drain_code": "DR-111", "address": "진행성 막힘", "latitude": 37.57, "longitude": 126.97, "status": "active"}
+{"drain_id": 112, "drain_code": "DR-112", "address": "간헐적 막힘", "latitude": 37.572, "longitude": 126.972, "status": "active"}
+{"drain_id": 113, "drain_code": "DR-113", "address": "YOLO 오탐 의심", "latitude": 37.574, "longitude": 126.974, "status": "active"}
+{"drain_id": 114, "drain_code": "DR-114", "address": "수위 센서 순간 Spike", "latitude": 37.576, "longitude": 126.976, "status": "active"}
+{"drain_id": 115, "drain_code": "DR-115", "address": "유속 센서 고정", "latitude": 37.578, "longitude": 126.978, "status": "active"}
+{"drain_id": 116, "drain_code": "DR-116", "address": "센서 데이터 지연", "latitude": 37.58, "longitude": 126.98, "status": "active"}
+{"drain_id": 117, "drain_code": "DR-117", "address": "유효 센서 데이터 없음", "latitude": 37.582, "longitude": 126.982, "status": "active"}
+{"drain_id": 118, "drain_code": "DR-118", "address": "YOLO 정상·센서 숨은 위험", "latitude": 37.584, "longitude": 126.984, "status": "active"}

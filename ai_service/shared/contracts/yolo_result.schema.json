@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "yolo_result.schema.json",
+  "title": "YOLO result record",
+  "type": "object",
+  "required": [
+    "yolo_result_id",
+    "drain_id",
+    "captured_at",
+    "image_uri",
+    "obstruction_ratio",
+    "confidence_score",
+    "yolo_status"
+  ],
+  "properties": {
+    "yolo_result_id": {"type": "integer", "minimum": 1},
+    "drain_id": {"type": "integer", "minimum": 1},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "image_uri": {"type": "string", "minLength": 1},
+    "obstruction_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+    "confidence_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "yolo_status": {
+      "type": "string",
+      "description": "Free text or normalized status from the YOLO team. Examples: 양호, 더러움, 막힘, 우천원활, 침수, good, caution, danger, unknown. XGBoost must not depend on class names."
+    },
+    "analysis_target": {
+      "type": "boolean",
+      "default": true,
+      "description": "false rows are retained as YOLO history only and are skipped by pending analysis."
+    }
+  },
+  "additionalProperties": true
+}

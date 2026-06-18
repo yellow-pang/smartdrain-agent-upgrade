@@ -1,0 +1,41 @@
+{
+  "model_version": "xgb-mock-v2.0.0",
+  "created_at": "2026-06-18T04:45:28.682020+00:00",
+  "mock_only": true,
+  "training_data": "deterministic synthetic features",
+  "feature_columns": [
+    "obstruction_ratio",
+    "confidence_score",
+    "obstruction_mean_30m",
+    "obstruction_delta_30m",
+    "obstruction_persistence_count_30m",
+    "water_level_latest",
+    "flow_velocity_latest",
+    "water_level_mean_5m",
+    "flow_velocity_mean_5m",
+    "water_level_delta_5m",
+    "flow_velocity_delta_5m",
+    "water_level_mean_30m",
+    "flow_velocity_mean_30m",
+    "water_level_delta_30m",
+    "flow_velocity_delta_30m",
+    "water_level_slope_30m",
+    "flow_velocity_slope_30m",
+    "water_level_max_30m",
+    "flow_velocity_min_30m",
+    "water_level_std_30m",
+    "flow_velocity_std_30m",
+    "sensor_age_seconds",
+    "sensor_count_30m",
+    "sensor_valid_ratio_30m"
+  ],
+  "class_mapping": {
+    "0": "good",
+    "1": "caution",
+    "2": "danger"
+  },
+  "risk_score_definition": "probability of the danger class",
+  "sensor_lookback_minutes": 30,
+  "sensor_short_window_minutes": 5,
+  "random_seed": 42
+}

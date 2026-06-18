@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sensor_record.schema.json",
+  "title": "Sensor record",
+  "type": "object",
+  "required": [
+    "measured_at",
+    "drain_id",
+    "water_level_cm",
+    "flow_velocity_mps",
+    "quality_status"
+  ],
+  "properties": {
+    "measured_at": {"type": "string", "format": "date-time"},
+    "drain_id": {"type": "integer", "minimum": 1},
+    "water_level_cm": {"type": "number", "minimum": 0},
+    "flow_velocity_mps": {"type": "number", "minimum": 0},
+    "quality_status": {
+      "type": "string",
+      "enum": ["valid", "missing", "suspect", "invalid"]
+    }
+  },
+  "additionalProperties": false
+}
