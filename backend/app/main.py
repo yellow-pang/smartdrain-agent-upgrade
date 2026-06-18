@@ -1,3 +1,12 @@
+"""
+FastAPI 애플리케이션을 생성하고 라우터를 등록하는 진입점 파일입니다.
+
+주요 역할:
+- FastAPI 앱 인스턴스 생성
+- CORS 미들웨어 설정
+- 헬스 체크 API와 주요 라우터 등록
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

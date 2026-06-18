@@ -1,3 +1,12 @@
+"""
+YOLO 분석 결과 생성과 조회를 담당하는 서비스 파일입니다.
+
+주요 역할:
+- 하수구 존재 여부 확인 후 YOLO 분석 결과 저장
+- 이미지 분석 기본값을 결과 데이터에 반영
+- 하수구별 YOLO 결과 목록과 최신 결과 조회
+"""
+
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session

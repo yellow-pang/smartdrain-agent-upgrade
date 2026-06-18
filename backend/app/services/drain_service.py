@@ -1,3 +1,12 @@
+"""
+하수구 데이터 조회와 생성을 담당하는 서비스 파일입니다.
+
+주요 역할:
+- 하수구 목록 조회
+- 단일 하수구 조회 및 미존재 시 예외 처리
+- 하수구 신규 등록
+"""
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 

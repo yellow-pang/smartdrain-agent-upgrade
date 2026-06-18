@@ -1,3 +1,12 @@
+"""
+센서 데이터 API를 처리하는 라우터 파일입니다.
+
+주요 역할:
+- 센서 데이터 등록 API 정의
+- 하수구별 센서 데이터 목록 조회 API 정의
+- 하수구별 최신 센서 데이터 조회 API 정의
+"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

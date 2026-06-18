@@ -1,3 +1,12 @@
+"""
+이미지 분석과 위험도 평가 API를 처리하는 라우터 파일입니다.
+
+주요 역할:
+- YOLO 분석 결과 생성 API 정의
+- XGBoost 위험도 평가 결과 생성 및 WebSocket 알림 전송
+- 하수구별 분석 결과와 위험도 이력 조회 API 정의
+"""
+
 import json
 
 from fastapi import APIRouter, Depends

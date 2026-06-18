@@ -1,3 +1,12 @@
+"""
+하수구 정보 API를 처리하는 라우터 파일입니다.
+
+주요 역할:
+- 하수구 목록 조회 API 정의
+- 단일 하수구 조회 API 정의
+- 하수구 등록 API 정의
+"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

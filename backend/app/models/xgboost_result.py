@@ -1,3 +1,12 @@
+"""
+XGBoost 위험도 평가 결과 테이블을 정의하는 SQLAlchemy 모델 파일입니다.
+
+주요 역할:
+- 하수구, 센서 데이터, YOLO 결과 참조 컬럼 정의
+- 위험 점수, 위험 등급, 최종 판단 컬럼 정의
+- 관련 모델과의 관계 설정
+"""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Float, ForeignKey, String

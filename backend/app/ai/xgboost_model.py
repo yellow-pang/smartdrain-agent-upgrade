@@ -1,3 +1,11 @@
+"""
+하수구 위험도 예측 로직을 제공하는 파일입니다.
+
+주요 역할:
+- 막힘 비율, 신뢰도, 수위, 유속 값을 기반으로 위험 점수 계산
+- 신뢰도와 임계값에 따른 위험 등급 반환
+"""
+
 def predict_risk(
     obstruction_ratio: float,
     confidence_score: float,

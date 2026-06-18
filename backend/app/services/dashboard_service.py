@@ -1,3 +1,12 @@
+"""
+대시보드 화면에 필요한 데이터를 계산하는 서비스 파일입니다.
+
+주요 역할:
+- 하수구 상태별 개수 요약 생성
+- 하수구별 기본 정보와 최신 위험도 정보 조회
+- 대시보드 응답 스키마 객체 구성
+"""
+
 from sqlalchemy.orm import Session
 
 from app.models.drain import Drain

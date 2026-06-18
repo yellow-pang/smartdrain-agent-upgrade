@@ -1,3 +1,12 @@
+"""
+센서 데이터 테이블을 정의하는 SQLAlchemy 모델 파일입니다.
+
+주요 역할:
+- 하수구별 수위와 유속 측정값 컬럼 정의
+- 측정 시각과 생성 시각 컬럼 정의
+- 하수구 및 XGBoost 결과 모델과의 관계 설정
+"""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Float, ForeignKey

@@ -1,3 +1,12 @@
+"""
+센서 데이터 API 요청과 응답 구조를 정의하는 Pydantic 스키마 파일입니다.
+
+주요 역할:
+- 센서 데이터 생성 요청 모델 정의
+- 센서 데이터 조회 응답 모델 정의
+- ORM 객체 기반 응답 변환 설정
+"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

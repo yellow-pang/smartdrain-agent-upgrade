@@ -1,3 +1,12 @@
+"""
+Alembic 데이터베이스 마이그레이션 실행 환경 파일입니다.
+
+주요 역할:
+- 백엔드 앱 경로와 데이터베이스 URL 설정
+- SQLAlchemy 모델 메타데이터 연결
+- 오프라인 및 온라인 마이그레이션 실행
+"""
+
 from logging.config import fileConfig
 from pathlib import Path
 import sys

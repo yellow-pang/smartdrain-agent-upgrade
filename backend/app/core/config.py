@@ -1,3 +1,12 @@
+"""
+백엔드 환경 설정 값을 관리하는 설정 파일입니다.
+
+주요 역할:
+- 프로젝트 이름, 데이터베이스 URL, CORS 허용 출처 정의
+- 환경 변수 기반 설정 로드
+- CORS 출처 문자열 파싱
+"""
+
 from functools import lru_cache
 
 from pydantic import Field, field_validator

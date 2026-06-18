@@ -1,3 +1,12 @@
+"""
+하수구 테이블을 정의하는 SQLAlchemy 모델 파일입니다.
+
+주요 역할:
+- 하수구 기본 정보와 상태 컬럼 정의
+- 생성 및 수정 시각 컬럼 정의
+- 센서 데이터, YOLO 결과, XGBoost 결과와의 관계 설정
+"""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Float, String

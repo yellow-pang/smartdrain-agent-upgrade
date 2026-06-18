@@ -1,3 +1,12 @@
+"""
+XGBoost 위험도 평가 API 요청과 응답 구조를 정의하는 Pydantic 스키마 파일입니다.
+
+주요 역할:
+- 위험도 평가 생성 요청 모델 정의
+- 위험 점수, 등급, 최종 판단을 포함한 응답 모델 정의
+- ORM 객체 기반 응답 변환 설정
+"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

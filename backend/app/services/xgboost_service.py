@@ -1,3 +1,12 @@
+"""
+하수구 위험도 평가 결과를 생성하고 조회하는 서비스 파일입니다.
+
+주요 역할:
+- 센서 데이터와 YOLO 결과를 이용한 위험도 평가
+- 위험도 결과 저장 및 하수구 상태 갱신
+- 하수구별 위험도 이력과 최신 결과 조회
+"""
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status

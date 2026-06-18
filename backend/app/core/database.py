@@ -1,3 +1,12 @@
+"""
+데이터베이스 연결과 세션 생성을 담당하는 파일입니다.
+
+주요 역할:
+- SQLAlchemy Base 클래스 정의
+- 데이터베이스 엔진과 세션 팩토리 생성
+- 요청 단위 DB 세션 의존성 제공
+"""
+
 from collections.abc import Generator
 
 from sqlalchemy import create_engine

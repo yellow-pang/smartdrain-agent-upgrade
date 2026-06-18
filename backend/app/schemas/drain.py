@@ -1,3 +1,12 @@
+"""
+하수구 API 요청과 응답 구조를 정의하는 Pydantic 스키마 파일입니다.
+
+주요 역할:
+- 하수구 기본 입력 필드 정의
+- 하수구 생성 요청 모델 정의
+- 하수구 조회 응답 모델 정의
+"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

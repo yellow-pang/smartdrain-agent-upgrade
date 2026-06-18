@@ -1,3 +1,12 @@
+"""
+WebSocket 연결 목록과 메시지 전송을 관리하는 파일입니다.
+
+주요 역할:
+- 활성 WebSocket 연결 등록과 해제
+- 특정 연결로 메시지 전송
+- 전체 활성 연결에 메시지 브로드캐스트
+"""
+
 from fastapi import WebSocket
 
 

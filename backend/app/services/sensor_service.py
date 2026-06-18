@@ -1,3 +1,12 @@
+"""
+센서 데이터 생성과 조회를 담당하는 서비스 파일입니다.
+
+주요 역할:
+- 하수구 존재 여부 확인 후 센서 데이터 저장
+- 하수구별 센서 데이터 목록 조회
+- 하수구별 최신 센서 데이터 조회 및 미존재 시 예외 처리
+"""
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
