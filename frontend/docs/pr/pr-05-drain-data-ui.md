@@ -9,6 +9,7 @@
     - API base URL이 없거나 호출 실패 시 API 명세형 mock 응답으로 fallback합니다.
     - 화면 컴포넌트는 API 응답을 직접 쓰지 않고 adapter를 거친 UI 타입을 사용합니다.
     - fallback 상태에서는 지도, CCTV, 센서 차트 영역에 placeholder 이미지와 `mock fallback` 배지를 표시해 실제 API 수신 여부를 시각적으로 구분합니다.
+    - 위험 시설 목록은 이미지 placeholder를 쓰지 않고 loading, empty, error, success 상태 컴포넌트로 구분합니다.
 - 메인 대시보드의 하드코딩 의존을 줄였습니다.
     - 지도, 위험 시설 목록, 상세 패널이 `loadDashboardData()` 결과를 공유합니다.
     - 대시보드 요약 영역을 추가해 전체/위험/주의/양호/판단불가 개수를 표시합니다.
@@ -37,6 +38,8 @@
     - 내부 생성 데이터 대신 props 기반 차트로 변경
 - `frontend/components/cctv-snapshot-card.tsx`
     - 내부 timestamp 상수 대신 props 기반 스냅샷 표시로 변경
+- `frontend/components/drain-risk-list.tsx`
+    - 목록 전용 skeleton, empty, error, list item 상태와 실시간 상태 chip 추가
 - `frontend/components/placeholder-state.tsx`
     - API 미연결, 데이터 없음, fallback 상태를 이미지와 상태 배지로 표시하는 공통 컴포넌트 추가
 - `frontend/lib/placeholders.ts`
@@ -61,3 +64,4 @@
 - Kakao Maps 실제 SDK와 WebSocket 실제 연결은 이번 작업 범위에서 제외했습니다.
 - 실제 백엔드 응답이 명세와 달라질 경우 `types.ts`, `drains.ts`, `adapters.ts`, `drain-data.ts`를 함께 갱신해야 합니다.
 - fallback 상태에서 placeholder가 보이면 실제 API 응답을 받지 못한 상태입니다. 백엔드 API가 정상 연결되면 지도/차트/CCTV 영역이 실제 데이터 UI로 바뀌는지 확인해야 합니다.
+- 위험 시설 목록은 fallback 상태에서 mock row를 표시하지 않습니다. 백엔드 API가 정상 연결되면 실제 목록 row가 표시되는지 확인해야 합니다.

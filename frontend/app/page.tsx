@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Info } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { RiskMap } from "@/components/risk-map";
-import { DrainRiskList } from "@/components/drain-risk-list";
+import {
+    DrainRiskList,
+    type DrainRealtimeStatus,
+    type DrainRiskListStatus,
+} from "@/components/drain-risk-list";
 import { DrainSummaryPanel } from "@/components/drain-summary-panel";
 import { PlaceholderState } from "@/components/placeholder-state";
 import {
@@ -18,7 +22,20 @@ export default function DashboardPage() {
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(
         null,
     );
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    const reloadDashboard = useCallback(() => {
+        setIsLoading(true);
+        loadDashboardData().then((data) => {
+            setDashboardData(data);
+            setSelectedId((current) => {
+                if (data.source !== "api") return null;
+                return current ?? data.sortedDrains[0]?.id ?? null;
+            });
+            setIsLoading(false);
+        });
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -26,7 +43,10 @@ export default function DashboardPage() {
         loadDashboardData().then((data) => {
             if (!mounted) return;
             setDashboardData(data);
-            setSelectedId((current) => current ?? data.sortedDrains[0]?.id);
+            setSelectedId(
+                data.source === "api" ? data.sortedDrains[0]?.id : null,
+            );
+            setIsLoading(false);
         });
 
         return () => {
@@ -35,11 +55,24 @@ export default function DashboardPage() {
     }, []);
 
     const selected = useMemo(() => {
-        if (!dashboardData || !selectedId) return undefined;
+        if (!dashboardData || dashboardData.source !== "api" || !selectedId) {
+            return undefined;
+        }
         return dashboardData.drains.find((drain) => drain.id === selectedId);
     }, [dashboardData, selectedId]);
 
-    const sorted = dashboardData?.sortedDrains ?? [];
+    const sorted =
+        dashboardData?.source === "api" ? dashboardData.sortedDrains : [];
+    const riskListStatus = getRiskListStatus({
+        dashboardData,
+        isLoading,
+    });
+    const realtimeStatus: DrainRealtimeStatus =
+        riskListStatus === "error"
+            ? "error"
+            : riskListStatus === "loading"
+              ? "waiting"
+              : "waiting";
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -99,22 +132,46 @@ export default function DashboardPage() {
                                 drains={sorted}
                                 selectedId={selectedId}
                                 onSelect={setSelectedId}
+                                status={riskListStatus}
+                                realtimeStatus={realtimeStatus}
+                                onRetry={reloadDashboard}
                             />
                         </div>
                     </section>
 
                     {/* Detail panel */}
                     <section className="lg:col-span-12 2xl:col-span-2">
-                        {selected && (
+                        {selected ? (
                             <div className="max-h-[640px] shadow-sm">
                                 <DrainSummaryPanel drain={selected} />
                             </div>
-                        )}
+                        ) : dashboardData?.source === "mock" ? (
+                            <PlaceholderState
+                                image={PLACEHOLDER_IMAGES.facility}
+                                title="상세 정보 연결 대기"
+                                description="목록 API가 연결되면 선택한 시설의 상세 정보가 표시됩니다."
+                                statusLabel="mock fallback"
+                                className="min-h-[420px]"
+                            />
+                        ) : null}
                     </section>
                 </div>
             </main>
         </div>
     );
+}
+
+function getRiskListStatus({
+    dashboardData,
+    isLoading,
+}: {
+    dashboardData: DashboardData | null;
+    isLoading: boolean;
+}): DrainRiskListStatus {
+    if (isLoading) return "loading";
+    if (!dashboardData || dashboardData.source === "mock") return "error";
+    if (dashboardData.sortedDrains.length === 0) return "empty";
+    return "success";
 }
 
 function DashboardSummaryBar({

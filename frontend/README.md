@@ -59,6 +59,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 | 영역 | fallback 표시 | API 수신 시 기대 표시 |
 |---|---|---|
 | 메인 지도 | 지도 placeholder + `mock fallback` 배지 | 위험도 지도와 마커 |
+| 위험 시설 목록 | 목록 전용 ErrorState + 다시 시도 버튼 | 정렬 가능한 실제 시설 목록 |
 | 상세 위치 지도 | 위치 지도 placeholder + `mock fallback` 배지 | 선택 시설 위치 지도 |
 | CCTV | CCTV placeholder 이미지 | API `imageUrl` 또는 분석 이미지 |
 | 센서 차트 | 실시간 차트 placeholder + `mock fallback` 배지 | 수위/유량 라인 차트 |
@@ -76,7 +77,9 @@ public/images/placeholder
 - 대시보드 현황 카드에 전체/위험/주의/양호/판단불가 개수가 표시되는지 확인합니다.
 - 위험도 지도 마커와 범례 개수가 데이터 기준으로 맞는지 확인합니다.
 - 백엔드 API가 연결되지 않은 상태에서는 지도 영역에 placeholder와 `mock fallback` 배지가 보이는지 확인합니다.
+- 백엔드 API가 연결되지 않은 상태에서는 위험 시설 목록이 mock rows가 아니라 연결 실패 상태와 다시 시도 버튼을 표시하는지 확인합니다.
 - 백엔드 API가 연결된 상태에서는 지도 영역이 placeholder가 아니라 실제 마커 UI로 바뀌는지 확인합니다.
+- 백엔드 API가 연결된 상태에서는 위험 시설 목록이 실제 API 목록 row로 바뀌는지 확인합니다.
 - 위험 시설 목록 선택 시 우측 상세 패널이 같은 시설 정보로 바뀌는지 확인합니다.
 - 상세 정보 페이지 이동 버튼이 `/drains/{id}`로 이동하는지 확인합니다.
 
