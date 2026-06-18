@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/api/client";
 import type {
     ApiListResponse,
     ApiResponse,
+    AnalysisResultDto,
+    DashboardSummaryDto,
     DrainDetailDto,
     DrainListItemDto,
     RiskHistoryDto,
@@ -21,16 +23,38 @@ export async function getDrainDetail(id: string) {
     return response.data;
 }
 
-export async function getDrainSensorHistory(id: string) {
+export async function getDrainSensorHistory(
+    id: string,
+    params?: { range?: string; limit?: number },
+) {
     const response = await apiClient.get<ApiListResponse<SensorHistoryDto>>(
         `/api/drains/${id}/sensors`,
+        { params },
     );
     return response.data;
 }
 
-export async function getDrainRiskHistory(id: string) {
+export async function getDrainRiskHistory(
+    id: string,
+    params?: { days?: number; limit?: number },
+) {
     const response = await apiClient.get<ApiListResponse<RiskHistoryDto>>(
         `/api/drains/${id}/risk-history`,
+        { params },
+    );
+    return response.data;
+}
+
+export async function getDashboardSummary() {
+    const response = await apiClient.get<ApiResponse<DashboardSummaryDto>>(
+        "/api/dashboard/summary",
+    );
+    return response.data;
+}
+
+export async function getLatestAnalysis(id: string) {
+    const response = await apiClient.get<ApiResponse<AnalysisResultDto>>(
+        `/api/drains/${id}/analysis/latest`,
     );
     return response.data;
 }

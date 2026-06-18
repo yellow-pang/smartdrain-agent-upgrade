@@ -4,16 +4,24 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const SNAPSHOTS = [
-    "2024-05-23 14:30:00",
-    "2024-05-23 14:00:00",
-    "2024-05-23 13:30:00",
-    "2024-05-23 13:00:00",
-    "2024-05-23 12:30:00",
-];
+type Snapshot = {
+    imageUrl: string;
+    capturedAt: string;
+};
 
-export function CctvSnapshotCard() {
+export function CctvSnapshotCard({
+    snapshots,
+    locationName,
+}: {
+    snapshots: Snapshot[];
+    locationName: string;
+}) {
     const [active, setActive] = useState(0);
+    const safeSnapshots =
+        snapshots.length > 0
+            ? snapshots
+            : [{ imageUrl: "/cctv-drain.png", capturedAt: "분석 데이터 없음" }];
+    const current = safeSnapshots[Math.min(active, safeSnapshots.length - 1)];
 
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -22,15 +30,15 @@ export function CctvSnapshotCard() {
                     CCTV (상단뷰)
                 </h2>
                 <span className="text-xs text-slate-400">
-                    최근 캡처 · {SNAPSHOTS[active]}
+                    최근 캡처 · {current.capturedAt}
                 </span>
             </div>
 
             {/* main snapshot */}
             <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
                 <img
-                    src="/cctv-drain.png"
-                    alt="빗물받이 상단뷰 CCTV 스냅샷"
+                    src={current.imageUrl}
+                    alt={`${locationName} 빗물받이 상단뷰 CCTV 스냅샷`}
                     className="size-full object-cover grayscale"
                 />
                 <button
@@ -52,9 +60,9 @@ export function CctvSnapshotCard() {
                     <ChevronLeft className="size-4" />
                 </button>
                 <div className="flex flex-1 gap-2">
-                    {SNAPSHOTS.map((ts, i) => (
+                    {safeSnapshots.map((snapshot, i) => (
                         <button
-                            key={ts}
+                            key={`${snapshot.capturedAt}-${i}`}
                             onClick={() => setActive(i)}
                             className={cn(
                                 "aspect-square flex-1 overflow-hidden rounded-md border-2 transition-colors",
@@ -62,10 +70,10 @@ export function CctvSnapshotCard() {
                                     ? "border-cyan-600"
                                     : "border-transparent hover:border-slate-300",
                             )}
-                            aria-label={`스냅샷 ${ts}`}
+                            aria-label={`스냅샷 ${snapshot.capturedAt}`}
                         >
                             <img
-                                src="/cctv-drain.png"
+                                src={snapshot.imageUrl}
                                 alt=""
                                 className="size-full object-cover grayscale"
                             />
@@ -74,10 +82,12 @@ export function CctvSnapshotCard() {
                 </div>
                 <button
                     onClick={() =>
-                        setActive((p) => Math.min(SNAPSHOTS.length - 1, p + 1))
+                        setActive((p) =>
+                            Math.min(safeSnapshots.length - 1, p + 1),
+                        )
                     }
                     className="flex size-8 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40"
-                    disabled={active === SNAPSHOTS.length - 1}
+                    disabled={active === safeSnapshots.length - 1}
                     aria-label="다음"
                 >
                     <ChevronRight className="size-4" />

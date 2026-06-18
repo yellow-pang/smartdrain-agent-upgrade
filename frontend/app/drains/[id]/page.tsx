@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { notFound } from "next/navigation";
 import {
     AlertTriangle,
@@ -21,13 +21,13 @@ import { SensorTrendChart } from "@/components/sensor-trend-chart";
 import { StatusBadge } from "@/components/status-badge";
 import { MetricProgress } from "@/components/metric-progress";
 import { RiskMap } from "@/components/risk-map";
+import { STATUS_META, type RiskStatus } from "@/lib/mock-data";
 import {
-    getDrainById,
-    RISK_HISTORY,
-    STATUS_META,
-    type RiskStatus,
-} from "@/lib/mock-data";
+    loadDrainDetailData,
+    type DrainDetailData,
+} from "@/lib/api/drain-data";
 import { cn } from "@/lib/utils";
+import type { AnalysisResultDto, YoloStatus } from "@/lib/api/types";
 
 export default function DrainDetailPage({
     params,
@@ -35,10 +35,40 @@ export default function DrainDetailPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = use(params);
-    const drain = getDrainById(id);
-    if (!drain) notFound();
+    const [detailData, setDetailData] = useState<DrainDetailData | null>();
 
-    const meta = STATUS_META[drain.status];
+    useEffect(() => {
+        let mounted = true;
+
+        loadDrainDetailData(id).then((data) => {
+            if (!mounted) return;
+            setDetailData(data);
+        });
+
+        return () => {
+            mounted = false;
+        };
+    }, [id]);
+
+    const drain = detailData?.drain;
+    const meta = drain ? STATUS_META[drain.status] : undefined;
+    const sensorSummary = useMemo(() => {
+        if (!detailData) return undefined;
+        return getSensorSummary(detailData.sensorHistory);
+    }, [detailData]);
+
+    if (detailData === null) notFound();
+
+    if (!drain || !meta || !sensorSummary) {
+        return (
+            <div className="min-h-screen bg-slate-50">
+                <AppHeader />
+                <main className="mx-auto max-w-[1600px] p-4 md:p-6">
+                    <DetailLoadingState />
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -60,29 +90,41 @@ export default function DrainDetailPage({
                     <span className="text-sm font-medium text-slate-500">
                         {drain.id} · {drain.road}
                     </span>
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                        {detailData.source === "api"
+                            ? "API 데이터"
+                            : "mock fallback"}
+                    </span>
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-12">
                     {/* Left column */}
                     <div className="flex flex-col gap-4 xl:col-span-4">
-                        <CctvSnapshotCard />
+                        <CctvSnapshotCard
+                            snapshots={getSnapshots(detailData)}
+                            locationName={drain.road}
+                        />
                         <LocationMapCard
+                            drain={drain}
                             fullAddress={drain.fullAddress}
                             road={drain.road}
-                            drainId={drain.id}
                         />
                     </div>
 
                     {/* Middle column */}
                     <div className="flex flex-col gap-4 xl:col-span-5">
-                        <SensorTrendChart />
+                        <SensorTrendChart
+                            points={detailData.sensorHistory}
+                            summary={sensorSummary}
+                        />
                         <CurrentRiskCard drain={drain} meta={meta} />
+                        <AnalysisResultCard analysis={detailData.analysis} />
                     </div>
 
                     {/* Right column */}
                     <div className="flex flex-col gap-4 xl:col-span-3">
                         <FacilityInfoCard drain={drain} meta={meta} />
-                        <RiskHistoryCard />
+                        <RiskHistoryCard riskHistory={detailData.riskHistory} />
                     </div>
                 </div>
             </main>
@@ -91,13 +133,13 @@ export default function DrainDetailPage({
 }
 
 function LocationMapCard({
+    drain,
     fullAddress,
     road,
-    drainId,
 }: {
+    drain: DrainDetailData["drain"];
     fullAddress: string;
     road: string;
-    drainId: string;
 }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -109,8 +151,8 @@ function LocationMapCard({
             </h2>
             <div className="h-[260px]">
                 <RiskMap
-                    drains={[{ ...drainOnly(drainId), x: 50, y: 48 }]}
-                    selectedId={drainId}
+                    drains={[{ ...drain, x: 50, y: 48 }]}
+                    selectedId={drain.id}
                     labelLocation={road}
                 />
             </div>
@@ -122,19 +164,13 @@ function LocationMapCard({
     );
 }
 
-// helper to render only the selected drain on the location map
-function drainOnly(id: string) {
-    return getDrainById(id)!;
-}
-
 function CurrentRiskCard({
     drain,
     meta,
 }: {
-    drain: ReturnType<typeof getDrainById> & {};
+    drain: DrainDetailData["drain"];
     meta: (typeof STATUS_META)[RiskStatus];
 }) {
-    if (!drain) return null;
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-base font-bold text-slate-900">
@@ -156,7 +192,7 @@ function CurrentRiskCard({
                                     meta.text,
                                 )}
                             >
-                                높음
+                                {meta.label}
                             </span>
                         </div>
                         <MetricProgress
@@ -178,7 +214,7 @@ function CurrentRiskCard({
                                     meta.text,
                                 )}
                             >
-                                높음
+                                {meta.label}
                             </span>
                         </div>
                         <MetricProgress
@@ -196,13 +232,13 @@ function CurrentRiskCard({
                         <span
                             className={cn("text-xs font-semibold", meta.text)}
                         >
-                            높음
+                            {meta.label}
                         </span>
                     </div>
                 </RiskTile>
                 <RiskTile icon={Clock} label="최근 업데이트">
                     <span className="text-sm font-semibold text-slate-700">
-                        2024-05-23 14:30:00
+                        {drain.updatedAt}
                     </span>
                 </RiskTile>
                 <RiskTile icon={AlertTriangle} label="판정 결과">
@@ -241,10 +277,9 @@ function FacilityInfoCard({
     drain,
     meta,
 }: {
-    drain: ReturnType<typeof getDrainById> & {};
+    drain: DrainDetailData["drain"];
     meta: (typeof STATUS_META)[RiskStatus];
 }) {
-    if (!drain) return null;
     const rows: {
         icon: React.ElementType;
         label: string;
@@ -260,11 +295,7 @@ function FacilityInfoCard({
         {
             icon: MapPin,
             label: "주소",
-            node: (
-                <span className="text-slate-700">
-                    서울시 강남구 테헤란로 123
-                </span>
-            ),
+            node: <span className="text-slate-700">{drain.fullAddress}</span>,
         },
         {
             icon: ShieldCheck,
@@ -276,7 +307,7 @@ function FacilityInfoCard({
             label: "막힘 정도",
             node: (
                 <span className={cn("font-semibold", meta.text)}>
-                    {drain.blockage}% (높음)
+                    {drain.blockage}% ({meta.label})
                 </span>
             ),
         },
@@ -301,7 +332,7 @@ function FacilityInfoCard({
         {
             icon: Clock,
             label: "최근 업데이트",
-            node: <span className="text-slate-700">2024-05-23 14:30:00</span>,
+            node: <span className="text-slate-700">{drain.updatedAt}</span>,
         },
     ];
     return (
@@ -327,7 +358,82 @@ function FacilityInfoCard({
     );
 }
 
-function RiskHistoryCard() {
+function AnalysisResultCard({
+    analysis,
+}: {
+    analysis?: AnalysisResultDto;
+}) {
+    const yolo = analysis?.yoloResult;
+    const xgboost = analysis?.xgboostResult;
+    const riskMeta = xgboost ? STATUS_META[xgboost.riskLevel] : undefined;
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-4 text-base font-bold text-slate-900">
+                YOLO / XGBoost 분석 결과
+            </h2>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <AnalysisMetric
+                    label="YOLO 막힘 상태"
+                    value={yolo ? getYoloStatusLabel(yolo.yoloStatus) : "없음"}
+                    tone={yolo ? "text-slate-900" : "text-slate-400"}
+                />
+                <AnalysisMetric
+                    label="YOLO 신뢰도"
+                    value={
+                        yolo
+                            ? `${Math.round(yolo.confidenceScore * 100)}%`
+                            : "없음"
+                    }
+                    tone={yolo ? "text-cyan-700" : "text-slate-400"}
+                />
+                <AnalysisMetric
+                    label="XGBoost 위험 점수"
+                    value={
+                        xgboost
+                            ? `${Math.round(xgboost.riskScore * 100)}점`
+                            : "없음"
+                    }
+                    tone={riskMeta?.text ?? "text-slate-400"}
+                />
+                <AnalysisMetric
+                    label="최종 판단"
+                    value={xgboost?.finalDecision ?? "분석 결과 없음"}
+                    tone={riskMeta?.text ?? "text-slate-400"}
+                />
+            </div>
+            {(yolo?.analyzedAt || xgboost?.predictedAt) && (
+                <p className="mt-3 text-xs text-slate-400">
+                    YOLO {yolo?.analyzedAt ?? "-"} · XGBoost{" "}
+                    {xgboost?.predictedAt ?? "-"}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function AnalysisMetric({
+    label,
+    value,
+    tone,
+}: {
+    label: string;
+    value: string;
+    tone: string;
+}) {
+    return (
+        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-3">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className={cn("mt-1 text-sm font-bold", tone)}>{value}</p>
+        </div>
+    );
+}
+
+function RiskHistoryCard({
+    riskHistory,
+}: {
+    riskHistory: DrainDetailData["riskHistory"];
+}) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-base font-bold text-slate-900">
@@ -337,7 +443,7 @@ function RiskHistoryCard() {
                 </span>
             </h2>
             <ul className="space-y-1">
-                {RISK_HISTORY.map((item) => {
+                {riskHistory.map((item) => {
                     const meta = STATUS_META[item.status];
                     return (
                         <li
@@ -366,4 +472,63 @@ function RiskHistoryCard() {
             </ul>
         </div>
     );
+}
+
+function DetailLoadingState() {
+    return (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-10 text-center text-sm font-medium text-slate-400">
+            배수 시설 상세 데이터를 불러오고 있습니다.
+        </div>
+    );
+}
+
+function getSensorSummary(points: DrainDetailData["sensorHistory"]) {
+    const fallback = {
+        currentLevel: 0,
+        currentFlow: 0,
+        maxLevel: 0,
+        maxLevelTime: "-",
+        maxFlow: 0,
+        maxFlowTime: "-",
+    };
+    if (points.length === 0) return fallback;
+
+    const latest = points[points.length - 1];
+    const maxLevel = points.reduce((max, point) =>
+        point.level > max.level ? point : max,
+    );
+    const maxFlow = points.reduce((max, point) =>
+        point.flow > max.flow ? point : max,
+    );
+
+    return {
+        currentLevel: latest.level,
+        currentFlow: latest.flow,
+        maxLevel: maxLevel.level,
+        maxLevelTime: maxLevel.time,
+        maxFlow: maxFlow.flow,
+        maxFlowTime: maxFlow.time,
+    };
+}
+
+function getSnapshots(detailData: DrainDetailData) {
+    const imageUrl =
+        detailData.analysis?.yoloResult?.imageUrl ??
+        detailData.detail.imageUrl ??
+        "/cctv-drain.png";
+    const capturedAt =
+        detailData.analysis?.yoloResult?.analyzedAt ??
+        detailData.drain.updatedAt;
+
+    return [{ imageUrl, capturedAt }];
+}
+
+function getYoloStatusLabel(status: YoloStatus) {
+    const labels: Record<YoloStatus, string> = {
+        clear: "막힘 없음",
+        partially_blocked: "일부 막힘",
+        blocked: "심한 막힘",
+        unknown: "판단불가",
+    };
+    return labels[status];
 }

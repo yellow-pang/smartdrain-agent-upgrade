@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Info } from "lucide-react";
 import {
     CartesianGrid,
@@ -14,9 +14,6 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import {
-    generate24hSeries,
-    generate7dSeries,
-    SENSOR_SUMMARY,
     SENSOR_THRESHOLDS,
     type SensorPoint,
 } from "@/lib/mock-data";
@@ -24,35 +21,27 @@ import { StatusBadge } from "@/components/status-badge";
 
 type RangeKey = "24h" | "7d";
 
-export function SensorTrendChart() {
+type SensorSummary = {
+    currentLevel: number;
+    currentFlow: number;
+    maxLevel: number;
+    maxLevelTime: string;
+    maxFlow: number;
+    maxFlowTime: string;
+};
+
+export function SensorTrendChart({
+    points,
+    summary,
+}: {
+    points: SensorPoint[];
+    summary: SensorSummary;
+}) {
     const [range, setRange] = useState<RangeKey>("24h");
-    const base24h = useMemo(() => generate24hSeries(), []);
-    const series7d = useMemo(() => generate7dSeries(), []);
-    const [live24h, setLive24h] = useState<SensorPoint[]>(base24h);
-    const tick = useRef(0);
-
-    // Simulated live update: nudge the last few points slightly every 2s
-    // so the chart feels like a live control-room feed. No real socket.
-    useEffect(() => {
-        if (range !== "24h") return;
-        const interval = setInterval(() => {
-            tick.current += 1;
-            setLive24h((prev) =>
-                prev.map((p, i) => {
-                    if (i < prev.length - 4) return p;
-                    const wobble = Math.sin((tick.current + i) * 0.9) * 0.06;
-                    return {
-                        ...p,
-                        level: +Math.max(0, p.level + wobble).toFixed(2),
-                        flow: +Math.max(0, p.flow + wobble * 1.1).toFixed(2),
-                    };
-                }),
-            );
-        }, 2000);
-        return () => clearInterval(interval);
-    }, [range]);
-
-    const data = range === "24h" ? live24h : series7d;
+    const chartData = useMemo(() => {
+        if (range === "24h") return points;
+        return points.filter((_, index) => index % 2 === 0);
+    }, [points, range]);
 
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -100,7 +89,7 @@ export function SensorTrendChart() {
             <div className="mt-2 h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                        data={data}
+                        data={chartData}
                         margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
                     >
                         <CartesianGrid
@@ -113,7 +102,7 @@ export function SensorTrendChart() {
                             tick={{ fontSize: 11, fill: "#94a3b8" }}
                             tickLine={false}
                             axisLine={{ stroke: "#e2e8f0" }}
-                            interval={range === "24h" ? 7 : 0}
+                            interval={range === "24h" ? 2 : 0}
                         />
                         <YAxis
                             tick={{ fontSize: 11, fill: "#94a3b8" }}
@@ -167,23 +156,23 @@ export function SensorTrendChart() {
             <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <SummaryCard
                     label="현재 수위"
-                    value={`${SENSOR_SUMMARY.currentLevel} m`}
+                    value={`${summary.currentLevel} m`}
                     badge="danger"
                 />
                 <SummaryCard
                     label="현재 유량"
-                    value={`${SENSOR_SUMMARY.currentFlow} m³/min`}
+                    value={`${summary.currentFlow} m³/min`}
                     badge="caution"
                 />
                 <SummaryCard
                     label="최고 수위 (24h)"
-                    value={`${SENSOR_SUMMARY.maxLevel} m`}
-                    sub={SENSOR_SUMMARY.maxLevelTime}
+                    value={`${summary.maxLevel} m`}
+                    sub={summary.maxLevelTime}
                 />
                 <SummaryCard
                     label="최고 유량 (24h)"
-                    value={`${SENSOR_SUMMARY.maxFlow} m³/min`}
-                    sub={SENSOR_SUMMARY.maxFlowTime}
+                    value={`${summary.maxFlow} m³/min`}
+                    sub={summary.maxFlowTime}
                 />
             </div>
         </div>
@@ -237,12 +226,25 @@ function SummaryCard({
     );
 }
 
-function ChartTooltip({ active, payload, label }: any) {
+function ChartTooltip({
+    active,
+    payload,
+    label,
+}: {
+    active?: boolean;
+    payload?: {
+        dataKey: string;
+        name: string;
+        value: number;
+        color: string;
+    }[];
+    label?: string;
+}) {
     if (!active || !payload?.length) return null;
     return (
         <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md">
             <p className="mb-1 text-xs font-semibold text-slate-700">{label}</p>
-            {payload.map((entry: any) => (
+            {payload.map((entry) => (
                 <p
                     key={entry.dataKey}
                     className="flex items-center gap-1.5 text-xs text-slate-600"
