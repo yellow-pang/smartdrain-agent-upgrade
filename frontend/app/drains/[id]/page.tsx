@@ -61,6 +61,10 @@ export default function DrainDetailPage({
 
     if (detailData === null) notFound();
 
+    if (detailData?.source === "mock") {
+        return <DrainDetailFallbackPage drainId={id} />;
+    }
+
     if (!drain || !meta || !sensorSummary) {
         return (
             <div className="min-h-screen bg-slate-50">
@@ -119,7 +123,6 @@ export default function DrainDetailPage({
                         <SensorTrendChart
                             points={detailData.sensorHistory}
                             summary={sensorSummary}
-                            isFallback={detailData.source === "mock"}
                         />
                         <CurrentRiskCard drain={drain} meta={meta} />
                         <AnalysisResultCard analysis={detailData.analysis} />
@@ -176,6 +179,79 @@ function LocationMapCard({
                 <MapPin className="size-3.5 text-slate-400" />
                 {fullAddress}
             </p>
+        </div>
+    );
+}
+
+function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
+    return (
+        <div className="min-h-screen bg-slate-50">
+            <AppHeader />
+
+            <main className="mx-auto max-w-[1600px] p-4 md:p-6">
+                <Link
+                    href="/"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+                >
+                    <ArrowLeft className="size-4" />
+                    대시보드로 돌아가기
+                </Link>
+
+                <div className="mt-2 flex flex-wrap items-baseline gap-3">
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                        하수구 상세 정보
+                    </h1>
+                    <span className="text-sm font-medium text-slate-500">
+                        {drainId}
+                    </span>
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                        mock fallback
+                    </span>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-12">
+                    <div className="flex flex-col gap-4 xl:col-span-4">
+                        <CctvSnapshotCard
+                            snapshots={[]}
+                            locationName="API 연결 대기 시설"
+                        />
+                        <PlaceholderState
+                            image={PLACEHOLDER_IMAGES.map}
+                            title="위치 지도 연결 대기"
+                            description="상세 API가 연결되면 실제 주소와 위치 지도가 표시됩니다."
+                            statusLabel="mock fallback"
+                            className="min-h-[340px]"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-4 xl:col-span-5">
+                        <SensorTrendChart
+                            points={[]}
+                            summary={getFallbackSensorSummary()}
+                            isFallback
+                        />
+                        <DetailUnavailableCard
+                            title="현재 위험 상태 연결 대기"
+                            description="상세 API가 연결되면 상태, 막힘 정도, 수위, 유량이 표시됩니다."
+                        />
+                        <DetailUnavailableCard
+                            title="YOLO / XGBoost 분석 결과 연결 대기"
+                            description="최신 분석 API가 연결되면 막힘 상태와 최종 위험 판단이 표시됩니다."
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-4 xl:col-span-3">
+                        <PlaceholderState
+                            image={PLACEHOLDER_IMAGES.facility}
+                            title="시설 정보 연결 대기"
+                            description="실제 상세 데이터가 도착하면 시설 정보 row가 표시됩니다."
+                            statusLabel="mock fallback"
+                            className="min-h-[320px]"
+                        />
+                        <RiskHistoryUnavailableCard />
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }
@@ -490,6 +566,54 @@ function RiskHistoryCard({
     );
 }
 
+function DetailUnavailableCard({
+    title,
+    description,
+}: {
+    title: string;
+    description: string;
+}) {
+    return (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                    <AlertTriangle className="size-5" />
+                </span>
+                <div>
+                    <h2 className="text-base font-bold text-slate-900">
+                        {title}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                        {description}
+                    </p>
+                    <span className="mt-3 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                        mock fallback
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function RiskHistoryUnavailableCard() {
+    return (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-base font-bold text-slate-900">
+                과거 위험 이력
+            </h2>
+            <div className="rounded-lg bg-slate-50 px-4 py-5 text-center">
+                <Clock className="mx-auto size-6 text-slate-400" />
+                <p className="mt-2 text-sm font-bold text-slate-700">
+                    위험 이력 연결 대기
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                    실제 위험 이력 API가 연결되면 이곳에 이력 row가 표시됩니다.
+                </p>
+            </div>
+        </div>
+    );
+}
+
 function DetailLoadingState() {
     return (
         <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-10 text-center text-sm font-medium text-slate-400">
@@ -498,8 +622,8 @@ function DetailLoadingState() {
     );
 }
 
-function getSensorSummary(points: DrainDetailData["sensorHistory"]) {
-    const fallback = {
+function getFallbackSensorSummary() {
+    return {
         currentLevel: 0,
         currentFlow: 0,
         maxLevel: 0,
@@ -507,6 +631,10 @@ function getSensorSummary(points: DrainDetailData["sensorHistory"]) {
         maxFlow: 0,
         maxFlowTime: "-",
     };
+}
+
+function getSensorSummary(points: DrainDetailData["sensorHistory"]) {
+    const fallback = getFallbackSensorSummary();
     if (points.length === 0) return fallback;
 
     const latest = points[points.length - 1];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Info } from "lucide-react";
+import { AlertCircle, Info, RotateCcw } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { RiskMap } from "@/components/risk-map";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/drain-risk-list";
 import { DrainSummaryPanel } from "@/components/drain-summary-panel";
 import { PlaceholderState } from "@/components/placeholder-state";
+import { Button } from "@/components/ui/button";
 import {
     loadDashboardData,
     type DashboardData,
@@ -79,11 +80,14 @@ export default function DashboardPage() {
             <AppHeader />
 
             <main className="mx-auto max-w-[1600px] p-4 md:p-6">
-                {dashboardData && (
+                {isLoading ? (
+                    <DashboardSummarySkeleton />
+                ) : dashboardData?.source === "api" ? (
                     <DashboardSummaryBar
                         summary={dashboardData.summary}
-                        source={dashboardData.source}
                     />
+                ) : (
+                    <DashboardSummaryErrorState onRetry={reloadDashboard} />
                 )}
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -176,10 +180,8 @@ function getRiskListStatus({
 
 function DashboardSummaryBar({
     summary,
-    source,
 }: {
     summary: DashboardSummaryDto;
-    source: "api" | "mock";
 }) {
     const items = [
         { label: "전체", value: summary.totalCount, className: "text-slate-900" },
@@ -209,9 +211,7 @@ function DashboardSummaryBar({
                         대시보드 현황
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                        {source === "api"
-                            ? "API 응답 기준"
-                            : "API 명세형 mock fallback 기준"}
+                        API 응답 기준
                         {summary.latestUpdatedAt
                             ? ` · 최신 업데이트 ${summary.latestUpdatedAt}`
                             : ""}
@@ -234,6 +234,65 @@ function DashboardSummaryBar({
                         </div>
                     ))}
                 </dl>
+            </div>
+        </section>
+    );
+}
+
+function DashboardSummarySkeleton() {
+    return (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    <div className="mt-2 h-3 w-44 animate-pulse rounded bg-slate-100" />
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 5 }, (_, index) => (
+                        <div
+                            key={index}
+                            className="min-w-16 rounded-lg bg-slate-50 px-3 py-2"
+                        >
+                            <div className="mx-auto h-3 w-10 animate-pulse rounded bg-slate-100" />
+                            <div className="mx-auto mt-2 h-5 w-8 animate-pulse rounded bg-slate-200" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function DashboardSummaryErrorState({
+    onRetry,
+}: {
+    onRetry: () => void;
+}) {
+    return (
+        <section className="mb-4 rounded-xl border border-red-100 bg-red-50/60 px-5 py-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-red-500 shadow-sm">
+                        <AlertCircle className="size-5" />
+                    </span>
+                    <div>
+                        <p className="text-sm font-bold text-red-700">
+                            대시보드 현황을 불러오지 못했습니다.
+                        </p>
+                        <p className="mt-0.5 text-xs text-red-600/80">
+                            실제 API 요약 데이터가 도착하면 현황 숫자가 표시됩니다.
+                        </p>
+                    </div>
+                </div>
+                <Button
+                    onClick={onRetry}
+                    size="sm"
+                    variant="outline"
+                    className="border-red-200 bg-white text-red-600 hover:bg-red-50"
+                >
+                    <RotateCcw className="size-3.5" />
+                    다시 시도
+                </Button>
             </div>
         </section>
     );

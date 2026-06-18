@@ -30,6 +30,7 @@ API 또는 API 명세형 mock 응답
 | 센서 차트 | 내부 생성 데이터 대신 props로 받은 센서 이력과 요약값 표시 |
 | placeholder fallback | API 미연결 또는 호출 실패 시 지도, CCTV, 센서 차트 영역에 placeholder 이미지와 `mock fallback` 배지 표시 |
 | 위험 시설 목록 상태 | 목록은 이미지 placeholder 대신 loading skeleton, empty, error, success 상태 컴포넌트로 처리 |
+| mock 값 미노출 | fallback 상태에서는 대시보드 현황 숫자, 목록 row, 상세 수치, 위험 이력, 분석 결과 mock 값을 실제 데이터처럼 표시하지 않음 |
 
 ## 3. 변경 전/후
 
@@ -42,6 +43,7 @@ API 또는 API 명세형 mock 응답
 | 분석 표시 | YOLO/XGBoost 결과 화면 없음 | 최신 분석 결과 카드 추가 |
 | fallback 시각화 | mock 데이터가 실제 API 데이터처럼 보일 수 있음 | placeholder 이미지로 API 미수신 상태를 구분 |
 | 목록 fallback | mock 시설 row가 실제 데이터처럼 보일 수 있음 | 연결 실패 상태와 다시 시도 버튼으로 API 미수신 상태를 구분 |
+| 상세 fallback | mock 상세 수치와 이력이 실제 데이터처럼 보일 수 있음 | 상세 fallback 전용 화면에서 연결 대기 상태만 표시 |
 
 ## 4. 검증 결과
 
@@ -61,6 +63,7 @@ API 또는 API 명세형 mock 응답
 | 이미지 최적화 warning | 기존 `<img>` 사용 warning이 남아 있으며 별도 `next/image` 전환 작업으로 분리 가능하다. |
 | fallback 판별 | placeholder가 보이면 실제 API가 아니라 fallback 상태로 판단한다. 실제 API 응답이 오면 지도/차트/이미지가 데이터 UI로 바뀌어야 한다. |
 | 목록 상태 | fallback 상태에서는 mock rows를 표시하지 않는다. 실제 API 목록 응답이 오면 위험 시설 목록 row가 표시되어야 한다. |
+| 대시보드/상세 상태 | fallback 상태에서는 mock summary와 mock detail 값을 표시하지 않는다. 실제 API 응답이 오면 현황 숫자와 상세 수치가 표시되어야 한다. |
 
 ## 6. 추천 커밋 메시지
 

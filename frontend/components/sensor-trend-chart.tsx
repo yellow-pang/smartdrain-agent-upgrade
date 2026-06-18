@@ -163,29 +163,30 @@ export function SensorTrendChart({
                 </div>
             )}
 
-            {/* Summary cards */}
-            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <SummaryCard
-                    label="현재 수위"
-                    value={`${summary.currentLevel} m`}
-                    badge="danger"
-                />
-                <SummaryCard
-                    label="현재 유량"
-                    value={`${summary.currentFlow} m³/min`}
-                    badge="caution"
-                />
-                <SummaryCard
-                    label="최고 수위 (24h)"
-                    value={`${summary.maxLevel} m`}
-                    sub={summary.maxLevelTime}
-                />
-                <SummaryCard
-                    label="최고 유량 (24h)"
-                    value={`${summary.maxFlow} m³/min`}
-                    sub={summary.maxFlowTime}
-                />
-            </div>
+            {!isFallback && (
+                <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <SummaryCard
+                        label="현재 수위"
+                        value={`${summary.currentLevel} m`}
+                        badge="danger"
+                    />
+                    <SummaryCard
+                        label="현재 유량"
+                        value={`${summary.currentFlow} m³/min`}
+                        badge="caution"
+                    />
+                    <SummaryCard
+                        label="최고 수위 (24h)"
+                        value={`${summary.maxLevel} m`}
+                        sub={summary.maxLevelTime}
+                    />
+                    <SummaryCard
+                        label="최고 유량 (24h)"
+                        value={`${summary.maxFlow} m³/min`}
+                        sub={summary.maxFlowTime}
+                    />
+                </div>
+            )}
         </div>
     );
 }
