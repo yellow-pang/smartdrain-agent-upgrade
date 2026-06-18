@@ -45,6 +45,8 @@ export function drainListItemDtoToFacility(
         flow: dto.flowVelocityMps,
         updatedAt: dto.updatedAt,
         judgement: dto.finalDecision,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
         x: mapPosition.x,
         y: mapPosition.y,
     };

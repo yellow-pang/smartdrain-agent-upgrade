@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
+import { FallbackImage } from "@/components/fallback-image";
 
 type Snapshot = {
     imageUrl: string;
@@ -42,8 +43,9 @@ export function CctvSnapshotCard({
 
             {/* main snapshot */}
             <div className="relative mt-3 aspect-[16/10] overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
-                <img
+                <FallbackImage
                     src={current.imageUrl}
+                    fallbackSrc={PLACEHOLDER_IMAGES.cctv}
                     alt={`${locationName} 빗물받이 상단뷰 CCTV 스냅샷`}
                     className="size-full object-cover grayscale"
                 />
@@ -78,8 +80,9 @@ export function CctvSnapshotCard({
                             )}
                             aria-label={`스냅샷 ${snapshot.capturedAt}`}
                         >
-                            <img
+                            <FallbackImage
                                 src={snapshot.imageUrl}
+                                fallbackSrc={PLACEHOLDER_IMAGES.thumbnail}
                                 alt=""
                                 className="size-full object-cover grayscale"
                             />
