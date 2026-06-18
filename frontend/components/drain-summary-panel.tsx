@@ -17,13 +17,16 @@ import { StatusBadge } from "@/components/status-badge";
 import { MetricProgress } from "@/components/metric-progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 
 export function DrainSummaryPanel({
     drain,
     onClose,
+    imageUrl = PLACEHOLDER_IMAGES.facility,
 }: {
     drain: DrainFacility;
     onClose?: () => void;
+    imageUrl?: string;
 }) {
     const meta = STATUS_META[drain.status];
     return (
@@ -54,7 +57,7 @@ export function DrainSummaryPanel({
                 {/* CCTV snapshot */}
                 <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
                     <img
-                        src="/cctv-drain.png"
+                        src={imageUrl}
                         alt={`${drain.road} 빗물받이 CCTV 스냅샷`}
                         className="size-full object-cover grayscale"
                     />
@@ -68,7 +71,7 @@ export function DrainSummaryPanel({
                     <InfoRow
                         icon={MapPin}
                         label="주소"
-                        value="서울시 강남구 테헤란로 123"
+                        value={drain.fullAddress}
                     />
                     <InfoRow icon={ShieldCheck} label="상태">
                         <StatusBadge status={drain.status} />
@@ -91,7 +94,7 @@ export function DrainSummaryPanel({
                     <InfoRow
                         icon={Clock}
                         label="최근 업데이트"
-                        value="2024-05-23 14:30:00"
+                        value={drain.updatedAt}
                     />
                 </dl>
 

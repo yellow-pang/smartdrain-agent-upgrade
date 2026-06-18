@@ -2,12 +2,7 @@
 
 import { Crosshair, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-    DRAINS,
-    LEGEND_COUNTS,
-    STATUS_META,
-    type DrainFacility,
-} from "@/lib/mock-data";
+import { DRAINS, STATUS_META, type DrainFacility } from "@/lib/mock-data";
 
 /**
  * Mock map component. Renders a stylised street grid background with
@@ -26,6 +21,13 @@ export function RiskMap({
     onSelect?: (id: string) => void;
     labelLocation?: string;
 }) {
+    const legendCounts = {
+        danger: drains.filter((drain) => drain.status === "danger").length,
+        caution: drains.filter((drain) => drain.status === "caution").length,
+        good: drains.filter((drain) => drain.status === "good").length,
+        unknown: drains.filter((drain) => drain.status === "unknown").length,
+    };
+
     return (
         <div className="relative h-full min-h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
             <MockStreetBackground />
@@ -36,22 +38,22 @@ export function RiskMap({
                     <LegendRow
                         color={STATUS_META.danger.dot}
                         label="위험"
-                        count={LEGEND_COUNTS.danger}
+                        count={legendCounts.danger}
                     />
                     <LegendRow
                         color={STATUS_META.caution.dot}
                         label="주의"
-                        count={LEGEND_COUNTS.caution}
+                        count={legendCounts.caution}
                     />
                     <LegendRow
                         color={STATUS_META.good.dot}
                         label="양호"
-                        count={LEGEND_COUNTS.good}
+                        count={legendCounts.good}
                     />
                     <LegendRow
                         color={STATUS_META.unknown.dot}
                         label="판단불가"
-                        count={LEGEND_COUNTS.unknown}
+                        count={legendCounts.unknown}
                     />
                 </ul>
             </div>

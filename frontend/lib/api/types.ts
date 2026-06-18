@@ -1,5 +1,7 @@
 import type { RiskLevel } from "@/lib/risk";
 
+export type YoloStatus = "clear" | "partially_blocked" | "blocked" | "unknown";
+
 export type ApiResponse<T> = {
     success: boolean;
     data: T | null;
@@ -57,7 +59,7 @@ export type YoloResultDto = {
     imageUrl?: string;
     obstructionRatio: number;
     confidenceScore: number;
-    yoloStatus: string;
+    yoloStatus: YoloStatus;
     analyzedAt: string;
 };
 
@@ -72,6 +74,22 @@ export type RiskHistoryDto = {
     changedAt: string;
     riskLevel: RiskLevel;
     riskScore: number;
+};
+
+export type AnalysisResultDto = {
+    sensorSummary?: SensorSummaryDto;
+    yoloResult?: YoloResultDto;
+    xgboostResult?: XgboostResultDto;
+    updatedAt?: string;
+};
+
+export type DashboardSummaryDto = {
+    totalCount: number;
+    goodCount: number;
+    cautionCount: number;
+    dangerCount: number;
+    unknownCount: number;
+    latestUpdatedAt?: string;
 };
 
 export type DrainStatusUpdatedEventDto = {
