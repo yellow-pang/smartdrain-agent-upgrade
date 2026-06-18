@@ -40,6 +40,14 @@ API 문서는 서버 실행 후 `http://localhost:8000/docs`에서 확인할 수
 docker compose up -d db
 ```
 
+기본 PostgreSQL 연결 정보:
+
+- container name: `smartdrain-postgres`
+- user: `smartdrain`
+- password: `smartdrain123`
+- database: `smartdrain_db`
+- URL: `postgresql+psycopg://smartdrain:smartdrain123@localhost:5432/smartdrain_db`
+
 ## .env Example
 
 ```env

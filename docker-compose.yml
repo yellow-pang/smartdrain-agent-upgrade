@@ -3,9 +3,9 @@ services:
     image: postgres:16
     container_name: smartdrain-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: flood_db
+      POSTGRES_USER: smartdrain
+      POSTGRES_PASSWORD: smartdrain123
+      POSTGRES_DB: smartdrain_db
     ports:
       - "5432:5432"
     volumes:

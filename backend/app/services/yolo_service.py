@@ -17,11 +17,21 @@ from app.schemas.yolo_result import YoloResultCreate
 from app.services.drain_service import get_drain
 
 
+def _normalize_obstruction_ratio(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return value / 100 if value > 1 else value
+
+
 def create_yolo_result(db: Session, payload: YoloResultCreate) -> YoloResult:
     get_drain(db, payload.drain_id)
     analysis = run_yolo_analysis(payload.image_url)
     data = payload.model_dump()
-    data["obstruction_ratio"] = data["obstruction_ratio"] if data["obstruction_ratio"] is not None else analysis["obstruction_ratio"]
+    data["obstruction_ratio"] = (
+        _normalize_obstruction_ratio(data["obstruction_ratio"])
+        if data["obstruction_ratio"] is not None
+        else analysis["obstruction_ratio"]
+    )
     data["confidence_score"] = data["confidence_score"] if data["confidence_score"] is not None else analysis["confidence_score"]
     data["yolo_status"] = data["yolo_status"] or analysis["yolo_status"]
     data["captured_at"] = data["captured_at"] or datetime.now(timezone.utc)

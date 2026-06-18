@@ -8,17 +8,26 @@
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ROOT_DIR = Path(__file__).resolve().parents[3]
+BACKEND_DIR = ROOT_DIR / "backend"
+DEFAULT_DATABASE_URL = "postgresql+psycopg://smartdrain:smartdrain123@localhost:5432/smartdrain_db"
+
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Flood Monitoring Backend"
-    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/flood_db"
+    DATABASE_URL: str = DEFAULT_DATABASE_URL
     CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
-    model_config = SettingsConfigDict(env_file=(".env", "../.env"), env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(ROOT_DIR / ".env", BACKEND_DIR / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
