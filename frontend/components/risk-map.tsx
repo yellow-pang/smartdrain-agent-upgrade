@@ -1,91 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Crosshair, Minus, Plus } from "lucide-react";
+import { useMemo } from "react";
+import {
+    AlertTriangle,
+    Crosshair,
+    Minus,
+    Plus,
+    ZoomIn,
+    ZoomOut,
+} from "lucide-react";
+import {
+    CustomOverlayMap,
+    Map,
+    MapMarker,
+    MarkerClusterer,
+    ZoomControl,
+    useKakaoLoader,
+} from "react-kakao-maps-sdk";
 import { cn } from "@/lib/utils";
 import { DRAINS, STATUS_META, type DrainFacility } from "@/lib/mock-data";
 import type { RiskLevel } from "@/lib/risk";
 
-type KakaoSdkStatus = "idle" | "loading" | "ready" | "error";
-
-type KakaoLatLng = {
-    getLat(): number;
-    getLng(): number;
+type MapCenter = {
+    lat: number;
+    lng: number;
 };
 
-type KakaoMap = {
-    setCenter(position: KakaoLatLng): void;
-    addControl(control: unknown, position: number): void;
-};
+type KakaoLoaderOptions = Parameters<typeof useKakaoLoader>[0];
 
-type KakaoMarker = {
-    setMap(map: KakaoMap | null): void;
-};
-
-type KakaoCustomOverlay = {
-    setMap(map: KakaoMap | null): void;
-};
-
-type KakaoEventTarget = KakaoMarker;
-
-type KakaoMaps = {
-    load(callback: () => void): void;
-    LatLng: new (lat: number, lng: number) => KakaoLatLng;
-    LatLngBounds: new () => {
-        extend(position: KakaoLatLng): void;
-    };
-    Map: new (
-        container: HTMLElement,
-        options: {
-            center: KakaoLatLng;
-            level: number;
-        },
-    ) => KakaoMap;
-    Marker: new (options: {
-        position: KakaoLatLng;
-        image: unknown;
-        title: string;
-    }) => KakaoMarker;
-    MarkerImage: new (
-        src: string,
-        size: unknown,
-        options: {
-            offset: unknown;
-        },
-    ) => unknown;
-    Size: new (width: number, height: number) => unknown;
-    Point: new (x: number, y: number) => unknown;
-    CustomOverlay: new (options: {
-        position: KakaoLatLng;
-        content: string;
-        yAnchor: number;
-        zIndex: number;
-    }) => KakaoCustomOverlay;
-    ZoomControl: new () => unknown;
-    ControlPosition: {
-        RIGHT: number;
-    };
-    event: {
-        addListener(
-            target: KakaoEventTarget,
-            type: "click",
-            callback: () => void,
-        ): void;
-    };
-};
-
-declare global {
-    interface Window {
-        kakao?: {
-            maps: KakaoMaps;
-        };
-    }
-}
-
-const KAKAO_SDK_ID = "kakao-map-sdk";
-const DEFAULT_CENTER = {
-    latitude: 37.4979,
-    longitude: 127.0276,
+const DEFAULT_CENTER: MapCenter = {
+    lat: 37.4979,
+    lng: 127.0276,
 };
 
 const MARKER_COLORS: Record<RiskLevel, string> = {
@@ -94,8 +39,6 @@ const MARKER_COLORS: Record<RiskLevel, string> = {
     good: "#10b981",
     unknown: "#94a3b8",
 };
-
-let kakaoSdkPromise: Promise<void> | null = null;
 
 export function RiskMap({
     drains = DRAINS,
@@ -108,11 +51,6 @@ export function RiskMap({
     onSelect?: (id: string) => void;
     labelLocation?: string;
 }) {
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const mapRef = useRef<KakaoMap | null>(null);
-    const markerRefs = useRef<KakaoMarker[]>([]);
-    const overlayRef = useRef<KakaoCustomOverlay | null>(null);
-    const [sdkStatus, setSdkStatus] = useState<KakaoSdkStatus>("idle");
     const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
     const validDrains = useMemo(() => drains.filter(hasValidCoordinate), [
         drains,
@@ -121,133 +59,141 @@ export function RiskMap({
         () => validDrains.find((drain) => drain.id === selectedId),
         [selectedId, validDrains],
     );
-    const mapDisplayStatus =
-        sdkStatus === "idle" && appKey && validDrains.length > 0
-            ? "loading"
-            : sdkStatus;
-    const shouldUseFallback =
-        !appKey || sdkStatus === "error" || validDrains.length === 0;
-
-    useEffect(() => {
-        if (!appKey || validDrains.length === 0) return;
-
-        loadKakaoMapsSdk(appKey)
-            .then(() => setSdkStatus("ready"))
-            .catch(() => setSdkStatus("error"));
-    }, [appKey, validDrains.length]);
-
-    useEffect(() => {
-        if (sdkStatus !== "ready" || !containerRef.current || !window.kakao) {
-            return;
-        }
-
-        const kakao = window.kakao;
-        const center = getMapCenter(validDrains);
-        const map = new kakao.maps.Map(containerRef.current, {
-            center: new kakao.maps.LatLng(center.latitude, center.longitude),
-            level: validDrains.length > 1 ? 5 : 3,
-        });
-
-        map.addControl(
-            new kakao.maps.ZoomControl(),
-            kakao.maps.ControlPosition.RIGHT,
-        );
-        mapRef.current = map;
-
-        return () => {
-            clearKakaoMarkers();
-            mapRef.current = null;
-        };
-    }, [sdkStatus, validDrains]);
-
-    useEffect(() => {
-        if (sdkStatus !== "ready" || !mapRef.current || !window.kakao) return;
-
-        const kakao = window.kakao;
-        clearKakaoMarkers();
-
-        markerRefs.current = validDrains.map((drain) => {
-            const marker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(drain.latitude, drain.longitude),
-                image: new kakao.maps.MarkerImage(
-                    createMarkerImage(drain.status, drain.id === selectedId),
-                    new kakao.maps.Size(34, 44),
-                    {
-                        offset: new kakao.maps.Point(17, 42),
-                    },
-                ),
-                title: `${drain.id} ${drain.road}`,
-            });
-
-            marker.setMap(mapRef.current);
-            kakao.maps.event.addListener(marker, "click", () => {
-                onSelect?.(drain.id);
-            });
-            return marker;
-        });
-
-        if (selectedDrain) {
-            const selectedPosition = new kakao.maps.LatLng(
-                selectedDrain.latitude,
-                selectedDrain.longitude,
-            );
-            mapRef.current.setCenter(selectedPosition);
-            overlayRef.current = new kakao.maps.CustomOverlay({
-                position: selectedPosition,
-                content: createSelectedOverlayContent(
-                    labelLocation ?? selectedDrain.road,
-                ),
-                yAnchor: 2.1,
-                zIndex: 20,
-            });
-            overlayRef.current.setMap(mapRef.current);
-        }
-
-        return clearKakaoMarkers;
-    }, [labelLocation, onSelect, sdkStatus, selectedDrain, selectedId, validDrains]);
-
     const legendCounts = {
         danger: drains.filter((drain) => drain.status === "danger").length,
         caution: drains.filter((drain) => drain.status === "caution").length,
         good: drains.filter((drain) => drain.status === "good").length,
         unknown: drains.filter((drain) => drain.status === "unknown").length,
     };
+    const fallbackReason = getFallbackReason({
+        appKey,
+        validCount: validDrains.length,
+    });
 
     return (
         <div className="relative h-full min-h-[420px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            {shouldUseFallback ? (
+            {!appKey || validDrains.length === 0 ? (
                 <FallbackRiskMap
                     drains={drains}
                     selectedId={selectedId}
                     onSelect={onSelect}
                     labelLocation={labelLocation}
-                    reason={getFallbackReason({
-                        appKey,
-                        sdkStatus,
-                        validCount: validDrains.length,
-                    })}
+                    reason={fallbackReason}
                 />
             ) : (
-                <>
-                    <div ref={containerRef} className="absolute inset-0" />
-                    {mapDisplayStatus === "loading" && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
-                            Kakao 지도를 불러오고 있습니다.
-                        </div>
-                    )}
-                </>
+                <KakaoRiskMap
+                    appKey={appKey}
+                    drains={drains}
+                    validDrains={validDrains}
+                    selectedDrain={selectedDrain}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    labelLocation={labelLocation}
+                />
             )}
 
             <MapLegend legendCounts={legendCounts} />
         </div>
     );
+}
 
-    function clearKakaoMarkers() {
-        markerRefs.current.forEach((marker) => marker.setMap(null));
-        markerRefs.current = [];
-        overlayRef.current?.setMap(null);
-        overlayRef.current = null;
+function KakaoRiskMap({
+    appKey,
+    drains,
+    validDrains,
+    selectedDrain,
+    selectedId,
+    onSelect,
+    labelLocation,
+}: {
+    appKey: string;
+    drains: DrainFacility[];
+    validDrains: DrainFacility[];
+    selectedDrain?: DrainFacility;
+    selectedId?: string | null;
+    onSelect?: (id: string) => void;
+    labelLocation?: string;
+}) {
+    const loaderOptions = useMemo<KakaoLoaderOptions>(
+        () => ({
+            appkey: appKey,
+            libraries: ["clusterer"],
+        }),
+        [appKey],
+    );
+    const [loading, error] = useKakaoLoader(loaderOptions);
+    const center = selectedDrain
+        ? drainToCenter(selectedDrain)
+        : getMapCenter(validDrains);
+
+    if (error) {
+        return (
+            <FallbackRiskMap
+                drains={drains}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                labelLocation={labelLocation}
+                reason={getFallbackReason({
+                    appKey,
+                    error,
+                    validCount: validDrains.length,
+                })}
+            />
+        );
     }
+
+    return (
+        <>
+            <Map
+                center={center}
+                isPanto
+                level={validDrains.length > 1 ? 5 : 3}
+                className="absolute inset-0 size-full"
+            >
+                <ZoomControl position="RIGHT" />
+                <MarkerClusterer
+                    averageCenter
+                    minLevel={6}
+                    minClusterSize={8}
+                    gridSize={80}
+                    styles={CLUSTER_STYLES}
+                    calculator={[10, 50, 100, 500]}
+                >
+                    {validDrains.map((drain) => (
+                        <MapMarker
+                            key={drain.id}
+                            position={drainToCenter(drain)}
+                            image={getMarkerImage({
+                                status: drain.status,
+                                selected: drain.id === selectedId,
+                                alt: `${STATUS_META[drain.status].label} 시설 마커`,
+                            })}
+                            title={`${drain.id} ${drain.road}`}
+                            zIndex={drain.id === selectedId ? 20 : 10}
+                            onClick={() => onSelect?.(drain.id)}
+                        />
+                    ))}
+                </MarkerClusterer>
+                {selectedDrain && (
+                    <CustomOverlayMap
+                        position={drainToCenter(selectedDrain)}
+                        yAnchor={2.1}
+                        zIndex={30}
+                    >
+                        <span className="whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white shadow-md">
+                            {labelLocation ?? selectedDrain.road}
+                        </span>
+                    </CustomOverlayMap>
+                )}
+            </Map>
+            {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
+                    Kakao 지도를 불러오고 있습니다.
+                </div>
+            )}
+            <ClusterHint />
+        </>
+    );
 }
 
 function FallbackRiskMap({
@@ -332,6 +278,16 @@ function FallbackRiskMap({
                 );
             })}
         </>
+    );
+}
+
+function ClusterHint() {
+    return (
+        <div className="absolute bottom-4 right-4 z-20 hidden items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur md:flex">
+            <ZoomOut className="size-3.5" />
+            <span>축소 시 밀집 마커를 묶어 표시</span>
+            <ZoomIn className="size-3.5" />
+        </div>
     );
 }
 
@@ -456,43 +412,6 @@ function MockStreetBackground() {
     );
 }
 
-function loadKakaoMapsSdk(appKey: string) {
-    if (window.kakao?.maps) {
-        return new Promise<void>((resolve) => {
-            window.kakao?.maps.load(resolve);
-        });
-    }
-
-    if (kakaoSdkPromise) return kakaoSdkPromise;
-
-    kakaoSdkPromise = new Promise((resolve, reject) => {
-        const existingScript = document.getElementById(KAKAO_SDK_ID);
-        if (existingScript) {
-            existingScript.addEventListener("load", () => {
-                window.kakao?.maps.load(resolve);
-            });
-            existingScript.addEventListener("error", reject);
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.id = KAKAO_SDK_ID;
-        script.async = true;
-        script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false`;
-        script.onload = () => {
-            if (!window.kakao?.maps) {
-                reject(new Error("Kakao Maps SDK is unavailable."));
-                return;
-            }
-            window.kakao.maps.load(resolve);
-        };
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-
-    return kakaoSdkPromise;
-}
-
 function hasValidCoordinate(drain: DrainFacility) {
     return (
         Number.isFinite(drain.latitude) &&
@@ -502,20 +421,52 @@ function hasValidCoordinate(drain: DrainFacility) {
     );
 }
 
-function getMapCenter(drains: DrainFacility[]) {
+function drainToCenter(drain: DrainFacility): MapCenter {
+    return {
+        lat: drain.latitude,
+        lng: drain.longitude,
+    };
+}
+
+function getMapCenter(drains: DrainFacility[]): MapCenter {
     if (drains.length === 0) return DEFAULT_CENTER;
 
     const total = drains.reduce(
         (acc, drain) => ({
-            latitude: acc.latitude + drain.latitude,
-            longitude: acc.longitude + drain.longitude,
+            lat: acc.lat + drain.latitude,
+            lng: acc.lng + drain.longitude,
         }),
-        { latitude: 0, longitude: 0 },
+        { lat: 0, lng: 0 },
     );
 
     return {
-        latitude: total.latitude / drains.length,
-        longitude: total.longitude / drains.length,
+        lat: total.lat / drains.length,
+        lng: total.lng / drains.length,
+    };
+}
+
+function getMarkerImage({
+    status,
+    selected,
+    alt,
+}: {
+    status: RiskLevel;
+    selected: boolean;
+    alt: string;
+}) {
+    return {
+        src: createMarkerImage(status, selected),
+        size: {
+            width: 34,
+            height: 44,
+        },
+        options: {
+            alt,
+            offset: {
+                x: 17,
+                y: 42,
+            },
+        },
     };
 }
 
@@ -531,31 +482,13 @@ function createMarkerImage(status: RiskLevel, selected: boolean) {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-function createSelectedOverlayContent(label: string) {
-    const safeLabel = escapeHtml(label);
-    return `
-        <div style="padding:4px 8px;border-radius:6px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;box-shadow:0 4px 10px rgba(15,23,42,.18);white-space:nowrap;">
-            ${safeLabel}
-        </div>
-    `;
-}
-
-function escapeHtml(value: string) {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
 function getFallbackReason({
     appKey,
-    sdkStatus,
+    error,
     validCount,
 }: {
     appKey?: string;
-    sdkStatus: KakaoSdkStatus;
+    error?: ErrorEvent;
     validCount: number;
 }) {
     if (!appKey) {
@@ -564,8 +497,55 @@ function getFallbackReason({
     if (validCount === 0) {
         return "사용 가능한 위도/경도 좌표가 없어 임시 지도를 표시합니다.";
     }
-    if (sdkStatus === "error") {
+    if (error) {
         return "Kakao Maps SDK를 불러오지 못해 임시 지도를 표시합니다.";
     }
     return "Kakao 지도를 준비하는 동안 임시 지도를 표시합니다.";
 }
+
+const CLUSTER_STYLES = [
+    {
+        width: "38px",
+        height: "38px",
+        borderRadius: "19px",
+        background: "rgba(14, 116, 144, 0.9)",
+        color: "#fff",
+        textAlign: "center",
+        fontWeight: "700",
+        lineHeight: "38px",
+        boxShadow: "0 8px 18px rgba(15, 23, 42, 0.22)",
+    },
+    {
+        width: "46px",
+        height: "46px",
+        borderRadius: "23px",
+        background: "rgba(217, 119, 6, 0.92)",
+        color: "#fff",
+        textAlign: "center",
+        fontWeight: "700",
+        lineHeight: "46px",
+        boxShadow: "0 10px 22px rgba(15, 23, 42, 0.24)",
+    },
+    {
+        width: "54px",
+        height: "54px",
+        borderRadius: "27px",
+        background: "rgba(220, 38, 38, 0.92)",
+        color: "#fff",
+        textAlign: "center",
+        fontWeight: "700",
+        lineHeight: "54px",
+        boxShadow: "0 12px 26px rgba(15, 23, 42, 0.26)",
+    },
+    {
+        width: "62px",
+        height: "62px",
+        borderRadius: "31px",
+        background: "rgba(15, 23, 42, 0.9)",
+        color: "#fff",
+        textAlign: "center",
+        fontWeight: "700",
+        lineHeight: "62px",
+        boxShadow: "0 14px 30px rgba(15, 23, 42, 0.3)",
+    },
+];
