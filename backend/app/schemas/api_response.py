@@ -16,6 +16,7 @@ from app.models.drain import Drain
 from app.models.sensor_data import SensorData
 from app.models.xgboost_result import XgboostResult
 from app.models.yolo_result import YoloResult
+from app.websocket.events import DRAIN_STATUS_UPDATED
 
 KST = timezone(timedelta(hours=9))
 RISK_LEVELS = {"good", "caution", "danger", "unknown"}
@@ -39,6 +40,10 @@ def normalize_risk_level(value: str | None) -> str:
 
 
 def normalize_yolo_status(value: str | None) -> str:
+    if value == "good":
+        return "clear"
+    if value == "dirty":
+        return "partially_blocked"
     return value if value in YOLO_STATUSES else "unknown"
 
 
@@ -109,7 +114,7 @@ def yolo_result_dto(yolo_result: YoloResult | None) -> dict[str, Any] | None:
         "obstructionRatio": yolo_result.obstruction_ratio,
         "confidenceScore": yolo_result.confidence_score,
         "yoloStatus": normalize_yolo_status(yolo_result.yolo_status),
-        "analyzedAt": format_datetime(yolo_result.captured_at),
+        "analyzedAt": format_datetime(yolo_result.created_at),
         "capturedAt": format_datetime(yolo_result.captured_at),
         "createdAt": format_datetime(yolo_result.created_at),
     }
@@ -250,7 +255,7 @@ def drain_status_event_payload(
     sensor_data = sensor_data or latest_sensor_data(db, drain.id)
     yolo_result = yolo_result or latest_yolo_result(db, drain.id)
     return {
-        "type": "DRAIN_STATUS_UPDATED",
+        "type": DRAIN_STATUS_UPDATED,
         "payload": {
             "drainId": drain.drain_code,
             "riskLevel": normalize_risk_level(result.risk_level),
@@ -260,5 +265,8 @@ def drain_status_event_payload(
             "obstructionRatio": yolo_result.obstruction_ratio if yolo_result else None,
             "finalDecision": result.final_decision,
             "updatedAt": format_datetime(result.evaluated_at),
+            "sensorDataId": result.sensor_data_id,
+            "yoloResultId": result.yolo_result_id,
+            "xgboostResultId": result.id,
         },
     }

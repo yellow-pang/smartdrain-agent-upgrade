@@ -1,146 +1,230 @@
-# SmartDrain Flood Monitoring Backend
+# SmartDrain Backend
 
-FastAPI 기반 지능형 도시 침수 관리 및 모니터링 MVP 백엔드입니다. 빗물받이/하수구 위치와 상태, 수위/유속 센서 데이터, YOLO 이미지 분석 결과, 규칙 기반 XGBoost 대체 위험도 판단 결과를 저장하고 조회합니다.
+## Seed Mock Data
 
-## Folder Structure
+프론트-백엔드 연동 테스트 전에 PostgreSQL DB에 대시보드와 상세 화면 확인용 목 데이터를 넣기 위한 seed 스크립트입니다.
 
-```text
-backend/
-  alembic/
-  app/
-    ai/
-    core/
-    models/
-    routers/
-    schemas/
-    services/
-    websocket/
-    main.py
-docker-compose.yml
-requirements.txt
-.env.example
-```
+생성되는 데이터:
 
-## Local Run
+- `DR-001`: `good`
+- `DR-002`: `good`
+- `DR-003`: `caution`
+- `DR-004`: `danger`
+- `DR-005`: `unknown`
+
+각 빗물받이에 대해 `sensor_data`, `yolo_result`, `xgboost_result`가 함께 생성됩니다. 이미 같은 `drain_code`가 있으면 중복 생성하지 않고 건너뜁니다.
+
+## 실행 전 준비
+
+DB 테이블은 Alembic 마이그레이션으로 먼저 생성되어 있어야 합니다.
+
+프로젝트 루트에서:
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
+python -m alembic upgrade head
+```
+
+## 실행 명령어
+
+프로젝트 루트에서:
+
+```bash
 cd backend
-uvicorn app.main:app --reload
+python -m app.seeds.seed_mock_data
 ```
 
-API 문서는 서버 실행 후 `http://localhost:8000/docs`에서 확인할 수 있습니다.
-
-## PostgreSQL With Docker
-
-```bash
-docker compose up -d db
-```
-
-기본 PostgreSQL 연결 정보:
-
-- container name: `smartdrain-postgres`
-- user: `smartdrain`
-- password: `smartdrain123`
-- database: `smartdrain_db`
-- URL: `postgresql+psycopg://smartdrain:smartdrain123@localhost:5432/smartdrain_db`
-
-## .env Example
-
-```env
-PROJECT_NAME=Flood Monitoring Backend
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/flood_db
-CORS_ORIGINS=http://localhost:3000
-```
-
-## Alembic Commands
-
-```bash
-alembic revision --autogenerate -m "create initial tables"
-alembic upgrade head
-```
-
-## API List
-
-REST API는 프론트엔드 명세에 맞춰 공통 wrapper 형식으로 응답합니다.
-
-단건 응답:
-
-```json
-{
-  "success": true,
-  "data": {},
-  "message": null,
-  "error": null,
-  "timestamp": "2026-06-18T09:30:00+09:00"
-}
-```
-
-목록 응답:
-
-```json
-{
-  "success": true,
-  "data": {
-    "items": [],
-    "totalCount": 0
-  },
-  "message": null,
-  "error": null,
-  "timestamp": "2026-06-18T09:30:00+09:00"
-}
-```
-
-프론트 명세 기준 주요 API:
+## 실행 후 확인할 API
 
 - `GET /api/drains`
-  - `ApiListResponse<DrainListItemDto>`
-  - 각 item은 `id`, `roadAddress`, `fullAddress`, `latitude`, `longitude`, `riskLevel`, `riskScore`, `obstructionRatio`, `waterLevelCm`, `flowVelocityMps`, `finalDecision`, `updatedAt` 포함
-- `GET /api/drains/{id}`
-  - `ApiResponse<DrainDetailDto>`
-  - 기본 하수구 필드와 `imageUrl`, `sensorSummary`, `sensorHistory`, `yoloResult`, `xgboostResult`, `riskHistory` 포함
-- `GET /api/drains/{id}/sensors`
-  - `ApiListResponse<SensorHistoryDto>`
-  - `limit` query를 적용하며 `range` query는 MVP 이후 기간 필터링에 반영 예정
-  - 기존 `GET /api/drains/{id}/sensor-data`도 alias로 유지
-- `GET /api/drains/{id}/risk-history`
-  - `ApiListResponse<RiskHistoryDto>`
-  - 각 item은 `changedAt`, `riskLevel`, `riskScore` 중심으로 반환
-  - `limit` query를 적용하며 `days` query는 MVP 이후 기간 필터링에 반영 예정
 - `GET /api/dashboard/summary`
-  - `ApiResponse<DashboardSummaryDto>`
-  - `totalCount`, `goodCount`, `cautionCount`, `dangerCount`, `unknownCount`, `latestUpdatedAt` 포함
-- `GET /api/drains/{id}/analysis/latest`
-  - `ApiResponse<AnalysisResultDto>`
-  - `sensorSummary`, `yoloResult`, `xgboostResult`, `updatedAt` 포함
-- `WS /ws/drains/status`
-  - 이벤트 타입: `DRAIN_STATUS_UPDATED`
-  - payload는 `drainId`, `riskLevel`, `riskScore`, `waterLevelCm`, `flowVelocityMps`, `obstructionRatio`, `finalDecision`, `updatedAt` 포함
+- `GET /api/drains/DR-004`
+- `GET /api/drains/DR-004/sensors`
+- `GET /api/drains/DR-004/risk-history`
+- `GET /api/drains/DR-004/analysis/latest`
 
-기존 호환 API:
+## Backend-AI Async Analysis
 
-- `GET /`
-- `POST /api/drains`
-- `POST /api/sensor-data`
-- `GET /api/drains/{id}/sensor-data`
-- `GET /api/drains/{id}/sensor-data/latest`
-- `POST /api/analysis/yolo`
-- `POST /api/analysis/xgboost`
-- `GET /api/drains/{id}/yolo-results`
-- `GET /api/drains/{id}/risk/latest`
-- `GET /api/dashboard/drain-status`
+백엔드는 최신 센서 데이터를 AI 서버로 보내 분석 job을 시작하고, AI 서버가 callback으로 전달하는 YOLO 중간 결과와 XGBoost 최종 결과를 DB에 저장합니다. callback 저장 후에는 `/ws/drains/status` WebSocket으로 프론트에 이벤트를 발행합니다.
 
-## API Implementation Notes
+사용 endpoint:
 
-- `POST /api/drains`, `POST /api/sensor-data`, `POST /api/analysis/yolo`, `POST /api/analysis/xgboost`는 camelCase와 snake_case 요청 body를 모두 허용합니다.
-- `riskLevel`은 `good`, `caution`, `danger`, `unknown`만 사용합니다.
-- `yoloStatus`는 `clear`, `partially_blocked`, `blocked`, `unknown`만 사용하며 `riskLevel`과 별도로 정규화합니다.
-- `YoloResultDto`는 `analyzedAt`, `XgboostResultDto`는 `predictedAt`을 포함합니다.
-- 에러 응답은 `error.code`, `error.message`, `error.detail`을 포함하는 공통 wrapper로 반환합니다.
+- Backend -> AI: `POST {AI_SERVER_BASE_URL}/ai/analysis/run`
+- AI -> Backend: `POST /api/ai-callback/yolo-result`
+- AI -> Backend: `POST /api/ai-callback/xgboost-result`
+- Backend 내부 실행 API: `POST /api/analysis/async-run`
 
-## AI Stubs
+환경변수:
 
-`backend/app/ai/yolo_model.py`와 `backend/app/ai/xgboost_model.py`는 실제 모델 파일이 없어도 서버가 실행되도록 더미/규칙 기반 함수로 작성되어 있습니다. 추후 `best.pt`, `xgboost_model.pkl` 로딩 로직을 해당 파일에 연결하면 됩니다.
+```env
+AI_SERVER_BASE_URL=http://localhost:9000
+AI_SERVER_TIMEOUT_SECONDS=10
+AI_CALLBACK_BASE_URL=http://localhost:8000
+AI_SERVER_ENABLED=true
+```
+
+분석 시작 요청 예시:
+
+```powershell
+$base = "http://localhost:8000"
+Invoke-RestMethod -Method Post -Uri "$base/api/analysis/async-run" -ContentType "application/json" -Body '{
+  "drainId": "DR-004"
+}'
+```
+
+AI 서버가 없으면 `ANALYSIS_UNAVAILABLE` 에러 wrapper가 반환됩니다.
+
+YOLO callback 테스트 예시:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "$base/api/ai-callback/yolo-result" -ContentType "application/json" -Body '{
+  "request_id": "REQ_202606190001_4",
+  "job_id": "AI_JOB_001",
+  "yolo_result": {
+    "obstruction_ratio": 0.82,
+    "confidence_score": 0.94,
+    "yolo_status": "blocked"
+  }
+}'
+```
+
+XGBoost callback 테스트 예시:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "$base/api/ai-callback/xgboost-result" -ContentType "application/json" -Body '{
+  "request_id": "REQ_202606190001_4",
+  "job_id": "AI_JOB_001",
+  "xgboost_result": {
+    "risk_score": 0.91,
+    "risk_level": "danger",
+    "final_decision": "dispatch_required",
+    "evaluated_at": "2026-06-18T08:36:25+09:00"
+  }
+}'
+```
+
+WebSocket 이벤트 확인:
+
+```js
+const socket = new WebSocket("ws://localhost:8000/ws/drains/status");
+socket.onopen = () => console.log("ws connected");
+socket.onmessage = (event) => console.log(JSON.parse(event.data));
+```
+
+WebSocket 이벤트 타입:
+
+- `YOLO_RESULT_UPDATED`: YOLO 중간 결과 저장 후 전달
+- `XGBOOST_RESULT_UPDATED`: XGBoost 최종 분석 결과 저장 후 전달
+- `DRAIN_STATUS_UPDATED`: 대시보드/상세 화면 갱신용 최종 상태 요약 전달
+
+두 이벤트는 모두 `/ws/drains/status`로 전달되며, 프론트는 `type` 기준으로 분기 처리합니다.
+
+`YOLO_RESULT_UPDATED` 예시:
+
+```json
+{
+  "type": "YOLO_RESULT_UPDATED",
+  "payload": {
+    "drainId": "DR-004",
+    "requestId": "REQ_202606190001_4",
+    "jobId": "AI_JOB_001",
+    "obstructionRatio": 0.82,
+    "confidenceScore": 0.94,
+    "yoloStatus": "blocked",
+    "updatedAt": "2026-06-18T08:36:20+09:00"
+  }
+}
+```
+
+`DRAIN_STATUS_UPDATED` 예시:
+
+```json
+{
+  "type": "DRAIN_STATUS_UPDATED",
+  "payload": {
+    "drainId": "DR-004",
+    "requestId": "REQ_202606190001_4",
+    "jobId": "AI_JOB_001",
+    "riskLevel": "danger",
+    "riskScore": 0.91,
+    "waterLevelCm": 85,
+    "flowVelocityMps": 0.05,
+    "obstructionRatio": 0.82,
+    "confidenceScore": 0.94,
+    "yoloStatus": "blocked",
+    "finalDecision": "dispatch_required",
+    "updatedAt": "2026-06-18T08:36:25+09:00"
+  }
+}
+```
+
+주의:
+
+- callback 테스트에는 먼저 `/api/analysis/async-run`으로 생성된 실제 `requestId`, `jobId`를 사용합니다.
+- Backend -> AI 요청 body에는 이미지 URL, snapshot URL, CCTV URL을 포함하지 않습니다.
+- AI 서버는 `drain_id` 기준으로 내부 mock image를 사용한다고 가정합니다.
+
+## Frontend WebSocket / Analysis History Contract
+
+프론트엔드는 단일 WebSocket endpoint인 `/ws/drains/status`에 연결하고, 수신한 메시지의 `type` 값으로 이벤트를 구분합니다.
+
+지원 이벤트:
+
+- `YOLO_RESULT_UPDATED`: YOLO 중간 분석 결과 저장 후 발행
+- `XGBOOST_RESULT_UPDATED`: XGBoost 최종 분석 결과 저장 후 발행
+- `DRAIN_STATUS_UPDATED`: 대시보드/상세 화면 갱신용 최종 상태 요약 발행
+
+`YOLO_RESULT_UPDATED` payload:
+
+```json
+{
+  "drainId": "DR-004",
+  "yoloResultId": 1,
+  "imageUrl": "ai-server://mock/4",
+  "obstructionRatio": 0.82,
+  "confidenceScore": 0.94,
+  "yoloStatus": "blocked",
+  "capturedAt": "2026-06-18T08:36:20+09:00",
+  "analyzedAt": "2026-06-18T08:36:20+09:00",
+  "updatedAt": "2026-06-18T08:36:20+09:00"
+}
+```
+
+`XGBOOST_RESULT_UPDATED` payload:
+
+```json
+{
+  "drainId": "DR-004",
+  "xgboostResultId": 1,
+  "sensorDataId": 1,
+  "yoloResultId": 1,
+  "riskLevel": "danger",
+  "riskScore": 0.91,
+  "finalDecision": "dispatch_required",
+  "evaluatedAt": "2026-06-18T08:36:25+09:00",
+  "updatedAt": "2026-06-18T08:36:25+09:00"
+}
+```
+
+`DRAIN_STATUS_UPDATED` payload:
+
+```json
+{
+  "drainId": "DR-004",
+  "riskLevel": "danger",
+  "riskScore": 0.91,
+  "waterLevelCm": 85,
+  "flowVelocityMps": 0.05,
+  "obstructionRatio": 0.82,
+  "finalDecision": "dispatch_required",
+  "updatedAt": "2026-06-18T08:36:25+09:00",
+  "sensorDataId": 1,
+  "yoloResultId": 1,
+  "xgboostResultId": 1
+}
+```
+
+분석 이력은 WebSocket이 아니라 REST API로 조회합니다.
+
+- `GET /api/drains/{drain_id}/analysis/yolo?limit=10`
+- `GET /api/drains/{drain_id}/analysis/xgboost?limit=10`
+- `GET /api/drains/{drain_id}/analysis/history?limit=10`
