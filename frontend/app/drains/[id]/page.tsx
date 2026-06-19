@@ -6,10 +6,13 @@ import { notFound } from "next/navigation";
 import {
     AlertTriangle,
     ArrowLeft,
+    Brain,
     Clipboard,
     Clock,
+    Eye,
     Gauge,
     Globe,
+    Images,
     MapPin,
     ShieldCheck,
     TrendingUp,
@@ -29,9 +32,15 @@ import {
 } from "@/lib/api/drain-data";
 import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
 import { cn } from "@/lib/utils";
-import type { DrainStatusUpdatedEventDto } from "@/lib/api/types";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { useDrainStatusSocket } from "@/lib/websocket/drain-status-socket";
+import type {
+    DrainStatusUpdatedEventDto,
+    XgboostResultDto,
+    XgboostResultUpdatedEventDto,
+    YoloResultDto,
+    YoloResultUpdatedEventDto,
+} from "@/lib/api/types";
 
 export default function DrainDetailPage({
     params,
@@ -64,6 +73,98 @@ export default function DrainDetailPage({
         [],
     );
 
+    const applyYoloEvent = useCallback((event: YoloResultUpdatedEventDto) => {
+        setDetailData((current) => {
+            if (
+                !current ||
+                current.source !== "api" ||
+                current.drain.id !== event.payload.drainId
+            ) {
+                return current;
+            }
+
+            const yoloResult = yoloEventToDto(event);
+            const yoloResults = upsertYoloResult(
+                current.analysisHistory?.yoloResults ?? [],
+                yoloResult,
+            );
+
+            return {
+                ...current,
+                drain: {
+                    ...current.drain,
+                    blockage:
+                        yoloResult.obstructionRatio == null
+                            ? current.drain.blockage
+                            : ratioToPercent(yoloResult.obstructionRatio),
+                    updatedAt: event.payload.updatedAt,
+                },
+                analysis: {
+                    ...current.analysis,
+                    yoloResult,
+                    updatedAt: event.payload.updatedAt,
+                },
+                analysisHistory: {
+                    drainId: event.payload.drainId,
+                    yoloResults,
+                    xgboostResults:
+                        current.analysisHistory?.xgboostResults ?? [],
+                },
+            };
+        });
+    }, []);
+
+    const applyXgboostEvent = useCallback(
+        (event: XgboostResultUpdatedEventDto) => {
+            setDetailData((current) => {
+                if (
+                    !current ||
+                    current.source !== "api" ||
+                    current.drain.id !== event.payload.drainId
+                ) {
+                    return current;
+                }
+
+                const xgboostResult = xgboostEventToDto(event);
+                const xgboostResults = upsertXgboostResult(
+                    current.analysisHistory?.xgboostResults ?? [],
+                    xgboostResult,
+                );
+
+                return {
+                    ...current,
+                    drain: {
+                        ...current.drain,
+                        status: event.payload.riskLevel,
+                        judgement:
+                            event.payload.finalDecision ??
+                            current.drain.judgement,
+                        updatedAt: event.payload.updatedAt,
+                    },
+                    analysis: {
+                        ...current.analysis,
+                        xgboostResult,
+                        updatedAt: event.payload.updatedAt,
+                    },
+                    analysisHistory: {
+                        drainId: event.payload.drainId,
+                        yoloResults: current.analysisHistory?.yoloResults ?? [],
+                        xgboostResults,
+                    },
+                    riskHistory: [
+                        {
+                            time: event.payload.evaluatedAt,
+                            status: event.payload.riskLevel,
+                            score: riskScoreToPoint(event.payload.riskScore),
+                        },
+                        ...current.riskHistory,
+                    ].slice(0, 10),
+                };
+            });
+        },
+        [],
+    );
+
     useEffect(() => {
         let mounted = true;
 
@@ -80,6 +181,8 @@ export default function DrainDetailPage({
     useDrainStatusSocket({
         enabled: detailData?.source === "api",
         onStatusUpdated: applyRealtimeEvent,
+        onYoloUpdated: applyYoloEvent,
+        onXgboostUpdated: applyXgboostEvent,
     });
 
     const drain = detailData?.drain;
@@ -133,6 +236,8 @@ export default function DrainDetailPage({
                     </span>
                 </div>
 
+                <AnalysisSummaryCard detailData={detailData} meta={meta} />
+
                 <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-12">
                     {/* Left column */}
                     <div className="flex flex-col gap-4 xl:col-span-4">
@@ -154,7 +259,7 @@ export default function DrainDetailPage({
                             points={detailData.sensorHistory}
                             summary={sensorSummary}
                         />
-                        <CurrentRiskCard drain={drain} meta={meta} />
+                        <AiAnalysisTabs detailData={detailData} meta={meta} />
                     </div>
 
                     {/* Right column */}
@@ -281,18 +386,385 @@ function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
     );
 }
 
+function AnalysisSummaryCard({
+    detailData,
+    meta,
+}: {
+    detailData: DrainDetailData;
+    meta: (typeof STATUS_META)[RiskStatus];
+}) {
+    const drain = detailData.drain;
+    const yoloResult = getLatestYoloResult(detailData);
+    const xgboostResult = getLatestXgboostResult(detailData);
+    const riskScore = riskScoreToPoint(xgboostResult?.riskScore);
+    const obstructionPercent =
+        yoloResult?.obstructionRatio == null
+            ? drain.blockage
+            : ratioToPercent(yoloResult.obstructionRatio);
+
+    return (
+        <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Detail dashboard
+                    </p>
+                    <h2 className="mt-1 text-lg font-bold text-slate-900">
+                        현재 분석 요약
+                    </h2>
+                </div>
+                <StatusBadge status={drain.status} />
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <SummaryMetricTile
+                    icon={Globe}
+                    label="막힘 정도"
+                    value={`${obstructionPercent}%`}
+                    metaText={meta.text}
+                    progress={obstructionPercent}
+                    barClass={meta.bar}
+                />
+                <SummaryMetricTile
+                    icon={Waves}
+                    label="수위"
+                    value={`${drain.waterLevelPct}%`}
+                    subValue={`${drain.waterLevelM} m`}
+                    metaText={meta.text}
+                    progress={drain.waterLevelPct}
+                    barClass={meta.bar}
+                />
+                <SummaryMetricTile
+                    icon={Gauge}
+                    label="유속"
+                    value={`${drain.flow} m/s`}
+                    metaText={meta.text}
+                />
+                <SummaryMetricTile
+                    icon={Brain}
+                    label="위험 점수"
+                    value={`${riskScore}점`}
+                    metaText={meta.text}
+                    progress={riskScore}
+                    barClass={meta.bar}
+                />
+                <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <AlertTriangle className="size-4 text-slate-400" />
+                        최종 판단
+                    </div>
+                    <p className={cn("mt-2 text-sm font-bold", meta.text)}>
+                        {xgboostResult?.finalDecision ?? drain.judgement}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                        {formatDisplayTime(
+                            xgboostResult?.evaluatedAt ??
+                                xgboostResult?.predictedAt ??
+                                drain.updatedAt,
+                        )}
+                    </p>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function SummaryMetricTile({
+    icon: Icon,
+    label,
+    value,
+    subValue,
+    metaText,
+    progress,
+    barClass,
+}: {
+    icon: React.ElementType;
+    label: string;
+    value: string;
+    subValue?: string;
+    metaText: string;
+    progress?: number;
+    barClass?: string;
+}) {
+    return (
+        <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Icon className="size-4 text-slate-400" />
+                {label}
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+                <span className={cn("text-xl font-bold", metaText)}>
+                    {value}
+                </span>
+                {subValue ? (
+                    <span className="text-xs font-semibold text-slate-400">
+                        {subValue}
+                    </span>
+                ) : null}
+            </div>
+            {progress != null && barClass ? (
+                <MetricProgress
+                    value={progress}
+                    barClass={barClass}
+                    className="mt-3"
+                />
+            ) : null}
+        </div>
+    );
+}
+
+function AiAnalysisTabs({
+    detailData,
+    meta,
+}: {
+    detailData: DrainDetailData;
+    meta: (typeof STATUS_META)[RiskStatus];
+}) {
+    const [activeTab, setActiveTab] = useState<
+        "summary" | "yolo" | "xgboost" | "history"
+    >("summary");
+    const tabs = [
+        { id: "summary", label: "요약", icon: ShieldCheck },
+        { id: "yolo", label: "YOLO", icon: Eye },
+        { id: "xgboost", label: "XGBoost", icon: Brain },
+        { id: "history", label: "이력", icon: Images },
+    ] as const;
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-base font-bold text-slate-900">
+                    AI 모델 판단 정보
+                </h2>
+                <div className="grid grid-cols-4 rounded-lg bg-slate-100 p-1">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                                "flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold text-slate-500 transition-colors",
+                                activeTab === tab.id &&
+                                    "bg-white text-slate-900 shadow-sm",
+                            )}
+                        >
+                            <tab.icon className="size-3.5 shrink-0" />
+                            <span className="truncate">{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {activeTab === "summary" ? (
+                <CurrentRiskCard drain={detailData.drain} meta={meta} compact />
+            ) : null}
+            {activeTab === "yolo" ? (
+                <YoloAnalysisPanel detailData={detailData} />
+            ) : null}
+            {activeTab === "xgboost" ? (
+                <XgboostAnalysisPanel detailData={detailData} />
+            ) : null}
+            {activeTab === "history" ? (
+                <AnalysisHistoryPanel detailData={detailData} />
+            ) : null}
+        </div>
+    );
+}
+
+function YoloAnalysisPanel({ detailData }: { detailData: DrainDetailData }) {
+    const yoloResult = getLatestYoloResult(detailData);
+    if (!yoloResult) {
+        return <EmptyAnalysisState label="YOLO 분석 정보가 없습니다." />;
+    }
+
+    return (
+        <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <AnalysisInfoRow
+                label="YOLO Result ID"
+                value={formatNullable(yoloResult.id)}
+            />
+            <AnalysisInfoRow
+                label="분석 상태"
+                value={getYoloStatusLabel(yoloResult.yoloStatus)}
+            />
+            <AnalysisInfoRow
+                label="막힘률"
+                value={formatRatioPercent(yoloResult.obstructionRatio)}
+            />
+            <AnalysisInfoRow
+                label="신뢰도"
+                value={formatRatioPercent(yoloResult.confidenceScore)}
+            />
+            <AnalysisInfoRow
+                label="촬영 시각"
+                value={formatDisplayTime(yoloResult.capturedAt)}
+            />
+            <AnalysisInfoRow
+                label="분석 시각"
+                value={formatDisplayTime(yoloResult.analyzedAt)}
+            />
+        </dl>
+    );
+}
+
+function XgboostAnalysisPanel({
+    detailData,
+}: {
+    detailData: DrainDetailData;
+}) {
+    const xgboostResult = getLatestXgboostResult(detailData);
+    if (!xgboostResult) {
+        return <EmptyAnalysisState label="XGBoost 판단 정보가 없습니다." />;
+    }
+
+    return (
+        <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <AnalysisInfoRow
+                label="XGBoost Result ID"
+                value={formatNullable(xgboostResult.id)}
+            />
+            <AnalysisInfoRow
+                label="위험 상태"
+                value={<StatusBadge status={xgboostResult.riskLevel} />}
+            />
+            <AnalysisInfoRow
+                label="위험 점수"
+                value={`${riskScoreToPoint(xgboostResult.riskScore)}점`}
+            />
+            <AnalysisInfoRow
+                label="참조 Sensor ID"
+                value={formatNullable(xgboostResult.sensorDataId)}
+            />
+            <AnalysisInfoRow
+                label="참조 YOLO ID"
+                value={formatNullable(xgboostResult.yoloResultId)}
+            />
+            <AnalysisInfoRow
+                label="판단 시각"
+                value={formatDisplayTime(
+                    xgboostResult.evaluatedAt ?? xgboostResult.predictedAt,
+                )}
+            />
+            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 md:col-span-2">
+                <dt className="text-xs font-medium text-slate-500">
+                    최종 판단 문구
+                </dt>
+                <dd className="mt-1 text-sm font-semibold text-slate-800">
+                    {xgboostResult.finalDecision ?? "-"}
+                </dd>
+            </div>
+        </dl>
+    );
+}
+
+function AnalysisHistoryPanel({
+    detailData,
+}: {
+    detailData: DrainDetailData;
+}) {
+    const yoloResults = detailData.analysisHistory?.yoloResults ?? [];
+    const xgboostResults = detailData.analysisHistory?.xgboostResults ?? [];
+
+    if (yoloResults.length === 0 && xgboostResults.length === 0) {
+        return <EmptyAnalysisState label="분석 이력 API 응답이 없습니다." />;
+    }
+
+    return (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <HistoryList
+                title="YOLO 이미지 이력"
+                items={yoloResults.map((item) => ({
+                    key: `yolo-${item.id ?? item.analyzedAt}`,
+                    title: `${formatRatioPercent(item.obstructionRatio)} / ${getYoloStatusLabel(item.yoloStatus)}`,
+                    meta: formatDisplayTime(item.analyzedAt ?? item.createdAt),
+                }))}
+            />
+            <HistoryList
+                title="XGBoost 판단 이력"
+                items={xgboostResults.map((item) => ({
+                    key: `xgboost-${item.id ?? item.evaluatedAt}`,
+                    title: `${riskScoreToPoint(item.riskScore)}점 / ${STATUS_META[item.riskLevel].label}`,
+                    meta: formatDisplayTime(item.evaluatedAt ?? item.createdAt),
+                }))}
+            />
+        </div>
+    );
+}
+
+function AnalysisInfoRow({
+    label,
+    value,
+}: {
+    label: string;
+    value: React.ReactNode;
+}) {
+    return (
+        <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+            <dt className="text-xs font-medium text-slate-500">{label}</dt>
+            <dd className="mt-1 text-sm font-semibold text-slate-800">
+                {value}
+            </dd>
+        </div>
+    );
+}
+
+function EmptyAnalysisState({ label }: { label: string }) {
+    return (
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">
+            {label}
+        </div>
+    );
+}
+
+function HistoryList({
+    title,
+    items,
+}: {
+    title: string;
+    items: { key: string; title: string; meta: string }[];
+}) {
+    return (
+        <div>
+            <h3 className="mb-2 text-sm font-bold text-slate-800">{title}</h3>
+            <ul className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
+                {items.map((item) => (
+                    <li
+                        key={item.key}
+                        className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                    >
+                        <p className="text-sm font-semibold text-slate-800">
+                            {item.title}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                            {item.meta}
+                        </p>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
 function CurrentRiskCard({
     drain,
     meta,
+    compact = false,
 }: {
     drain: DrainDetailData["drain"];
     meta: (typeof STATUS_META)[RiskStatus];
+    compact?: boolean;
 }) {
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-bold text-slate-900">
-                현재 위험 상태
-            </h2>
+        <div
+            className={cn(
+                !compact &&
+                    "rounded-xl border border-slate-200 bg-white p-5 shadow-sm",
+            )}
+        >
+            {!compact ? (
+                <h2 className="mb-4 text-base font-bold text-slate-900">
+                    현재 위험 상태
+                </h2>
+            ) : null}
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <RiskTile icon={ShieldCheck} label="상태">
                     <StatusBadge status={drain.status} />
@@ -610,14 +1082,145 @@ function getSensorSummary(points: DrainDetailData["sensorHistory"]) {
 }
 
 function getSnapshots(detailData: DrainDetailData) {
-    const imageUrl =
-        detailData.analysis?.yoloResult?.imageUrl ??
-        detailData.detail.imageUrl ??
-        PLACEHOLDER_IMAGES.cctv;
-    const capturedAt =
-        detailData.analysis?.yoloResult?.analyzedAt ??
-        detailData.drain.updatedAt;
+    const yoloResults = [
+        getLatestYoloResult(detailData),
+        ...(detailData.analysisHistory?.yoloResults ?? []),
+    ].filter(Boolean) as YoloResultDto[];
+    const snapshots = yoloResults
+        .map((item) => ({
+            id: item.id,
+            imageUrl: item.imageUrl ?? PLACEHOLDER_IMAGES.cctv,
+            capturedAt:
+                item.capturedAt ??
+                item.analyzedAt ??
+                item.createdAt ??
+                detailData.drain.updatedAt,
+            obstructionRatio: item.obstructionRatio,
+            confidenceScore: item.confidenceScore,
+            yoloStatus: item.yoloStatus,
+        }))
+        .filter(
+            (item, index, array) =>
+                array.findIndex(
+                    (candidate) =>
+                        candidate.imageUrl === item.imageUrl &&
+                        candidate.capturedAt === item.capturedAt,
+                ) === index,
+        );
 
-    return [{ imageUrl, capturedAt }];
+    if (snapshots.length > 0) return snapshots;
+
+    return [
+        {
+            imageUrl: detailData.detail.imageUrl ?? PLACEHOLDER_IMAGES.cctv,
+            capturedAt: detailData.drain.updatedAt,
+        },
+    ];
+}
+
+function getLatestYoloResult(
+    detailData: DrainDetailData,
+): YoloResultDto | undefined {
+    return (
+        detailData.analysisHistory?.yoloResults[0] ??
+        detailData.analysis?.yoloResult ??
+        detailData.detail.yoloResult
+    );
+}
+
+function getLatestXgboostResult(
+    detailData: DrainDetailData,
+): XgboostResultDto | undefined {
+    return (
+        detailData.analysisHistory?.xgboostResults[0] ??
+        detailData.analysis?.xgboostResult ??
+        detailData.detail.xgboostResult
+    );
+}
+
+function yoloEventToDto(event: YoloResultUpdatedEventDto): YoloResultDto {
+    return {
+        id: event.payload.yoloResultId,
+        drainId: event.payload.drainId,
+        imageUrl: event.payload.imageUrl,
+        obstructionRatio: event.payload.obstructionRatio,
+        confidenceScore: event.payload.confidenceScore,
+        yoloStatus: event.payload.yoloStatus,
+        capturedAt: event.payload.capturedAt,
+        analyzedAt: event.payload.analyzedAt,
+        createdAt: event.payload.updatedAt,
+    };
+}
+
+function xgboostEventToDto(
+    event: XgboostResultUpdatedEventDto,
+): XgboostResultDto {
+    return {
+        id: event.payload.xgboostResultId,
+        drainId: event.payload.drainId,
+        sensorDataId: event.payload.sensorDataId,
+        yoloResultId: event.payload.yoloResultId,
+        riskLevel: event.payload.riskLevel,
+        riskScore: event.payload.riskScore,
+        finalDecision: event.payload.finalDecision,
+        evaluatedAt: event.payload.evaluatedAt,
+        createdAt: event.payload.updatedAt,
+    };
+}
+
+function upsertYoloResult(items: YoloResultDto[], item: YoloResultDto) {
+    return [
+        item,
+        ...items.filter((current) => current.id !== item.id),
+    ].slice(0, 10);
+}
+
+function upsertXgboostResult(
+    items: XgboostResultDto[],
+    item: XgboostResultDto,
+) {
+    return [
+        item,
+        ...items.filter((current) => current.id !== item.id),
+    ].slice(0, 10);
+}
+
+function ratioToPercent(value: number) {
+    return Math.min(100, Math.max(0, Math.round(value <= 1 ? value * 100 : value)));
+}
+
+function riskScoreToPoint(value?: number | null) {
+    if (value == null) return 0;
+    return ratioToPercent(value);
+}
+
+function formatRatioPercent(value?: number | null) {
+    if (value == null) return "-";
+    return `${ratioToPercent(value)}%`;
+}
+
+function formatNullable(value?: number | string | null) {
+    return value == null || value === "" ? "-" : String(value);
+}
+
+function formatDisplayTime(value?: string | null) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+    return `${month}-${day} ${hour}:${minute}`;
+}
+
+function getYoloStatusLabel(status: YoloResultDto["yoloStatus"]) {
+    const labels: Record<YoloResultDto["yoloStatus"], string> = {
+        clear: "정상",
+        partially_blocked: "부분 막힘",
+        blocked: "막힘",
+        unknown: "판단 불가",
+    };
+    return labels[status];
 }
 

@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/adapters";
 import {
     getDashboardSummary,
+    getDrainAnalysisHistory,
     getDrainDetail,
     getDrainRiskHistory,
     getDrainSensorHistory,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/api/drains";
 import {
     createMockDashboardSummaryResponse,
+    createMockAnalysisHistoryResponse,
     createMockDrainDetailResponse,
     createMockDrainListResponse,
     createMockLatestAnalysisResponse,
@@ -26,6 +28,7 @@ import {
 import type {
     AnalysisResultDto,
     DashboardSummaryDto,
+    DrainAnalysisHistoryResponse,
     DrainDetailDto,
     RiskHistoryDto,
     SensorHistoryDto,
@@ -49,6 +52,7 @@ export type DrainDetailData = {
     riskHistory: RiskHistoryItem[];
     detail: DrainDetailDto;
     analysis?: AnalysisResultDto;
+    analysisHistory?: DrainAnalysisHistoryResponse;
     source: "api" | "mock";
 };
 
@@ -99,12 +103,18 @@ async function tryLoadDrainDetailFromApi(
     if (!hasApiBaseUrl()) return null;
 
     try {
-        const [detailResponse, sensorResponse, riskResponse, analysisResponse] =
-            await Promise.all([
+        const [
+            detailResponse,
+            sensorResponse,
+            riskResponse,
+            analysisResponse,
+            historyResponse,
+        ] = await Promise.all([
                 getDrainDetail(id),
                 getDrainSensorHistory(id, { range: "24h", limit: 48 }),
                 getDrainRiskHistory(id, { days: 7, limit: 10 }),
                 getLatestAnalysis(id),
+                getDrainAnalysisHistory(id, { limit: 10 }).catch(() => null),
             ]);
 
         if (!detailResponse.success || !detailResponse.data) return null;
@@ -117,6 +127,10 @@ async function tryLoadDrainDetailFromApi(
             sensorHistory: sensorResponse.data?.items,
             riskHistory: riskResponse.data?.items,
             analysis: analysisResponse.data ?? undefined,
+            analysisHistory:
+                historyResponse?.success && historyResponse.data
+                    ? historyResponse.data
+                    : undefined,
             source: "api",
         });
     } catch {
@@ -143,6 +157,7 @@ function loadDrainDetailFromMock(id: string): DrainDetailData | null {
     const sensorResponse = createMockSensorHistoryResponse(id);
     const riskResponse = createMockRiskHistoryResponse(id);
     const analysisResponse = createMockLatestAnalysisResponse(id);
+    const historyResponse = createMockAnalysisHistoryResponse(id);
 
     return mapDetailResponses({
         detail: mergeAnalysisIntoDetail(
@@ -152,6 +167,7 @@ function loadDrainDetailFromMock(id: string): DrainDetailData | null {
         sensorHistory: sensorResponse.data?.items,
         riskHistory: riskResponse.data?.items,
         analysis: analysisResponse.data ?? undefined,
+        analysisHistory: historyResponse.data ?? undefined,
         source: "mock",
     });
 }
@@ -161,12 +177,14 @@ function mapDetailResponses({
     sensorHistory,
     riskHistory,
     analysis,
+    analysisHistory,
     source,
 }: {
     detail: DrainDetailDto;
     sensorHistory?: SensorHistoryDto[];
     riskHistory?: RiskHistoryDto[];
     analysis?: AnalysisResultDto;
+    analysisHistory?: DrainAnalysisHistoryResponse;
     source: "api" | "mock";
 }): DrainDetailData {
     return {
@@ -179,6 +197,7 @@ function mapDetailResponses({
         ),
         detail,
         analysis,
+        analysisHistory,
         source,
     };
 }
