@@ -1,5 +1,0 @@
-# Project-scoped Codex defaults. Loaded only after the repository is trusted.
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
-web_search = "cached"
-project_doc_max_bytes = 65536
