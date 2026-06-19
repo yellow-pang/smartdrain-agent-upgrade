@@ -34,7 +34,7 @@ mock 이벤트는 이번 구현 범위에서 제외한다. 백엔드가 실제 W
 | YOLO 중간 결과 | 팀 흐름상 YOLO 완료 시 즉시 반영 필요 | 현재 백엔드는 YOLO 생성 시 broadcast가 없어 REST 최신 분석 또는 후속 백엔드 변경 필요 |
 | XGBoost 최종 위험도 | 지도 마커, 위험 목록, 상세 최종 판단 갱신 | 현재 백엔드는 XGBoost 생성 후 이벤트 발행 |
 | 실패 처리 | 분석 실패 시 앱 전체가 멈추지 않게 처리 | 현재 백엔드는 실패 이벤트가 없어 프론트 연결/파싱 오류와 REST 오류 중심 처리 |
-| 상세 화면 구성 | MVP 첫 화면 기준으로 필요한 정보만 표시 | 불필요한 별도 YOLO/XGBoost 결과 카드는 정리하고 현재 위험 상태/시설 정보에 통합 |
+| 상세 화면 구성 | MVP 첫 화면 기준으로 필요한 정보만 표시 | 1차 구현에서는 명시적 YOLO/XGBoost 원천 데이터 노출을 제외하고 현재 위험 상태/시설 정보 중심으로 구성 |
 | 연결 상태 | 연결됨, 대기, 재연결, 실패 표시 | 기존 `DrainRealtimeStatus` UI를 실제 연결 상태와 연결 |
 | 검증 | lint/build 점검 | `npm run lint`, `npm run build` 실행 |
 
@@ -79,7 +79,7 @@ mock 이벤트는 이번 구현 범위에서 제외한다. 백엔드가 실제 W
 | WebSocket 연결 코드 | `/frontend/lib/ws` 또는 `/frontend/lib/websocket` 구조가 아직 보이지 않음 | 새 client/hook을 만들 가능성이 높음 |
 | 대시보드 | REST 조회 후 `dashboardData` state로 지도/목록/패널 표시 | 이벤트 수신 시 state 배열에서 해당 `drainId`만 갱신 |
 | 위험 시설 목록 | 연결 상태 chip UI는 있으나 실제 연결 상태와 연결되지 않음 | WebSocket 상태를 `waiting/connected/reconnecting/error`에 매핑 |
-| 상세 화면 | 센서 차트, 현재 위험도, 시설 정보, 위험 이력, 별도 YOLO/XGBoost 카드 구조가 있음 | MVP 첫 화면 기준으로 별도 YOLO/XGBoost 카드는 정리하고 핵심 값만 현재 위험 상태에 통합 |
+| 상세 화면 | 센서 차트, 현재 위험도, 시설 정보, 위험 이력, 별도 YOLO/XGBoost 카드 구조가 있음 | 1차 MVP에서는 별도 YOLO/XGBoost 카드를 제거하고 WebSocket/REST의 최종 표시값 중심으로 구성 |
 | 이미지 표시 | `imageUrl` 기반 `FallbackImage` 표시 구조가 있음 | WebSocket으로 이미지 파일을 받지 않고 URL만 반영 가능 |
 | loading/error/empty | 대시보드 목록 중심으로 일부 구현 | 상세 분석 중/실패/이미지 없음/WebSocket 끊김 상태 보강 필요 |
 
@@ -160,7 +160,7 @@ MVP 프론트 구현은 현재 백엔드의 `DRAIN_STATUS_UPDATED`를 먼저 처
 | `frontend/lib/websocket/*` | WebSocket client, reconnect, message parser 추가 |
 | `frontend/hooks/*` | 대시보드/상세에서 사용할 realtime hook 추가 가능 |
 | `frontend/app/page.tsx` | 대시보드 초기 조회 이후 WebSocket 이벤트 수신 및 부분 갱신 |
-| `frontend/app/drains/[id]/page.tsx` | 상세 화면 별도 YOLO/XGBoost 결과 카드 정리, 현재 위험 상태 중심으로 표시 |
+| `frontend/app/drains/[id]/page.tsx` | 상세 화면 별도 YOLO/XGBoost 결과 카드 제거, 현재 위험 상태 중심으로 표시 |
 | `frontend/components/drain-risk-list.tsx` | 연결 상태와 위험도 정렬/표시 보강 |
 | `frontend/components/drain-summary-panel.tsx` | 선택 시설 패널은 최종 위험도, 수위, 유속, 막힘 정도 중심으로 유지 |
 | `frontend/components/cctv-snapshot-card.tsx` | 이미지 없음/분석 실패/최근 이미지 없음 상태 보강 |
@@ -174,7 +174,7 @@ MVP 프론트 구현은 현재 백엔드의 `DRAIN_STATUS_UPDATED`를 먼저 처
 | 2 | 기존 REST 초기 조회와 mock fallback이 깨지지 않도록 타입/adapter 보강 |
 | 3 | WebSocket client 또는 hook 추가, 연결 상태와 reconnect 상태 관리 |
 | 4 | 대시보드에서 `drainId` 기준으로 시설 목록/지도/선택 패널 부분 갱신 |
-| 5 | 상세 화면은 별도 YOLO/XGBoost 결과 카드를 줄이고 MVP 첫 화면 기준의 현재 위험 상태로 정리 |
+| 5 | 상세 화면은 별도 YOLO/XGBoost 결과 카드를 제거하고 MVP 첫 화면 기준의 현재 위험 상태로 정리 |
 | 6 | 상세 화면에서 이벤트가 현재 시설에 해당할 때 `DRAIN_STATUS_UPDATED` 기준 최신 상태만 부분 갱신 |
 | 7 | loading/error/empty/연결 끊김/이미지 없음 상태 점검 |
 | 8 | `npm run lint`, `npm run build` 실행 후 결과 기록 |
@@ -190,7 +190,7 @@ MVP 프론트 구현은 현재 백엔드의 `DRAIN_STATUS_UPDATED`를 먼저 처
 | WebSocket으로 이미지 파일 수신 | 확정 기준은 `imageUrl`만 전달 |
 | 센서 이력 전체 WebSocket 수신 | 이력/차트는 REST API 조회 유지 |
 | mock WebSocket 이벤트 구현 | 사용자는 백엔드 실제 데이터 기준 진행을 원함 |
-| 상세 화면에 별도 YOLO/XGBoost 결과 카드 유지 | MVP 첫 화면 레퍼런스 기준으로는 중복 정보가 많아 현재 위험 상태에 통합하는 것이 적절 |
+| 상세 화면에 별도 YOLO/XGBoost 결과 카드 유지 | 1차 MVP에서는 현재 위험 상태 중심으로 충분하며 명시적 AI 원천 데이터 노출은 후순위 |
 
 ## 9. 추가 확인 필요 항목
 
@@ -226,7 +226,7 @@ MVP 프론트 구현은 현재 백엔드의 `DRAIN_STATUS_UPDATED`를 먼저 처
 | 리스크 | 대응 |
 |---|---|
 | 팀 흐름의 단계별 실시간 반영과 현재 백엔드 구현이 다름 | MVP는 `DRAIN_STATUS_UPDATED`로 먼저 연결하고, 단계별 이벤트는 백엔드 후속 작업으로 분리 |
-| 이벤트 payload에 YOLO 상세 필드가 없음 | 1차 구현에서는 별도 YOLO/XGBoost 결과 카드를 줄이고, 막힘률/최종 판단 중심으로 표시 |
+| 이벤트 payload에 YOLO 상세 필드가 없음 | 1차 구현에서는 YOLO/XGBoost 원천 데이터 노출을 제외하고 막힘률/최종 판단 중심으로 표시 |
 | 이벤트 payload에 sensor measuredAt이 없음 | `updatedAt`을 최신 표시 시각으로 사용하거나 REST 재조회 여부 확인 |
 | WebSocket 연결 실패 시 화면 혼란 | 연결 상태 chip과 기존 REST 데이터 유지 정책 적용 |
 | 상세 화면 문자열/표시 품질 이슈 | 실시간 작업 중 깨진 문구가 발견되면 `/frontend` 안에서 별도 보정 가능 여부 확인 |
@@ -242,7 +242,7 @@ MVP 안정화를 기준으로 추천하는 방향은 다음과 같다.
 | 3 | socket client는 단일 endpoint에 연결하고, 메시지 내부 `type`으로 handler를 분기 |
 | 4 | 이벤트 수신 시 `payload.drainId`와 REST `id`를 매칭해 대시보드 항목만 부분 갱신 |
 | 5 | 연결이 끊겨도 기존 REST 데이터는 유지하고 연결 상태만 표시 |
-| 6 | 상세 화면은 MVP 첫 화면 레퍼런스 기준으로 정리하고, 별도 YOLO/XGBoost 결과 카드는 제거 또는 현재 위험 상태에 통합 |
+| 6 | 상세 화면은 MVP 첫 화면 레퍼런스 기준으로 정리하고, 별도 YOLO/XGBoost 결과 카드는 제거 |
 | 7 | Sensor/YOLO/Failed 단계별 이벤트와 필요 데이터 확정은 후순위로 둠 |
 | 8 | 단계별 이벤트가 필요하다는 결정이 나면 endpoint 추가가 아니라 같은 endpoint의 `type` 확장으로 요청 |
 
@@ -270,6 +270,10 @@ MVP 안정화를 기준으로 추천하는 방향은 다음과 같다.
 
 `docs/image/02_detail_layout_reference.png` 기준으로 상세 화면을 맞출 때 필요한 데이터는 대부분 현재 상세 REST API와 이력 API에 포함되어 있다. 따라서 화면 구성을 맞추기 위해 무조건 새 API를 요청할 상황은 아니다.
 
+루트 문서 확인 결과 `docs/01_프로젝트정의서.md`, `docs/03_요구사항정의서.md`, `docs/04_MVP범위.md`, `docs/05_와이어프레임.md`, `docs/10_역할분담_일정_발표목차.md`에는 상세 화면에서 YOLO 분석 결과와 XGBoost 판단 결과를 확인해야 한다는 내용이 있다. 다만 1차 MVP 화면에서는 이를 원천 데이터 카드로 직접 노출하지 않고, 최종 표시값에 녹여서 보여준다.
+
+즉, 1차 구현에서는 `yoloStatus`, `confidenceScore`, `yoloResultId`, `xgboostId` 같은 세부 분석 데이터는 화면에 직접 표시하지 않는다. 레퍼런스 첫 화면 기준으로는 `막힘 정도`, `상태`, `위험 점수`, `최종 판단`, `최근 업데이트`처럼 관리자 판단에 필요한 값만 표시하는 방향이 적절하다.
+
 | 화면 영역 | 레퍼런스 표시 내용 | 현재 데이터 충족 여부 | 확인/요청 필요 |
 |---|---|---|---|
 | 상단 제목 | 시설 ID, 주소 또는 도로명 | 충족 | `GET /api/drains/{id}`의 `id`, `roadAddress`, `fullAddress` 사용 |
@@ -280,8 +284,8 @@ MVP 안정화를 기준으로 추천하는 방향은 다음과 같다.
 | 현재 위험 상태 | 상태, 막힘 정도, 수위, 유속, 최근 업데이트, 판정 결과 | 충족 | `riskLevel`, `obstructionRatio`, `waterLevelCm`, `flowVelocityMps`, `updatedAt`, `finalDecision` 사용 |
 | 시설 정보 | 시설 ID, 주소, 상태, 막힘 정도, 수위, 유속, 최근 업데이트 | 충족 | 상세 DTO와 adapter로 표시 가능 |
 | 과거 위험 이력 | 최근 7일 위험도, 점수, 시각 | 충족 | `riskHistory` 또는 `/risk-history?days=7` 사용 |
-| YOLO 분석 결과 | 막힘 상태, 막힘 비율, 신뢰도, 분석 시각 | 부분 충족 | MVP 첫 화면에서는 별도 카드보다 막힘 정도/이미지/현재 위험 상태에 필요한 값만 통합 표시 |
-| XGBoost 결과 | 위험 점수, 위험도, 최종 판단 | 충족 | 별도 카드보다 현재 위험 상태의 상태/점수/판정 결과로 통합 표시 |
+| YOLO 분석 결과 | 막힘 상태, 막힘 비율, 신뢰도, 분석 시각 | 1차 제외 | 명시적 YOLO 원천 데이터는 표시하지 않고 `obstructionRatio` 기반 막힘 정도만 표시 |
+| XGBoost 결과 | 위험 점수, 위험도, 최종 판단 | 부분 표시 | `riskScore`, `riskLevel`, `finalDecision`처럼 현재 상태에 필요한 최종 표시값만 사용 |
 | 알림/사용자 아이콘 | 알림 수, 사용자 메뉴 | 상세 데이터와 무관 | 앱 공통 header UI 영역. 백엔드 상세 API 요청 대상 아님 |
 
 추가로 백엔드 담당자에게 확인하면 좋은 데이터 기준은 아래 정도다.
@@ -293,7 +297,7 @@ MVP 안정화를 기준으로 추천하는 방향은 다음과 같다.
 | 유속 단위 표시를 `m/s`로 통일할지, 레퍼런스처럼 `m³/min`으로 표시할지 | 현재 백엔드 필드는 `flowVelocityMps`라서 단위는 `m/s`가 자연스러움 |
 | WebSocket 최종 이벤트 후 상세 화면에서 최신 분석 REST를 재조회할지 | 1차 구현에서는 재조회하지 않고, 필요 데이터 확정 후 후순위로 검토 |
 
-정리하면 1차 구현은 상세 화면을 MVP 첫 화면 기준으로 정리하고, 별도 YOLO/XGBoost 결과 카드는 제거하거나 현재 위험 상태 카드에 통합한다. 레퍼런스 이미지에 맞추기 위해 더 확인할 것은 `센서 range 필터링`, `스냅샷 여러 장 필요 여부`, `유속 단위`, `실시간 이벤트 후 상세 최신 분석 재조회 여부`지만, 이 항목들은 WebSocket 연결과 1차 안정화 이후 후순위로 둔다. 그 외 시설 정보, 위험 상태, 지도, 위험 이력은 현재 API로 구현 가능하다.
+정리하면 1차 구현은 상세 화면을 MVP 첫 화면 기준으로 정리하고, 명시적인 YOLO/XGBoost 원천 데이터 카드는 제거한다. 대신 현재 WebSocket과 REST가 제공하는 `obstructionRatio`, `riskScore`, `riskLevel`, `finalDecision` 같은 최종 표시값만 사용한다. 레퍼런스 이미지에 맞추기 위해 더 확인할 것은 `센서 range 필터링`, `스냅샷 여러 장 필요 여부`, `유속 단위`, `실시간 이벤트 후 상세 최신 분석 재조회 여부`지만, 이 항목들은 WebSocket 연결과 1차 안정화 이후 후순위로 둔다. 그 외 시설 정보, 위험 상태, 지도, 위험 이력은 현재 API로 구현 가능하다.
 
 ## 15. 사용자 승인 후 진행 기준
 
@@ -301,7 +305,7 @@ MVP 안정화를 기준으로 추천하는 방향은 다음과 같다.
 
 1. 현재 백엔드의 `/ws/drains/status`와 `DRAIN_STATUS_UPDATED` 기준으로 구현한다.
 2. mock WebSocket 이벤트는 구현하지 않는다.
-3. 상세 화면은 MVP 첫 화면 기준으로 정리하고, 불필요한 별도 YOLO/XGBoost 결과 카드는 제거 또는 통합한다.
+3. 상세 화면은 MVP 첫 화면 기준으로 정리하고, 명시적인 YOLO/XGBoost 원천 데이터 카드는 제거한다.
 4. 필요 데이터 확정 영역은 후순위로 두고, 1차는 WebSocket 연결과 최종 상태 갱신을 우선한다.
 5. `/frontend` 내부에서만 타입, adapter, hook/client, 화면 상태를 수정한다.
 6. Sensor/YOLO/Failed 이벤트 부재는 백엔드 확인 필요 항목으로 보고한다.
@@ -323,7 +327,7 @@ docs: MVP 기준 실시간 대시보드 안정화 계획 정리
 - 단일 WebSocket endpoint에서 메시지 type으로 이벤트를 구분하는 방향을 반영한다.
 - 현재 백엔드 기준 구현 가능 범위와 추가 백엔드 이벤트가 필요한 범위를 구분한다.
 - 상세 화면 레퍼런스 기준으로 추가 확인이 필요한 데이터 항목을 정리한다.
-- 상세 화면의 별도 YOLO/XGBoost 결과 카드를 MVP 첫 화면 기준으로 정리하는 방향을 추가한다.
+- 1차 MVP에서는 명시적인 YOLO/XGBoost 원천 데이터 카드를 제외하고 최종 표시값 중심으로 상세 화면을 정리한다.
 - 필요 데이터 확정은 후순위로 두고 WebSocket 연결과 최종 상태 갱신을 1차 범위로 둔다.
 - Sensor, YOLO, Failed 단계별 이벤트 부재를 백엔드 확인 필요 항목으로 기록한다.
 ```
