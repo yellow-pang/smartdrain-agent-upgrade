@@ -44,7 +44,7 @@ docker compose up -d
 `alembic.ini`가 프로젝트 루트에 있으므로 루트에서 실행합니다.
 
 ```bash
-alembic upgrade head
+python -m alembic upgrade head
 ```
 
 ### 7. mock seed 데이터 삽입
