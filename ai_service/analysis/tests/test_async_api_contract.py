@@ -100,4 +100,3 @@ def test_unknown_is_allowed_yolo_status():
 
 def test_backend_final_decision_mapping_covers_all_risk_levels():
     assert set(BACKEND_FINAL_DECISION_BY_RISK_LEVEL) == set(RISK_LEVELS)
-

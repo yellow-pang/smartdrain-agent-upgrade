@@ -24,4 +24,3 @@ def build_xgboost_input_batch(sensor_data: dict, yolo_result: dict) -> dict:
 def _normalize_to_unit_range(value: float, denominator: float) -> float:
     normalized = float(value) / denominator
     return min(max(normalized, 0.0), 1.0)
-

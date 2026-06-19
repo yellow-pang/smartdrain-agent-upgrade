@@ -53,4 +53,3 @@ def test_send_json_callback_retries_once_then_returns_false(monkeypatch):
 
     assert result is False
     assert len(calls) == 2
-

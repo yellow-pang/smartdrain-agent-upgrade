@@ -37,4 +37,3 @@ def _post_json(url: str, payload: dict, timeout_seconds: float) -> None:
     )
     with request.urlopen(req, timeout=timeout_seconds) as response:
         response.read()
-

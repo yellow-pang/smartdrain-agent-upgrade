@@ -27,4 +27,3 @@ def validate_analysis_request(payload: dict) -> None:
 
     if sensor_data["quality_status"] != "valid":
         raise ValueError("sensor_data.quality_status must be 'valid'.")
-

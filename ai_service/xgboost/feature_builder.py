@@ -15,4 +15,3 @@ def build_feature_rows(input_dict_batch: dict) -> list[dict]:
         rows.append(row)
 
     return rows
-

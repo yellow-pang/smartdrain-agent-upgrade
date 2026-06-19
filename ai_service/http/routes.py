@@ -58,4 +58,3 @@ def process_analysis_callbacks(payload: dict) -> None:
         settings.callback_timeout_seconds,
         settings.callback_retry_count,
     )
-

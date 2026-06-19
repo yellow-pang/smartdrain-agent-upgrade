@@ -45,4 +45,3 @@ def run_analysis_job(payload: dict) -> dict:
 
 def _evaluated_at_now() -> str:
     return datetime.now(KST).isoformat()
-

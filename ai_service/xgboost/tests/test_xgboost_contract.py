@@ -101,4 +101,3 @@ def test_multi_row_output_preserves_input_order_and_index():
     assert result[0]["feature_snapshot"]["obstruction_ratio"] == 0.12
     assert result[1]["feature_snapshot"]["obstruction_ratio"] == 0.65
     assert result[2]["feature_snapshot"]["obstruction_ratio"] == 0.88
-

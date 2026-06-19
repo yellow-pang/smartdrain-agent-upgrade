@@ -38,4 +38,3 @@ FAKE_YOLO_RESULTS_BY_DRAIN_ID = {
         "yolo_status": YOLO_STATUS_GOOD,
     },
 }
-

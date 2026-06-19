@@ -11,4 +11,3 @@ def map_risk_level_to_backend_decision(risk_level: str) -> str:
         return BACKEND_FINAL_DECISION_BY_RISK_LEVEL[risk_level]
     except KeyError as exc:
         raise ValueError(f"Unsupported risk_level: {risk_level}") from exc
-

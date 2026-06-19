@@ -28,4 +28,3 @@ def get_http_settings() -> HttpSettings:
         ),
         callback_retry_count=int(os.getenv("BACKEND_CALLBACK_RETRY_COUNT", "1")),
     )
-

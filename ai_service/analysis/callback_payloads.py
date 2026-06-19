@@ -39,4 +39,3 @@ def build_xgboost_callback_payload(
             "evaluated_at": evaluated_at,
         },
     }
-

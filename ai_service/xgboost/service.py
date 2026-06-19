@@ -7,4 +7,3 @@ def predict_flood_risk_batch(input_dict_batch: dict) -> list[dict]:
     feature_rows = build_feature_rows(input_dict_batch)
     predictor = RuleBaselinePredictor()
     return predictor.predict(feature_rows)
-

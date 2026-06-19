@@ -12,4 +12,3 @@ class FakeYoloPredictor:
 def predict_yolo_by_drain_id(drain_id: int) -> dict:
     predictor = FakeYoloPredictor()
     return predictor.predict(drain_id)
-

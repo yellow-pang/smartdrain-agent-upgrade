@@ -1,2 +1,1 @@
 """XGBoost inference contract package."""
-
