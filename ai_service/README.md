@@ -4,7 +4,7 @@ This directory contains the SmartDrain AI server area.
 
 The current implementation provides analysis orchestration, a fake YOLO stub, the XGBoost inference contract, and a temporary rule-based XGBoost baseline predictor. It does not contain real YOLO execution or a trained XGBoost model.
 
-The internal analysis flow can now build accepted responses, YOLO callback payloads, and XGBoost callback payloads without HTTP endpoints or real callback sending.
+The internal analysis flow can now build accepted responses, YOLO callback payloads, and XGBoost callback payloads. A FastAPI skeleton exposes `POST /ai/analysis/run` and sends callback payloads through a best-effort HTTP sender.
 
 ## Planned Flow
 
@@ -18,10 +18,7 @@ This asynchronous contract is the current basis for `ai_service`. A sensor-only 
 
 The AI service will receive the latest sensor values from the backend, resolve the image source internally by `drain_id`, run YOLO, run XGBoost with YOLO and sensor features, and build callback payloads.
 
-The HTTP API layer is not implemented yet. The current HTTP connection design is documented in `ai_service/HTTP_API_DESIGN.md`.
-
-The endpoint skeleton is intentionally deferred until the team selects a server framework and dependency management approach.
-The repository currently has no server framework dependency or AI server HTTP entrypoint.
+The HTTP API layer is implemented as a minimal FastAPI adapter. The current HTTP connection design is documented in `ai_service/HTTP_API_DESIGN.md`.
 
 ## Current Limits
 
@@ -31,8 +28,6 @@ The following are not implemented yet:
 - CCTV API calls.
 - Image processing.
 - Database reads or writes.
-- HTTP callback sending.
-- FastAPI or Flask endpoints.
 - Real XGBoost model loading or training.
 
 Currently implemented:
@@ -43,6 +38,8 @@ Currently implemented:
 - accepted response payload creation
 - YOLO callback payload creation
 - XGBoost callback payload creation
+- FastAPI `/ai/analysis/run` endpoint skeleton
+- best-effort backend callback sender
 
 ## Module Communication Boundaries
 
@@ -83,13 +80,19 @@ The returned callback payload dictionaries also do not include `drain_id`; the b
 
 Detailed request, response, callback payload, error policy, and normalization examples are documented in `ai_service/analysis/README.md`. Static documentation fixtures are available under `ai_service/analysis/examples/`.
 
-Future HTTP endpoint code should call:
+HTTP endpoint code calls:
 
 `from ai_service.analysis.service import run_analysis_job`
 
 The `/ai/analysis/run` route should pass its parsed JSON body to `run_analysis_job(payload)` and return the `accepted_response` portion immediately.
 
-No `ai_service/http/` runtime package exists yet because the server framework is not confirmed.
+The FastAPI runtime package is `ai_service/http`.
+
+Run command:
+
+```cmd
+python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
+```
 
 ## Local Setup
 
@@ -99,6 +102,7 @@ Windows cmd:
 python -m venv ai_service\.venv
 ai_service\.venv\Scripts\activate.bat
 python -m pip install pytest
+python -m pip install -r ai_service\requirements.txt
 python -m pytest ai_service
 ```
 

@@ -2,7 +2,9 @@
 
 This document describes how the current internal AI service orchestration should connect to a future HTTP API layer.
 
-No FastAPI, Flask, callback sender, database access, WebSocket, or server runtime code is implemented in this stage.
+FastAPI endpoint skeleton and best-effort callback sender code are implemented in `ai_service/http`.
+
+Database access, WebSocket behavior, real YOLO, CCTV API calls, and trained XGBoost loading are not implemented.
 
 ## Layer Responsibility Rule
 
@@ -29,42 +31,19 @@ The backend sends latest sensor values only. It does not send image paths, snaps
 
 ## Framework Status
 
-The AI server HTTP framework is not selected in this repository yet.
+The AI server HTTP skeleton uses FastAPI.
 
-Because no framework dependency or server entrypoint exists, this stage keeps the HTTP layer as a design contract only.
+Runtime entrypoint:
 
-When the framework is selected, the HTTP endpoint should be a thin adapter around the existing analysis orchestration function.
+`ai_service.http.app:app`
 
-## Stage 5 Decision
+Dependency file:
 
-Endpoint skeleton implementation is deferred.
+`ai_service/requirements.txt`
 
-Reason:
+Local run command:
 
-- No server framework dependency is present.
-- No existing AI server app entrypoint is present.
-- Adding FastAPI or Flask now would create a framework decision before the team has selected one.
-
-Therefore this repository currently keeps HTTP behavior as a design contract and does not add `ai_service/http/` runtime code yet.
-
-The next implementation step should start only after the team confirms the framework and dependency management approach.
-
-## Latest Repository Check
-
-The repository was checked for framework indicators before adding endpoint code.
-
-No server framework or dependency-management standard is currently present:
-
-- No FastAPI, Flask, Django, Starlette, aiohttp, uvicorn, or gunicorn usage was found.
-- No requirements, pyproject, setup, Pipfile, poetry, uv, conda, or environment file was found at the repository root.
-- No AI server HTTP entrypoint exists yet.
-
-Decision:
-
-- Do not create `ai_service/http/` yet.
-- Do not add framework dependencies.
-- Keep `run_analysis_job(payload)` as the stable internal integration point.
-- Revisit endpoint implementation after the team confirms the server framework.
+`python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload`
 
 ## Target Endpoints
 
@@ -180,17 +159,18 @@ Allowed backend `final_decision` values:
 
 ## Future Endpoint Adapter Shape
 
-The future HTTP endpoint should only adapt HTTP input/output around the orchestration layer.
+The HTTP endpoint adapts HTTP input/output around the orchestration layer.
 
 Expected flow:
 
 1. Receive JSON body from `POST /ai/analysis/run`.
-2. Pass the parsed body to `run_analysis_job(payload)`.
+2. Validate the parsed body.
 3. Return `accepted_response` immediately.
-4. Send `yolo_callback_payload` to the backend callback endpoint later.
-5. Send `xgboost_callback_payload` to the backend callback endpoint later.
+4. Run `run_analysis_job(payload)` in a background task.
+5. Send `yolo_callback_payload` to the backend callback endpoint.
+6. Send `xgboost_callback_payload` to the backend callback endpoint.
 
-Current implementation stops at step 3 as an internal dictionary result. It does not send callbacks.
+Current implementation sends callbacks as best-effort HTTP POST requests from `ai_service/http/callback_sender.py`.
 
 ## Callback Sender Boundary
 
@@ -205,6 +185,7 @@ It does not:
 - map HTTP status codes
 
 Those concerns belong to a future HTTP/callback sender layer.
+The initial callback sender layer now exists under `ai_service/http`; `_yolo`, `xgboost`, and `analysis` still do not perform network I/O.
 
 ## Callback Sender Design Draft
 
@@ -231,11 +212,9 @@ The future HTTP layer should translate `ValueError` into an appropriate client e
 
 The exact error response body should be agreed with the backend before implementation.
 
-## Recommended File Placement Later
+## File Placement
 
-If the team selects FastAPI or Flask later, keep framework-specific code separate from pure analysis logic.
-
-Suggested future shape:
+Framework-specific code is separate from pure analysis logic:
 
 ai_service/
 ├─ analysis/
@@ -247,17 +226,3 @@ ai_service/
 └─ HTTP_API_DESIGN.md
 
 `analysis` should remain importable and testable without network, DB, or server dependencies.
-
-## Framework Selection Checklist
-
-Before implementing endpoint code, decide:
-
-- HTTP framework: FastAPI, Flask, or another server framework.
-- Dependency management: requirements file, pyproject, uv, poetry, or existing team standard.
-- Server entrypoint location.
-- Runtime command for local development.
-- Error response shape for `ValueError`.
-- Whether `/ai/analysis/run` should run callbacks synchronously in MVP or enqueue background work.
-- Callback sender retry and failure policy.
-
-Until these are decided, `run_analysis_job(payload)` remains the stable internal integration point.

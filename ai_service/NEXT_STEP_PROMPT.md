@@ -1,109 +1,86 @@
-# 다음 단계 작업 프롬프트
+# Next Step Prompt
 
-너는 팀 프로젝트의 `ai_service/` 영역을 담당하는 Python 엔지니어다.
+You are a Python engineer responsible for the `ai_service/` area of the team project.
 
-이번 작업은 **HTTP endpoint 스켈레톤 구현 또는 callback sender 런타임 추가**이다.
+This task is **callback sender integration test hardening or backend smoke-test preparation**.
 
-작업 전 저장소 루트의 `AGENTS.md`가 있으면 먼저 읽고 따른다. 또한 `ai_service/AGENTS.md`를 반드시 읽고 따른다.
+Before working, read the repository root `AGENTS.md` if it exists. Also read and follow `ai_service/AGENTS.md`.
 
-작업 전 현재 파일 구조를 확인하고, 기존 구조와 충돌하지 않게 최소 변경으로 진행한다.
+Check the current file structure before making changes. Keep changes small and consistent with the existing structure.
 
-작업 완료 후 `ai_service/AGENTS.md`의 커밋 규칙에 맞춰 적절한 타입과 한글 설명으로 커밋한다.
+After completing the task, commit according to the commit rules in `ai_service/AGENTS.md`.
 
-## 선택 기준
+## Current State
 
-서버 프레임워크가 확정되었다면 `/ai/analysis/run` HTTP endpoint 스켈레톤을 구현한다.
+FastAPI HTTP skeleton exists.
 
-서버 프레임워크가 아직 미확정이라면 endpoint 코드와 callback sender 런타임을 만들지 않고, 문서만 보강한다.
-
-## 현재 기준 계약
-
-현재 `ai_service`는 비동기 AI 분석 API 문서를 기준으로 한다.
-
-사용 endpoint:
+AI server endpoint:
 
 POST /ai/analysis/run
+
+Run command:
+
+python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
+
+Backend base URL default:
+
+http://localhost:8000
+
+Callback endpoints:
+
 POST /api/ai-callback/yolo-result
 POST /api/ai-callback/xgboost-result
 
-현재 내부 entrypoint:
+## Responsibility Boundary
 
-from ai_service.analysis.service import run_analysis_job
+Backend HTTP communication must happen only in `ai_service/http`.
 
-현재 job_id 정책:
+`analysis` only orchestrates and builds callback-ready payload dictionaries.
 
-job_id = AI_JOB_{request_id}
+`_yolo` is predictor-only: it receives `drain_id` and returns a YOLO result dictionary.
 
-YOLO status 허용 값:
+`xgboost` is predictor-only: it receives feature batches and returns risk result dictionaries.
 
-good
-dirty
-blocked
-unknown
+## Work Candidates
 
-## 책임 경계
+1. Harden callback sender integration tests.
+2. Document smoke-test steps for when the real backend server is running.
+3. Add or clarify callback sender logging policy documentation.
 
-백엔드 HTTP 통신은 future `ai_service/http` 계층에서만 수행한다.
+## Do Not
 
-`analysis`는 orchestration과 callback-ready payload dict 생성까지만 담당한다.
+- Implement real YOLO.
+- Change fake YOLO mock values.
+- Implement image processing.
+- Call CCTV APIs.
+- Train or load a real XGBoost model.
+- Read or write the database.
+- Implement WebSocket behavior.
+- Modify frontend code.
+- Change the XGBoost public contract.
 
-`_yolo`는 `drain_id`를 받아 YOLO 결과 dict를 반환하는 predictor-only 모듈이다.
+## Verification
 
-`xgboost`는 feature batch를 받아 risk 결과 dict를 반환하는 predictor-only 모듈이다.
-
-`_yolo`, `xgboost`, `analysis` 안에서 백엔드 API 호출, callback 전송, FastAPI import, backend URL 관리, timeout/retry 처리를 하지 않는다.
-
-## callback sender MVP 정책
-
-HTTP 계층이 추가되면 callback sender는 best-effort로 동작한다.
-
-- accepted 응답은 callback 성공/실패와 분리한다.
-- YOLO callback 실패 후에도 XGBoost callback은 시도한다.
-- callback 요청마다 timeout을 둔다.
-- callback 요청마다 최대 1회만 재시도한다.
-- 재시도 실패 후에는 로그만 남기고 persistent retry queue는 만들지 않는다.
-
-## 작업 범위
-
-수정 가능 범위:
-
-ai_service/**
-
-하지 말 것:
-
-- 실제 YOLO 구현
-- fake YOLO mock 값 변경
-- 이미지 처리 구현
-- CCTV API 호출 구현
-- 실제 XGBoost 학습 또는 모델 로딩
-- DB 조회/저장 구현
-- WebSocket 구현
-- 백엔드 callback 실제 HTTP 전송 구현
-- 프론트엔드 수정
-- XGBoost public contract 변경
-
-## 검증
-
-아래 명령이 통과해야 한다.
+The following command must pass:
 
 python -m pytest ai_service
 
-venv 기준:
+venv command:
 
 ai_service\.venv\Scripts\python.exe -m pytest ai_service
 
-## 완료 후 갱신
+## Completion
 
-작업 완료 후 `ai_service/NEXT_STEP_PROMPT.md`를 다음 단계 프롬프트로 갱신한다.
+After finishing, update `ai_service/NEXT_STEP_PROMPT.md` for the next stage.
 
-다음 단계 프롬프트도 삼중 백틱 없이 작성한다.
+Do not use triple-backtick code fences in the next-step prompt.
 
-완료 후 아래를 보고한다.
+Report:
 
-- 생성/수정한 파일
-- 선택한 작업 방향
-- 테스트 결과
-- 커밋 해시와 커밋 메시지
-- 이후 단계 작업 가능 여부
+- Created or modified files
+- Chosen work direction
+- Test result
+- Commit hash and commit message
+- Whether the next stage can start
 
-가능하면 변경 범위를 작게 유지하고, 기존 코드 스타일을 따르며, 불필요한 추상화는 만들지 않는다.
+Keep changes small, follow existing style, and avoid unnecessary abstractions.

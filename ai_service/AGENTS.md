@@ -4,13 +4,14 @@
 
 ## Modules
 
-- `analysis` owns the backend-AI server asynchronous analysis orchestration flow.
+- `analysis` owns backend-AI asynchronous analysis orchestration.
 - `_yolo` owns the temporary fake YOLO stub and is the future integration point for real YOLO.
 - `xgboost` owns the flood-risk inference contract and predictor implementation.
+- `http` owns backend HTTP requests, backend callback delivery, timeout, retry, and HTTP error mapping.
 
 ## Communication Boundaries
 
-- `http` is the only future layer that may receive backend HTTP requests or send backend HTTP callbacks.
+- `http` is the only layer that may receive backend HTTP requests or send backend HTTP callbacks.
 - `analysis` may orchestrate `_yolo` and `xgboost`, validate payload dictionaries, and build callback-ready payload dictionaries. It must not send HTTP callbacks directly.
 - `_yolo` must remain a predictor module: receive values such as `drain_id` and return YOLO result dictionaries. It must not import FastAPI, call backend APIs, send callbacks, or know backend URLs.
 - `xgboost` must remain a predictor module: receive feature batches and return risk result dictionaries. It must not import FastAPI, call backend APIs, send callbacks, or know backend URLs.
@@ -42,22 +43,28 @@ At the end of each completed stage, commit the stage work unless the user explic
 
 Use this commit message format:
 
-`type: 한글 설명`
+type: Korean description
+
+Examples:
+
+- `feat: AI 분석 HTTP 엔드포인트 스켈레톤 추가`
+- `docs: 비동기 AI 분석 계약 기준 정리`
+- `test: 비동기 AI 분석 계약 테스트 보강`
 
 Allowed types:
 
-- `feat`: 새로운 기능 추가
-- `fix`: 버그 수정
-- `docs`: 문서 수정, 코드 변경 없음
-- `style`: 코드 포맷팅, 세미콜론 등 스타일 변경, 논리 변경 없음
-- `refactor`: 리팩토링, 기능 변화 없음
-- `test`: 테스트 관련 코드 추가 또는 수정
-- `chore`: 빌드, 패키지 매니저 설정, 개발 환경 등 기타 작업
-- `design`: CSS 등 사용자 UI 디자인 변경
-- `comment`: 필요한 주석 추가 또는 변경
-- `rename`: 파일 혹은 폴더명을 수정하거나 옮기는 작업만인 경우
-- `remove`: 파일 삭제 작업만 수행한 경우
-- `!HOTFIX`: 급하게 치명적인 버그를 고쳐야 하는 경우
+- `feat`: new feature
+- `fix`: bug fix
+- `docs`: documentation only
+- `style`: formatting or style change without logic change
+- `refactor`: refactor without feature behavior change
+- `test`: test code added or changed
+- `chore`: build, package manager, setup, or other maintenance work
+- `design`: user-facing UI design or CSS change
+- `comment`: comment-only change
+- `rename`: file or folder rename only
+- `remove`: file deletion only
+- `!HOTFIX`: urgent critical bug fix
 
 Pick the type that best represents the main purpose of the stage. For mixed environment and documentation setup work, prefer `chore`.
 
@@ -80,4 +87,4 @@ External callers should use:
 from ai_service.xgboost.service import predict_flood_risk_batch
 ```
 
-The current XGBoost package returns `final_decision` with the same value as `risk_level`. Backend callback payload work must map this to the backend decision codes when that layer is implemented.
+The current XGBoost package returns `final_decision` with the same value as `risk_level`. Backend callback payload work must map this to the backend decision codes before callback delivery.

@@ -12,234 +12,185 @@ The backend-AI server asynchronous integration is based on three endpoints:
 
 The backend sends `request_id`, `drain_id`, and latest sensor values. The AI server resolves image input by `drain_id`, runs YOLO, then runs XGBoost using YOLO output plus sensor values.
 
-## Contract Gap To Resolve Later
+The agreed local ports are:
 
-- The current `xgboost` internal `final_decision` is the same value as `risk_level`.
-- The backend callback document expects `final_decision` values of `normal`, `monitoring`, `field_check`, or `dispatch_required`.
-- Callback payload generation must include a decision mapper.
+- AI server: `9000`
+- Backend server: `8000`
+
+## Responsibility Boundary
+
+- `ai_service/http` handles HTTP endpoint input and backend callback delivery.
+- `ai_service/analysis` validates and orchestrates dictionaries, then builds callback-ready payloads.
+- `ai_service/_yolo` returns fake or future real YOLO result dictionaries only.
+- `ai_service/xgboost` returns flood-risk inference result dictionaries only.
+
+`_yolo`, `xgboost`, and `analysis` must not send callbacks or know backend URLs.
 
 ## Current Stage Status
 
-- 0단계 ai_service 개발 환경 정리 완료.
-- 1단계 fake YOLO stub 추가 완료.
-- `ai_service/_yolo` now provides deterministic mock YOLO results for drain IDs `1`, `2`, `3`, and `4`.
-- The fake YOLO values are fixed from the first four samples of `yolo_results_json.json`.
-- Fake YOLO does not read images, CCTV APIs, model files, or the external sample JSON at runtime.
-- 2단계 analysis orchestration 추가 완료.
-- `ai_service/analysis` now builds accepted responses, YOLO callback payloads, and XGBoost callback payloads without HTTP or DB behavior.
-- 3단계 analysis 계약 세분화 및 예시 실행 문서화 완료.
-- `ai_service/analysis/README.md` now documents request examples, callback payload examples, ValueError policy, sensor normalization, and decision mapping.
-- `ai_service/analysis/examples/` contains static documentation fixtures.
-- 4단계 HTTP API 연결 준비 범위 결정 및 스켈레톤 설계 완료.
-- `ai_service/HTTP_API_DESIGN.md` documents the future `/ai/analysis/run` adapter boundary, callback sender boundary, framework status, and import path for `run_analysis_job`.
-- 5단계 HTTP endpoint 스켈레톤 구현 여부 결정 완료.
-- No endpoint skeleton was added because no server framework or dependency standard is present in the repository.
-- Framework indicators were rechecked and endpoint implementation remains deferred.
-- 비동기 AI 분석 API 문서 기준으로 `ai_service` 문서 정렬 완료.
-- YOLO `unknown` status 허용 결정 완료.
-- `job_id = AI_JOB_{request_id}` deterministic MVP 정책 문서화 완료.
-- Endpoint and callback sender implementation remains blocked on server framework selection.
-- 비동기 API 계약 테스트 보강 완료.
-- Callback sender best-effort 정책 초안 문서화 완료.
-- Next stage: 서버 프레임워크 확정 후 HTTP endpoint skeleton implementation.
+- Stage 0 complete: `ai_service` development environment and shared instructions.
+- Stage 1 complete: fake YOLO stub for drain IDs `1`, `2`, `3`, and `4`.
+- Stage 2 complete: internal analysis orchestration.
+- Stage 3 complete: analysis contract and examples documented.
+- Stage 4 complete: HTTP API design documented.
+- Stage 5 complete: endpoint implementation was deferred until framework confirmation.
+- API contract alignment complete: asynchronous backend-AI API document reflected in service docs.
+- Contract tests complete: async API contract tests added.
+- Current implementation complete: FastAPI `/ai/analysis/run` skeleton and best-effort callback sender.
 
-## 0단계: ai_service 개발 환경 정리
+## Contract Notes
 
-목표:
-Create shared `ai_service` instructions, pytest settings, gitignore rules, a service README, this plan, and the next-step prompt.
+- `job_id` MVP policy: `AI_JOB_{request_id}`.
+- YOLO status values: `good`, `dirty`, `blocked`, `unknown`.
+- XGBoost risk levels: `good`, `caution`, `danger`, `unknown`.
+- Backend `final_decision` values: `normal`, `monitoring`, `field_check`, `dispatch_required`.
+- Current XGBoost internal `final_decision` equals `risk_level`; analysis maps it to backend decision codes before callback payload delivery.
+- Callback delivery is best-effort in MVP. A failed callback is logged and does not change the already accepted response.
 
-생성/수정 예상 파일:
+## Stage 0: ai_service Development Environment
+
+Goal:
+Create shared `ai_service` instructions, pytest settings, gitignore rules, service README, plan, and next-step prompt.
+
+Expected files:
+
 - `ai_service/AGENTS.md`
 - `ai_service/.gitignore`
 - `ai_service/pytest.ini`
 - `ai_service/README.md`
 - `ai_service/AI_SERVICE_PLAN.md`
 - `ai_service/NEXT_STEP_PROMPT.md`
-- Remove duplicate common files from `ai_service/xgboost/`
 
-하지 않을 것:
-- Do not change XGBoost inference behavior.
-- Do not implement YOLO, analysis orchestration, endpoints, DB access, or callback sending.
+Do not:
 
-완료 기준:
+- Change XGBoost inference behavior.
+- Implement YOLO, analysis orchestration, endpoints, DB access, or callback sending.
+
+Done when:
+
 - `python -m pytest ai_service` passes.
 - Common configuration is owned by `ai_service`, not `ai_service/xgboost`.
-- `ai_service/NEXT_STEP_PROMPT.md` is also shown in the final chat response for quick handoff.
-- Next-step prompts avoid triple-backtick code fences so they can be copied from chat in one piece.
-- Stage work is committed with the repository commit type convention, for example `chore: AI 서비스 개발 환경 정리`.
 
-## 1단계: fake YOLO stub 추가
+## Stage 1: Fake YOLO Stub
 
-목표:
+Goal:
 Add a deterministic fake YOLO predictor for backend-AI flow testing before real YOLO exists.
 
-생성/수정 예상 파일:
+Expected files:
+
 - `ai_service/_yolo/__init__.py`
 - `ai_service/_yolo/constants.py`
 - `ai_service/_yolo/fake_yolo_predictor.py`
 - `ai_service/_yolo/README.md`
 - `ai_service/_yolo/tests/test_fake_yolo_predictor.py`
-- Update `ai_service/pytest.ini` testpaths if needed.
-- Update `ai_service/NEXT_STEP_PROMPT.md` for the next stage.
 
-하지 않을 것:
-- Do not run real YOLO.
-- Do not load image files.
-- Do not call CCTV APIs.
-- Do not add model weights.
+Do not:
 
-완료 기준:
+- Run real YOLO.
+- Load image files.
+- Call CCTV APIs.
+- Add model weights.
+
+Done when:
+
 - Fake YOLO returns `obstruction_ratio`, `confidence_score`, and `yolo_status`.
-- Allowed `yolo_status` values are `good`, `dirty`, `blocked`, and `unknown`.
 - Tests pass with `python -m pytest ai_service`.
 
-## 2단계: analysis orchestration 추가
+## Stage 2: Analysis Orchestration
 
-목표:
-Add an internal orchestration layer that accepts the backend analysis request payload, creates a job response, invokes fake YOLO, invokes XGBoost, and returns callback payload dictionaries.
+Goal:
+Add an internal orchestration layer that accepts backend request payloads, creates a job response, invokes fake YOLO, invokes XGBoost, and returns callback payload dictionaries.
 
-생성/수정 예상 파일:
+Expected files:
+
 - `ai_service/analysis/__init__.py`
 - `ai_service/analysis/service.py`
 - `ai_service/analysis/job_id.py`
-- `ai_service/analysis/schemas.py`
 - `ai_service/analysis/callback_payloads.py`
-- `ai_service/analysis/README.md`
+- `ai_service/analysis/validator.py`
 - `ai_service/analysis/tests/test_analysis_flow.py`
 
-하지 않을 것:
-- Do not create FastAPI or Flask endpoints.
-- Do not send real HTTP callbacks.
-- Do not store jobs in a database.
+Do not:
 
-완료 기준:
+- Create HTTP endpoints.
+- Send real HTTP callbacks.
+- Store jobs in a database.
+
+Done when:
+
 - A single function can process a sample backend payload and return accepted response, YOLO callback payload, and XGBoost callback payload.
 - Tests pass with `python -m pytest ai_service`.
 
-## 3단계: 백엔드 요청 payload 검증
+## Stage 3: Analysis Contract Documentation
 
-목표:
-Validate `/ai/analysis/run` request payload shape before orchestration runs.
+Goal:
+Document request examples, accepted response, callback payloads, error policy, sensor normalization, and decision mapping.
 
-생성/수정 예상 파일:
-- `ai_service/analysis/validator.py`
-- `ai_service/analysis/tests/test_analysis_validator.py`
+Expected files:
 
-하지 않을 것:
-- Do not query backend DB.
-- Do not implement HTTP status handling yet.
+- `ai_service/analysis/README.md`
+- `ai_service/analysis/examples/*`
 
-완료 기준:
-- Required fields are validated.
-- Invalid `quality_status` is rejected or handled by the documented policy.
+Do not:
 
-## 4단계: YOLO callback payload 생성
+- Add network, DB, endpoint, or real model behavior.
 
-목표:
-Build the backend callback body for `/api/ai-callback/yolo-result`.
+Done when:
 
-생성/수정 예상 파일:
-- `ai_service/analysis/callback_payloads.py`
-- `ai_service/analysis/tests/test_callback_payloads.py`
+- The backend contract can be reviewed from repository docs.
+- Tests pass with `python -m pytest ai_service`.
 
-하지 않을 것:
-- Do not send the callback over HTTP.
-- Do not store YOLO results.
+## Stage 4: HTTP API Design
 
-완료 기준:
-- Payload includes `request_id`, `job_id`, and `yolo_result`.
+Goal:
+Document how `/ai/analysis/run` connects to `run_analysis_job(payload)` and how callback sending is owned by the HTTP layer.
 
-## 5단계: XGBoost 입력 adapter 추가
+Expected files:
 
-목표:
-Convert backend sensor fields and YOLO output into the existing XGBoost dict-of-list input contract.
+- `ai_service/HTTP_API_DESIGN.md`
+- `ai_service/README.md`
 
-생성/수정 예상 파일:
-- `ai_service/analysis/xgboost_adapter.py`
-- `ai_service/analysis/tests/test_xgboost_adapter.py`
+Do not:
 
-하지 않을 것:
-- Do not change the XGBoost service contract.
-- Do not train or load a real model.
+- Implement endpoint code until framework confirmation.
 
-완료 기준:
-- Adapter maps YOLO `obstruction_ratio`, YOLO `confidence_score`, `water_level_cm`, and `flow_velocity_mps` into XGBoost input.
-- Any normalization policy is documented and tested.
+Done when:
 
-## 6단계: XGBoost callback payload 생성
+- Endpoint boundary, callback boundary, and framework decision criteria are documented.
+- Tests pass with `python -m pytest ai_service`.
 
-목표:
-Build the backend callback body for `/api/ai-callback/xgboost-result`.
+## Stage 5: FastAPI Endpoint Skeleton
 
-생성/수정 예상 파일:
-- `ai_service/analysis/decision_mapper.py`
-- `ai_service/analysis/callback_payloads.py`
-- `ai_service/analysis/tests/test_xgboost_callback_payload.py`
+Goal:
+Expose `POST /ai/analysis/run` using FastAPI after framework confirmation.
 
-하지 않을 것:
-- Do not change backend DB schema.
-- Do not send HTTP callbacks.
+Expected files:
 
-완료 기준:
-- Payload includes `request_id`, `job_id`, `risk_score`, `risk_level`, mapped `final_decision`, and `evaluated_at`.
+- `ai_service/http/app.py`
+- `ai_service/http/routes.py`
+- `ai_service/http/config.py`
+- `ai_service/http/callback_sender.py`
+- `ai_service/http/README.md`
+- `ai_service/http/tests/*`
+- `ai_service/requirements.txt`
 
-## 7단계: 통합 테스트 추가
+Do not:
 
-목표:
-Cover the full internal flow from backend request payload to callback payload dictionaries.
+- Implement real YOLO.
+- Call CCTV APIs.
+- Store to DB.
+- Change XGBoost public contract.
 
-생성/수정 예상 파일:
-- `ai_service/analysis/tests/test_analysis_integration.py`
+Done when:
 
-하지 않을 것:
-- Do not require network, DB, image files, or real model weights.
+- The endpoint validates request payloads.
+- The endpoint immediately returns accepted response.
+- Background processing sends YOLO and XGBoost callback payloads through a best-effort callback sender.
+- Tests pass with `python -m pytest ai_service`.
 
-완료 기준:
-- End-to-end internal tests pass with deterministic fake YOLO and rule-based XGBoost.
+## Next Work Candidates
 
-## 8단계: 실제 HTTP endpoint/callback sender 연결
-
-목표:
-Connect the internal orchestration to actual AI server endpoint and backend callback sender.
-
-생성/수정 예상 파일:
-- To be decided when the server framework is selected.
-
-하지 않을 것:
-- Do not change model contracts without backend agreement.
-
-완료 기준:
-- Backend can call `/ai/analysis/run`.
-- AI server can send both callback payloads.
-
-## 9단계: 실제 YOLO/CCTV API 연동
-
-목표:
-Replace fake YOLO image-source behavior with real image acquisition and YOLO inference.
-
-생성/수정 예상 파일:
-- To be decided with YOLO implementation owner.
-
-하지 않을 것:
-- Do not change backend request shape solely for image path passing.
-
-완료 기준:
-- `drain_id` resolves to real image input.
-- Real YOLO output preserves the fake YOLO result contract.
-
-## 10단계: 실제 XGBoost 모델 교체
-
-목표:
-Replace the rule-based baseline predictor with a trained XGBoost predictor while preserving the public service contract.
-
-생성/수정 예상 파일:
-- `ai_service/xgboost/xgb_predictor.py`
-- `ai_service/xgboost/service.py`
-- XGBoost tests and documentation as needed.
-
-하지 않을 것:
-- Do not change backend callback payloads without contract update.
-
-완료 기준:
-- Trained model predictor returns the same output contract as the current baseline.
-- Existing contract tests continue to pass.
+1. Add stronger callback sender integration tests.
+2. Document manual smoke test steps with backend running on port `8000` and AI server on port `9000`.
+3. Add optional callback sender logging policy documentation.
+4. Later, replace fake YOLO and rule-based XGBoost only after their contracts are stable.
