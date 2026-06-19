@@ -1,0 +1,92 @@
+[
+  {
+    "sample_id": "caution_001",
+    "obstruction_ratio": 0.664,
+    "confidence_score": 0.957,
+    "water_level": 0.95,
+    "flow_velocity": 0.361,
+    "stagnation_score": 0.607,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_002",
+    "obstruction_ratio": 0.681,
+    "confidence_score": 0.969,
+    "water_level": 0.954,
+    "flow_velocity": 0.417,
+    "stagnation_score": 0.556,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_003",
+    "obstruction_ratio": 0.443,
+    "confidence_score": 0.961,
+    "water_level": 0.68,
+    "flow_velocity": 0.211,
+    "stagnation_score": 0.537,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_004",
+    "obstruction_ratio": 0.587,
+    "confidence_score": 0.815,
+    "water_level": 0.829,
+    "flow_velocity": 0.236,
+    "stagnation_score": 0.633,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_005",
+    "obstruction_ratio": 0.543,
+    "confidence_score": 0.833,
+    "water_level": 0.825,
+    "flow_velocity": 0.343,
+    "stagnation_score": 0.542,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_006",
+    "obstruction_ratio": 0.664,
+    "confidence_score": 0.871,
+    "water_level": 0.681,
+    "flow_velocity": 0.198,
+    "stagnation_score": 0.546,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_007",
+    "obstruction_ratio": 0.558,
+    "confidence_score": 0.882,
+    "water_level": 0.909,
+    "flow_velocity": 0.369,
+    "stagnation_score": 0.574,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_008",
+    "obstruction_ratio": 0.403,
+    "confidence_score": 0.906,
+    "water_level": 0.766,
+    "flow_velocity": 0.184,
+    "stagnation_score": 0.625,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_009",
+    "obstruction_ratio": 0.481,
+    "confidence_score": 0.887,
+    "water_level": 0.926,
+    "flow_velocity": 0.407,
+    "stagnation_score": 0.549,
+    "label": "caution"
+  },
+  {
+    "sample_id": "caution_010",
+    "obstruction_ratio": 0.381,
+    "confidence_score": 0.896,
+    "water_level": 0.84,
+    "flow_velocity": 0.329,
+    "stagnation_score": 0.564,
+    "label": "caution"
+  }
+]

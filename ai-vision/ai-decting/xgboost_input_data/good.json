@@ -1,0 +1,92 @@
+[
+  {
+    "sample_id": "good_001",
+    "obstruction_ratio": 0.236,
+    "confidence_score": 0.879,
+    "water_level": 0.488,
+    "flow_velocity": 0.938,
+    "stagnation_score": 0.03,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_002",
+    "obstruction_ratio": 0.281,
+    "confidence_score": 0.947,
+    "water_level": 0.655,
+    "flow_velocity": 0.713,
+    "stagnation_score": 0.188,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_003",
+    "obstruction_ratio": 0.245,
+    "confidence_score": 0.932,
+    "water_level": 0.411,
+    "flow_velocity": 0.849,
+    "stagnation_score": 0.062,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_004",
+    "obstruction_ratio": 0.074,
+    "confidence_score": 0.914,
+    "water_level": 0.596,
+    "flow_velocity": 0.483,
+    "stagnation_score": 0.308,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_005",
+    "obstruction_ratio": 0.057,
+    "confidence_score": 0.834,
+    "water_level": 0.846,
+    "flow_velocity": 0.737,
+    "stagnation_score": 0.222,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_006",
+    "obstruction_ratio": 0.215,
+    "confidence_score": 0.823,
+    "water_level": 0.806,
+    "flow_velocity": 0.524,
+    "stagnation_score": 0.384,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_007",
+    "obstruction_ratio": 0.248,
+    "confidence_score": 0.821,
+    "water_level": 0.698,
+    "flow_velocity": 0.651,
+    "stagnation_score": 0.244,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_008",
+    "obstruction_ratio": 0.242,
+    "confidence_score": 0.875,
+    "water_level": 0.492,
+    "flow_velocity": 0.585,
+    "stagnation_score": 0.204,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_009",
+    "obstruction_ratio": 0.26,
+    "confidence_score": 0.839,
+    "water_level": 0.669,
+    "flow_velocity": 0.581,
+    "stagnation_score": 0.28,
+    "label": "good"
+  },
+  {
+    "sample_id": "good_010",
+    "obstruction_ratio": 0.117,
+    "confidence_score": 0.836,
+    "water_level": 0.645,
+    "flow_velocity": 0.832,
+    "stagnation_score": 0.108,
+    "label": "good"
+  }
+]
