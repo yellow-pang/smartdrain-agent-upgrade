@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { DrainStatusUpdatedEventDto } from "@/lib/api/types";
+import type {
+    DrainRealtimeEventDto,
+    DrainStatusUpdatedEventDto,
+    XgboostResultUpdatedEventDto,
+    YoloResultUpdatedEventDto,
+} from "@/lib/api/types";
 
 export type DrainSocketStatus =
     | "waiting"
@@ -12,14 +17,16 @@ export type DrainSocketStatus =
 const DRAIN_STATUS_SOCKET_PATH = "/ws/drains/status";
 const RECONNECT_DELAY_MS = 3000;
 
-type DrainRealtimeEvent = DrainStatusUpdatedEventDto;
-
 export function useDrainStatusSocket({
     enabled,
     onStatusUpdated,
+    onYoloUpdated,
+    onXgboostUpdated,
 }: {
     enabled: boolean;
     onStatusUpdated: (event: DrainStatusUpdatedEventDto) => void;
+    onYoloUpdated?: (event: YoloResultUpdatedEventDto) => void;
+    onXgboostUpdated?: (event: XgboostResultUpdatedEventDto) => void;
 }) {
     const [status, setStatus] = useState<DrainSocketStatus>("waiting");
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -56,6 +63,14 @@ export function useDrainStatusSocket({
                 if (!event) return;
                 if (event.type === "DRAIN_STATUS_UPDATED") {
                     onStatusUpdated(event);
+                    return;
+                }
+                if (event.type === "YOLO_RESULT_UPDATED") {
+                    onYoloUpdated?.(event);
+                    return;
+                }
+                if (event.type === "XGBOOST_RESULT_UPDATED") {
+                    onXgboostUpdated?.(event);
                 }
             };
 
@@ -83,19 +98,40 @@ export function useDrainStatusSocket({
             clearReconnectTimer();
             socket?.close();
         };
-    }, [socketUrl, onStatusUpdated]);
+    }, [socketUrl, onStatusUpdated, onYoloUpdated, onXgboostUpdated]);
 
     if (!enabled) return "waiting";
     if (!socketUrl) return "error";
     return status;
 }
 
-function parseDrainRealtimeEvent(data: string): DrainRealtimeEvent | null {
+function parseDrainRealtimeEvent(data: string): DrainRealtimeEventDto | null {
     try {
-        const parsed = JSON.parse(data) as Partial<DrainRealtimeEvent>;
-        if (parsed.type !== "DRAIN_STATUS_UPDATED") return null;
-        if (!parsed.payload?.drainId || !parsed.payload.updatedAt) return null;
-        return parsed as DrainStatusUpdatedEventDto;
+        const parsed = JSON.parse(data) as Partial<DrainRealtimeEventDto>;
+        if (!parsed.payload?.drainId) return null;
+
+        if (parsed.type === "DRAIN_STATUS_UPDATED") {
+            if (!parsed.payload.updatedAt) return null;
+            return parsed as DrainStatusUpdatedEventDto;
+        }
+
+        if (parsed.type === "YOLO_RESULT_UPDATED") {
+            const payload = parsed.payload as Partial<
+                YoloResultUpdatedEventDto["payload"]
+            >;
+            if (!payload.updatedAt || !payload.analyzedAt) return null;
+            return parsed as YoloResultUpdatedEventDto;
+        }
+
+        if (parsed.type === "XGBOOST_RESULT_UPDATED") {
+            const payload = parsed.payload as Partial<
+                XgboostResultUpdatedEventDto["payload"]
+            >;
+            if (!payload.updatedAt || !payload.evaluatedAt) return null;
+            return parsed as XgboostResultUpdatedEventDto;
+        }
+
+        return null;
     } catch {
         return null;
     }

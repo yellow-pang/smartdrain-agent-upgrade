@@ -3,10 +3,13 @@ import type {
     ApiListResponse,
     ApiResponse,
     DashboardSummaryDto,
+    DrainAnalysisHistoryResponse,
     DrainDetailDto,
     DrainListItemDto,
     RiskHistoryDto,
     SensorHistoryDto,
+    XgboostResultDto,
+    YoloResultDto,
     YoloStatus,
 } from "@/lib/api/types";
 import { DRAINS, type DrainFacility } from "@/lib/mock-data";
@@ -137,6 +140,35 @@ export function createMockLatestAnalysisResponse(
     };
 }
 
+export function createMockAnalysisHistoryResponse(
+    id: string,
+): ApiResponse<DrainAnalysisHistoryResponse> {
+    const detail = createMockDrainDetailResponse(id);
+    const drain = DRAINS.find((item) => item.id === id);
+    if (!detail.success || !detail.data || !drain) {
+        return {
+            success: false,
+            data: null,
+            message: detail.message,
+            error: detail.error,
+            timestamp: detail.timestamp,
+        };
+    }
+
+    const yoloResults = createMockYoloHistoryItems(drain);
+    const xgboostResults = createMockXgboostHistoryItems(drain, yoloResults);
+
+    return {
+        success: true,
+        data: {
+            drainId: id,
+            yoloResults,
+            xgboostResults,
+        },
+        timestamp: `${BASE_DATE}T09:30:01+09:00`,
+    };
+}
+
 function facilityToListItemDto(drain: DrainFacility): DrainListItemDto {
     return {
         id: drain.id,
@@ -195,8 +227,68 @@ function createMockYoloResult(drain: DrainFacility) {
         obstructionRatio: drain.blockage / 100,
         confidenceScore: drain.status === "unknown" ? 0.42 : 0.91,
         yoloStatus,
+        capturedAt: toIsoTime(drain.updatedAt),
         analyzedAt: toIsoTime(drain.updatedAt),
     };
+}
+
+function createMockYoloHistoryItems(drain: DrainFacility): YoloResultDto[] {
+    const images = [
+        PLACEHOLDER_IMAGES.cctv,
+        "/test-snapshots/drain-001-a.jpg",
+        "/test-snapshots/drain-001-b.jpg",
+        "/test-snapshots/drain-001-c.jpg",
+    ];
+
+    return images.map((imageUrl, index) => {
+        const obstructionRatio = Math.max(
+            0.05,
+            drain.blockage / 100 - index * 0.12,
+        );
+        return {
+            id: index + 1,
+            drainId: drain.id,
+            imageUrl,
+            obstructionRatio,
+            confidenceScore: Math.max(0.5, 0.92 - index * 0.06),
+            yoloStatus: getYoloStatus(obstructionRatio),
+            capturedAt: `${BASE_DATE}T${String(14 - index).padStart(2, "0")}:10:00+09:00`,
+            analyzedAt: `${BASE_DATE}T${String(14 - index).padStart(2, "0")}:10:01+09:00`,
+            createdAt: `${BASE_DATE}T${String(14 - index).padStart(2, "0")}:10:01+09:00`,
+        };
+    });
+}
+
+function createMockXgboostHistoryItems(
+    drain: DrainFacility,
+    yoloResults: YoloResultDto[],
+): XgboostResultDto[] {
+    return yoloResults.slice(0, 3).map((yoloResult, index) => {
+        const riskScore = Math.max(0.06, drain.blockage / 100 - index * 0.15);
+        return {
+            id: index + 1,
+            drainId: drain.id,
+            sensorDataId: index + 1,
+            yoloResultId: yoloResult.id ?? null,
+            riskScore,
+            riskLevel:
+                riskScore >= 0.7
+                    ? "danger"
+                    : riskScore >= 0.35
+                      ? "caution"
+                      : "good",
+            finalDecision:
+                index === 0 ? drain.judgement : "최근 분석 이력 mock 데이터",
+            evaluatedAt: `${BASE_DATE}T${String(14 - index).padStart(2, "0")}:15:00+09:00`,
+            createdAt: `${BASE_DATE}T${String(14 - index).padStart(2, "0")}:15:00+09:00`,
+        };
+    });
+}
+
+function getYoloStatus(value: number): YoloStatus {
+    if (value >= 0.7) return "blocked";
+    if (value >= 0.35) return "partially_blocked";
+    return "clear";
 }
 
 function toIsoTime(value: string) {

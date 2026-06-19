@@ -56,18 +56,28 @@ export type SensorHistoryDto = {
 };
 
 export type YoloResultDto = {
-    imageUrl?: string;
-    obstructionRatio: number;
-    confidenceScore: number;
+    id?: number;
+    drainId?: string;
+    imageUrl?: string | null;
+    obstructionRatio: number | null;
+    confidenceScore: number | null;
     yoloStatus: YoloStatus;
-    analyzedAt: string;
+    capturedAt?: string | null;
+    analyzedAt?: string | null;
+    createdAt?: string | null;
 };
 
 export type XgboostResultDto = {
-    riskScore: number;
+    id?: number;
+    drainId?: string;
+    sensorDataId?: number | null;
+    yoloResultId?: number | null;
+    riskScore: number | null;
     riskLevel: RiskLevel;
-    finalDecision: string;
-    predictedAt: string;
+    finalDecision: string | null;
+    predictedAt?: string;
+    evaluatedAt?: string;
+    createdAt?: string;
 };
 
 export type RiskHistoryDto = {
@@ -81,6 +91,12 @@ export type AnalysisResultDto = {
     yoloResult?: YoloResultDto;
     xgboostResult?: XgboostResultDto;
     updatedAt?: string;
+};
+
+export type DrainAnalysisHistoryResponse = {
+    drainId: string;
+    yoloResults: YoloResultDto[];
+    xgboostResults: XgboostResultDto[];
 };
 
 export type DashboardSummaryDto = {
@@ -103,5 +119,43 @@ export type DrainStatusUpdatedEventDto = {
         obstructionRatio?: number | null;
         finalDecision?: string | null;
         updatedAt: string;
+        sensorDataId?: number | null;
+        yoloResultId?: number | null;
+        xgboostResultId?: number | null;
     };
 };
+
+export type YoloResultUpdatedEventDto = {
+    type: "YOLO_RESULT_UPDATED";
+    payload: {
+        drainId: string;
+        yoloResultId: number;
+        imageUrl: string | null;
+        obstructionRatio: number | null;
+        confidenceScore: number | null;
+        yoloStatus: YoloStatus;
+        capturedAt: string | null;
+        analyzedAt: string;
+        updatedAt: string;
+    };
+};
+
+export type XgboostResultUpdatedEventDto = {
+    type: "XGBOOST_RESULT_UPDATED";
+    payload: {
+        drainId: string;
+        xgboostResultId: number;
+        sensorDataId: number | null;
+        yoloResultId: number | null;
+        riskLevel: RiskLevel;
+        riskScore: number | null;
+        finalDecision: string | null;
+        evaluatedAt: string;
+        updatedAt: string;
+    };
+};
+
+export type DrainRealtimeEventDto =
+    | DrainStatusUpdatedEventDto
+    | YoloResultUpdatedEventDto
+    | XgboostResultUpdatedEventDto;
