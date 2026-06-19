@@ -16,8 +16,14 @@ import {
     loadDashboardData,
     type DashboardData,
 } from "@/lib/api/drain-data";
-import type { DashboardSummaryDto } from "@/lib/api/types";
+import {
+    dashboardSummaryFromDrains,
+    mergeDrainStatusEventIntoFacility,
+    sortFacilitiesByRisk,
+} from "@/lib/api/adapters";
+import type { DashboardSummaryDto, DrainStatusUpdatedEventDto } from "@/lib/api/types";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
+import { useDrainStatusSocket } from "@/lib/websocket/drain-status-socket";
 
 export default function DashboardPage() {
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(
@@ -25,6 +31,26 @@ export default function DashboardPage() {
     );
     const [isLoading, setIsLoading] = useState(true);
     const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    const applyRealtimeEvent = useCallback(
+        (event: DrainStatusUpdatedEventDto) => {
+            setDashboardData((current) => {
+                if (!current || current.source !== "api") return current;
+
+                const drains = current.drains.map((drain) =>
+                    mergeDrainStatusEventIntoFacility(drain, event),
+                );
+
+                return {
+                    ...current,
+                    drains,
+                    sortedDrains: sortFacilitiesByRisk(drains),
+                    summary: dashboardSummaryFromDrains(drains),
+                };
+            });
+        },
+        [],
+    );
 
     const reloadDashboard = useCallback(() => {
         setIsLoading(true);
@@ -55,6 +81,11 @@ export default function DashboardPage() {
         };
     }, []);
 
+    const realtimeStatus = useDrainStatusSocket({
+        enabled: dashboardData?.source === "api",
+        onStatusUpdated: applyRealtimeEvent,
+    });
+
     const selected = useMemo(() => {
         if (!dashboardData || dashboardData.source !== "api" || !selectedId) {
             return undefined;
@@ -68,12 +99,12 @@ export default function DashboardPage() {
         dashboardData,
         isLoading,
     });
-    const realtimeStatus: DrainRealtimeStatus =
+    const riskListRealtimeStatus: DrainRealtimeStatus =
         riskListStatus === "error"
             ? "error"
             : riskListStatus === "loading"
               ? "waiting"
-              : "waiting";
+              : realtimeStatus;
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -137,7 +168,7 @@ export default function DashboardPage() {
                                 selectedId={selectedId}
                                 onSelect={setSelectedId}
                                 status={riskListStatus}
-                                realtimeStatus={realtimeStatus}
+                                realtimeStatus={riskListRealtimeStatus}
                                 onRetry={reloadDashboard}
                             />
                         </div>
