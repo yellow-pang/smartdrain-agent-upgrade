@@ -1,0 +1,27 @@
+{
+  "accepted_response": {
+    "accepted": true,
+    "request_id": "REQ_20260618_001",
+    "job_id": "AI_JOB_REQ_20260618_001",
+    "status": "processing"
+  },
+  "yolo_callback_payload": {
+    "request_id": "REQ_20260618_001",
+    "job_id": "AI_JOB_REQ_20260618_001",
+    "yolo_result": {
+      "obstruction_ratio": 0.057,
+      "confidence_score": 0.9404,
+      "yolo_status": "good"
+    }
+  },
+  "xgboost_callback_payload": {
+    "request_id": "REQ_20260618_001",
+    "job_id": "AI_JOB_REQ_20260618_001",
+    "xgboost_result": {
+      "risk_score": 0.65,
+      "risk_level": "caution",
+      "final_decision": "monitoring",
+      "evaluated_at": "2026-06-19T13:30:00+09:00"
+    }
+  }
+}
