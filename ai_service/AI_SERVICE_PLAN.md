@@ -27,7 +27,10 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - Fake YOLO does not read images, CCTV APIs, model files, or the external sample JSON at runtime.
 - 2단계 analysis orchestration 추가 완료.
 - `ai_service/analysis` now builds accepted responses, YOLO callback payloads, and XGBoost callback payloads without HTTP or DB behavior.
-- Next stage: 3단계 요청/계약 세분화 또는 HTTP 연결 준비.
+- 3단계 analysis 계약 세분화 및 예시 실행 문서화 완료.
+- `ai_service/analysis/README.md` now documents request examples, callback payload examples, ValueError policy, sensor normalization, and decision mapping.
+- `ai_service/analysis/examples/` contains static documentation fixtures.
+- Next stage: 4단계 HTTP API 스켈레톤 또는 callback sender 준비 여부 결정.
 
 ## 0단계: ai_service 개발 환경 정리
 

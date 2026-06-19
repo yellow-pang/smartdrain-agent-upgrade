@@ -2,6 +2,8 @@
 
 `ai_service/analysis` coordinates the internal backend-AI analysis flow without creating HTTP endpoints or sending callbacks.
 
+This package is the bridge between the backend request contract and the current fake YOLO plus XGBoost inference modules.
+
 ## Input
 
 `run_analysis_job(payload)` accepts the backend analysis request shape:
@@ -17,6 +19,15 @@
     },
 }
 
+Required fields:
+
+- `request_id`: backend-generated analysis request ID.
+- `drain_id`: target drain ID. The current fake YOLO supports MVP drain IDs `1`, `2`, `3`, and `4`.
+- `sensor_data.measured_at`: sensor measurement timestamp.
+- `sensor_data.water_level_cm`: water level in centimeters.
+- `sensor_data.flow_velocity_mps`: flow velocity in meters per second.
+- `sensor_data.quality_status`: must be `valid`.
+
 ## Output
 
 The function returns callback-ready payload dictionaries:
@@ -26,6 +37,44 @@ The function returns callback-ready payload dictionaries:
     "yolo_callback_payload": {...},
     "xgboost_callback_payload": {...},
 }
+
+The returned dictionary is for internal orchestration tests. It does not mean callbacks were sent.
+
+## Accepted Response Example
+
+{
+    "accepted": true,
+    "request_id": "REQ_20260618_001",
+    "job_id": "AI_JOB_REQ_20260618_001",
+    "status": "processing"
+}
+
+## YOLO Callback Payload Example
+
+{
+    "request_id": "REQ_20260618_001",
+    "job_id": "AI_JOB_REQ_20260618_001",
+    "yolo_result": {
+        "obstruction_ratio": 0.057,
+        "confidence_score": 0.9404,
+        "yolo_status": "good"
+    }
+}
+
+## XGBoost Callback Payload Example
+
+{
+    "request_id": "REQ_20260618_001",
+    "job_id": "AI_JOB_REQ_20260618_001",
+    "xgboost_result": {
+        "risk_score": 0.65,
+        "risk_level": "caution",
+        "final_decision": "monitoring",
+        "evaluated_at": "2026-06-19T13:30:00+09:00"
+    }
+}
+
+`evaluated_at` is generated at runtime as a timezone-aware ISO string using the Korea Standard Time offset `+09:00`.
 
 ## Current Behavior
 
@@ -37,6 +86,20 @@ The function returns callback-ready payload dictionaries:
 - Calls `predict_flood_risk_batch`.
 - Maps XGBoost risk levels to backend final decision codes.
 
+## Error Policy
+
+The orchestration layer raises `ValueError` for invalid request payloads.
+
+Current `ValueError` cases:
+
+- The top-level payload is not a `dict`.
+- Required top-level keys are missing: `request_id`, `drain_id`, `sensor_data`.
+- `sensor_data` is not a `dict`.
+- Required sensor keys are missing: `measured_at`, `water_level_cm`, `flow_velocity_mps`, `quality_status`.
+- `sensor_data.quality_status` is not `valid`.
+
+This package does not convert these errors into HTTP status codes. HTTP error mapping should be handled later by the API layer.
+
 ## Sensor Normalization
 
 The current adapter converts backend sensor units into model features with a temporary MVP policy:
@@ -44,7 +107,29 @@ The current adapter converts backend sensor units into model features with a tem
 - `water_level = water_level_cm / 100.0`, clamped to `0.0` through `1.0`
 - `flow_velocity = flow_velocity_mps / 1.0`, clamped to `0.0` through `1.0`
 
+For example:
+
+- `water_level_cm = 98.13` becomes `water_level = 0.9813`
+- `flow_velocity_mps = 0.4512` becomes `flow_velocity = 0.4512`
+
 This policy should be revisited when trained model feature scaling is finalized.
+
+## Decision Mapping
+
+The XGBoost package currently returns `final_decision` with the same value as `risk_level`. The backend callback contract uses separate final decision codes, so `analysis` maps risk levels before building the XGBoost callback payload.
+
+Current mapping:
+
+- `good` -> `normal`
+- `caution` -> `monitoring`
+- `danger` -> `dispatch_required`
+- `unknown` -> `field_check`
+
+## Example Files
+
+Small static examples are available under `ai_service/analysis/examples/`.
+
+These files are documentation fixtures only. The runtime code does not read them.
 
 ## Not Implemented
 
@@ -53,4 +138,3 @@ This policy should be revisited when trained model feature scaling is finalized.
 - Database persistence.
 - Real YOLO.
 - Real XGBoost model loading.
-

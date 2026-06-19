@@ -43,6 +43,8 @@ Sensor values are normalized with the current MVP policy:
 
 The orchestration layer does not create HTTP endpoints, send callbacks, or persist data.
 
+Detailed request, response, callback payload, error policy, and normalization examples are documented in `ai_service/analysis/README.md`. Static documentation fixtures are available under `ai_service/analysis/examples/`.
+
 ## Local Setup
 
 Windows cmd:
