@@ -18,6 +18,8 @@ The AI service will receive the latest sensor values from the backend, resolve t
 
 The HTTP API layer is not implemented yet. The current HTTP connection design is documented in `ai_service/HTTP_API_DESIGN.md`.
 
+The endpoint skeleton is intentionally deferred until the team selects a server framework and dependency management approach.
+
 ## Current Limits
 
 The following are not implemented yet:
@@ -52,6 +54,8 @@ Future HTTP endpoint code should call:
 `from ai_service.analysis.service import run_analysis_job`
 
 The `/ai/analysis/run` route should pass its parsed JSON body to `run_analysis_job(payload)` and return the `accepted_response` portion immediately.
+
+No `ai_service/http/` runtime package exists yet because the server framework is not confirmed.
 
 ## Local Setup
 

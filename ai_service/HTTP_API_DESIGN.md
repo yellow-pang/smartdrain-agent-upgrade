@@ -12,6 +12,20 @@ Because no framework dependency or server entrypoint exists, this stage keeps th
 
 When the framework is selected, the HTTP endpoint should be a thin adapter around the existing analysis orchestration function.
 
+## Stage 5 Decision
+
+Endpoint skeleton implementation is deferred.
+
+Reason:
+
+- No server framework dependency is present.
+- No existing AI server app entrypoint is present.
+- Adding FastAPI or Flask now would create a framework decision before the team has selected one.
+
+Therefore this repository currently keeps HTTP behavior as a design contract and does not add `ai_service/http/` runtime code yet.
+
+The next implementation step should start only after the team confirms the framework and dependency management approach.
+
 ## Target Endpoints
 
 Backend to AI server:
@@ -120,3 +134,16 @@ ai_service/
 
 `analysis` should remain importable and testable without network, DB, or server dependencies.
 
+## Framework Selection Checklist
+
+Before implementing endpoint code, decide:
+
+- HTTP framework: FastAPI, Flask, or another server framework.
+- Dependency management: requirements file, pyproject, uv, poetry, or existing team standard.
+- Server entrypoint location.
+- Runtime command for local development.
+- Error response shape for `ValueError`.
+- Whether `/ai/analysis/run` should run callbacks synchronously in MVP or enqueue background work.
+- Callback sender retry and failure policy.
+
+Until these are decided, `run_analysis_job(payload)` remains the stable internal integration point.
