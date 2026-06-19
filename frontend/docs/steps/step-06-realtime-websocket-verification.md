@@ -191,6 +191,21 @@ GPU process isn't usable. Goodbye.
 | 이미지 UI | 이미지/썸네일 영역이 커서 레이아웃을 밀어내는 문제가 있어 후속 UI 개선 필요 |
 | 남은 문제 | 내부 숫자 ID 미노출, 한글 응답 깨짐, XGBoost 사용 YOLO와 최신 YOLO 기준 불일치 가능성, 이미지 이력 API 부재 |
 
+## 10.1 수동 테스트 절차 분리
+
+수동 브라우저 테스트의 세부 절차는 별도 문서로 분리했다.
+
+| 문서 | 역할 |
+|---|---|
+| `frontend/docs/test/maual_test_websocket.md` | 사용자가 실제 Swagger/브라우저에서 따라갈 수 있는 수동 테스트 체크리스트 |
+| `frontend/docs/plans/plan-05-realtime-websocket-manual-verification.md` | 현재 DB 상태 기준 수동 테스트 계획과 완료 기준 |
+
+따라서 이 Step 문서는 전체 절차를 반복하지 않고, 실제로 확인된 결과와 남은 판단만 기록한다. 이후 테스트 단계는 아래처럼 줄여 진행한다.
+
+1. 수동 테스트 문서의 8번 결과 기록 양식만 채운다.
+2. 실패/보류 항목만 이 Step 문서 또는 후속 Step 문서에 옮긴다.
+3. WebSocket 계약이 바뀌면 `plan-06-realtime-analysis-websocket-contract.md`를 먼저 갱신한다.
+
 ## 11. 추천 커밋 메시지
 
 제목:
