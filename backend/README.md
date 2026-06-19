@@ -41,3 +41,77 @@ python -m app.seeds.seed_mock_data
 - `GET /api/drains/DR-004/sensors`
 - `GET /api/drains/DR-004/risk-history`
 - `GET /api/drains/DR-004/analysis/latest`
+
+## Backend-AI Async Analysis
+
+백엔드는 최신 센서 데이터를 AI 서버로 보내 분석 job을 시작하고, AI 서버가 callback으로 전달하는 YOLO 중간 결과와 XGBoost 최종 결과를 DB에 저장합니다. XGBoost 최종 결과 저장 후에는 `/ws/drains/status` WebSocket으로 `DRAIN_STATUS_UPDATED` 이벤트를 발행합니다.
+
+사용 endpoint:
+
+- Backend -> AI: `POST {AI_SERVER_BASE_URL}/ai/analysis/run`
+- AI -> Backend: `POST /api/ai-callback/yolo-result`
+- AI -> Backend: `POST /api/ai-callback/xgboost-result`
+- Backend 내부 실행 API: `POST /api/analysis/async-run`
+
+환경변수:
+
+```env
+AI_SERVER_BASE_URL=http://localhost:9000
+AI_SERVER_TIMEOUT_SECONDS=10
+AI_CALLBACK_BASE_URL=http://localhost:8000
+AI_SERVER_ENABLED=true
+```
+
+분석 시작 요청 예시:
+
+```powershell
+$base = "http://localhost:8000"
+Invoke-RestMethod -Method Post -Uri "$base/api/analysis/async-run" -ContentType "application/json" -Body '{
+  "drainId": "DR-004"
+}'
+```
+
+AI 서버가 없으면 `ANALYSIS_UNAVAILABLE` 에러 wrapper가 반환됩니다.
+
+YOLO callback 테스트 예시:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "$base/api/ai-callback/yolo-result" -ContentType "application/json" -Body '{
+  "request_id": "REQ_202606190001_4",
+  "job_id": "AI_JOB_001",
+  "yolo_result": {
+    "obstruction_ratio": 0.82,
+    "confidence_score": 0.94,
+    "yolo_status": "blocked"
+  }
+}'
+```
+
+XGBoost callback 테스트 예시:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "$base/api/ai-callback/xgboost-result" -ContentType "application/json" -Body '{
+  "request_id": "REQ_202606190001_4",
+  "job_id": "AI_JOB_001",
+  "xgboost_result": {
+    "risk_score": 0.91,
+    "risk_level": "danger",
+    "final_decision": "dispatch_required",
+    "evaluated_at": "2026-06-18T08:36:25+09:00"
+  }
+}'
+```
+
+WebSocket 이벤트 확인:
+
+```js
+const socket = new WebSocket("ws://localhost:8000/ws/drains/status");
+socket.onopen = () => console.log("ws connected");
+socket.onmessage = (event) => console.log(JSON.parse(event.data));
+```
+
+주의:
+
+- callback 테스트에는 먼저 `/api/analysis/async-run`으로 생성된 실제 `requestId`, `jobId`를 사용합니다.
+- Backend -> AI 요청 body에는 이미지 URL, snapshot URL, CCTV URL을 포함하지 않습니다.
+- AI 서버는 `drain_id` 기준으로 내부 mock image를 사용한다고 가정합니다.
