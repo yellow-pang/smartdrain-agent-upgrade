@@ -2,7 +2,7 @@
 
 너는 팀 프로젝트의 `ai_service/` 영역을 담당하는 Python 엔지니어다.
 
-이번 작업은 **비동기 AI 분석 API 계약 테스트 보강 또는 HTTP endpoint 스켈레톤 구현**이다.
+이번 작업은 **HTTP endpoint 스켈레톤 구현 또는 callback sender 런타임 추가**이다.
 
 작업 전 저장소 루트의 `AGENTS.md`가 있으면 먼저 읽고 따른다. 또한 `ai_service/AGENTS.md`를 반드시 읽고 따른다.
 
@@ -14,7 +14,7 @@
 
 서버 프레임워크가 확정되었다면 `/ai/analysis/run` HTTP endpoint 스켈레톤을 구현한다.
 
-서버 프레임워크가 아직 미확정이라면 endpoint 코드를 만들지 않고, 비동기 API 계약 테스트 또는 callback sender 설계를 보강한다.
+서버 프레임워크가 아직 미확정이라면 endpoint 코드와 callback sender 런타임을 만들지 않고, 문서만 보강한다.
 
 ## 현재 기준 계약
 
@@ -52,6 +52,16 @@ unknown
 `xgboost`는 feature batch를 받아 risk 결과 dict를 반환하는 predictor-only 모듈이다.
 
 `_yolo`, `xgboost`, `analysis` 안에서 백엔드 API 호출, callback 전송, FastAPI import, backend URL 관리, timeout/retry 처리를 하지 않는다.
+
+## callback sender MVP 정책
+
+HTTP 계층이 추가되면 callback sender는 best-effort로 동작한다.
+
+- accepted 응답은 callback 성공/실패와 분리한다.
+- YOLO callback 실패 후에도 XGBoost callback은 시도한다.
+- callback 요청마다 timeout을 둔다.
+- callback 요청마다 최대 1회만 재시도한다.
+- 재시도 실패 후에는 로그만 남기고 persistent retry queue는 만들지 않는다.
 
 ## 작업 범위
 

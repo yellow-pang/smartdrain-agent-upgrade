@@ -39,6 +39,8 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - YOLO `unknown` status 허용 결정 완료.
 - `job_id = AI_JOB_{request_id}` deterministic MVP 정책 문서화 완료.
 - Endpoint and callback sender implementation remains blocked on server framework selection.
+- 비동기 API 계약 테스트 보강 완료.
+- Callback sender best-effort 정책 초안 문서화 완료.
 - Next stage: 서버 프레임워크 확정 후 HTTP endpoint skeleton implementation.
 
 ## 0단계: ai_service 개발 환경 정리

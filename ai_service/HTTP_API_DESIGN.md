@@ -206,6 +206,23 @@ It does not:
 
 Those concerns belong to a future HTTP/callback sender layer.
 
+## Callback Sender Design Draft
+
+If the server framework is still not selected, implement no callback sender runtime code.
+
+When the HTTP layer is added, callback sender behavior should follow the MVP best-effort policy:
+
+- `POST /ai/analysis/run` returns `accepted_response` after request validation and job acceptance.
+- Callback success or failure must not change the already-returned accepted response.
+- Send YOLO callback first.
+- Send XGBoost callback after YOLO callback is attempted.
+- If YOLO callback fails, still attempt XGBoost callback.
+- Use a timeout for each callback request.
+- Retry each callback at most once.
+- If retry fails, log and drop the callback.
+- Do not implement a persistent retry queue in MVP.
+- Do not store callback state in a database in this package.
+
 ## Error Boundary
 
 The current analysis layer raises `ValueError` for invalid payloads.
