@@ -16,6 +16,8 @@ The backend-AI server integration will follow this asynchronous shape:
 
 The AI service will receive the latest sensor values from the backend, resolve the image source internally by `drain_id`, run YOLO, run XGBoost with YOLO and sensor features, and build callback payloads.
 
+The HTTP API layer is not implemented yet. The current HTTP connection design is documented in `ai_service/HTTP_API_DESIGN.md`.
+
 ## Current Limits
 
 The following are not implemented yet:
@@ -44,6 +46,12 @@ Sensor values are normalized with the current MVP policy:
 The orchestration layer does not create HTTP endpoints, send callbacks, or persist data.
 
 Detailed request, response, callback payload, error policy, and normalization examples are documented in `ai_service/analysis/README.md`. Static documentation fixtures are available under `ai_service/analysis/examples/`.
+
+Future HTTP endpoint code should call:
+
+`from ai_service.analysis.service import run_analysis_job`
+
+The `/ai/analysis/run` route should pass its parsed JSON body to `run_analysis_job(payload)` and return the `accepted_response` portion immediately.
 
 ## Local Setup
 

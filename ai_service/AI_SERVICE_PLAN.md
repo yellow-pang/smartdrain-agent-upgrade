@@ -30,7 +30,9 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - 3단계 analysis 계약 세분화 및 예시 실행 문서화 완료.
 - `ai_service/analysis/README.md` now documents request examples, callback payload examples, ValueError policy, sensor normalization, and decision mapping.
 - `ai_service/analysis/examples/` contains static documentation fixtures.
-- Next stage: 4단계 HTTP API 스켈레톤 또는 callback sender 준비 여부 결정.
+- 4단계 HTTP API 연결 준비 범위 결정 및 스켈레톤 설계 완료.
+- `ai_service/HTTP_API_DESIGN.md` documents the future `/ai/analysis/run` adapter boundary, callback sender boundary, framework status, and import path for `run_analysis_job`.
+- Next stage: 5단계 HTTP endpoint 스켈레톤 구현 여부는 서버 프레임워크 확정 후 결정.
 
 ## 0단계: ai_service 개발 환경 정리
 
