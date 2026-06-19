@@ -113,7 +113,8 @@ socket.onmessage = (event) => console.log(JSON.parse(event.data));
 WebSocket 이벤트 타입:
 
 - `YOLO_RESULT_UPDATED`: YOLO 중간 결과 저장 후 전달
-- `DRAIN_STATUS_UPDATED`: XGBoost 최종 위험도 결과 저장 후 전달
+- `XGBOOST_RESULT_UPDATED`: XGBoost 최종 분석 결과 저장 후 전달
+- `DRAIN_STATUS_UPDATED`: 대시보드/상세 화면 갱신용 최종 상태 요약 전달
 
 두 이벤트는 모두 `/ws/drains/status`로 전달되며, 프론트는 `type` 기준으로 분기 처리합니다.
 
@@ -161,3 +162,69 @@ WebSocket 이벤트 타입:
 - callback 테스트에는 먼저 `/api/analysis/async-run`으로 생성된 실제 `requestId`, `jobId`를 사용합니다.
 - Backend -> AI 요청 body에는 이미지 URL, snapshot URL, CCTV URL을 포함하지 않습니다.
 - AI 서버는 `drain_id` 기준으로 내부 mock image를 사용한다고 가정합니다.
+
+## Frontend WebSocket / Analysis History Contract
+
+프론트엔드는 단일 WebSocket endpoint인 `/ws/drains/status`에 연결하고, 수신한 메시지의 `type` 값으로 이벤트를 구분합니다.
+
+지원 이벤트:
+
+- `YOLO_RESULT_UPDATED`: YOLO 중간 분석 결과 저장 후 발행
+- `XGBOOST_RESULT_UPDATED`: XGBoost 최종 분석 결과 저장 후 발행
+- `DRAIN_STATUS_UPDATED`: 대시보드/상세 화면 갱신용 최종 상태 요약 발행
+
+`YOLO_RESULT_UPDATED` payload:
+
+```json
+{
+  "drainId": "DR-004",
+  "yoloResultId": 1,
+  "imageUrl": "ai-server://mock/4",
+  "obstructionRatio": 0.82,
+  "confidenceScore": 0.94,
+  "yoloStatus": "blocked",
+  "capturedAt": "2026-06-18T08:36:20+09:00",
+  "analyzedAt": "2026-06-18T08:36:20+09:00",
+  "updatedAt": "2026-06-18T08:36:20+09:00"
+}
+```
+
+`XGBOOST_RESULT_UPDATED` payload:
+
+```json
+{
+  "drainId": "DR-004",
+  "xgboostResultId": 1,
+  "sensorDataId": 1,
+  "yoloResultId": 1,
+  "riskLevel": "danger",
+  "riskScore": 0.91,
+  "finalDecision": "dispatch_required",
+  "evaluatedAt": "2026-06-18T08:36:25+09:00",
+  "updatedAt": "2026-06-18T08:36:25+09:00"
+}
+```
+
+`DRAIN_STATUS_UPDATED` payload:
+
+```json
+{
+  "drainId": "DR-004",
+  "riskLevel": "danger",
+  "riskScore": 0.91,
+  "waterLevelCm": 85,
+  "flowVelocityMps": 0.05,
+  "obstructionRatio": 0.82,
+  "finalDecision": "dispatch_required",
+  "updatedAt": "2026-06-18T08:36:25+09:00",
+  "sensorDataId": 1,
+  "yoloResultId": 1,
+  "xgboostResultId": 1
+}
+```
+
+분석 이력은 WebSocket이 아니라 REST API로 조회합니다.
+
+- `GET /api/drains/{drain_id}/analysis/yolo?limit=10`
+- `GET /api/drains/{drain_id}/analysis/xgboost?limit=10`
+- `GET /api/drains/{drain_id}/analysis/history?limit=10`

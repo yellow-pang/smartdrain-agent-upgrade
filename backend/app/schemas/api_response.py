@@ -114,7 +114,7 @@ def yolo_result_dto(yolo_result: YoloResult | None) -> dict[str, Any] | None:
         "obstructionRatio": yolo_result.obstruction_ratio,
         "confidenceScore": yolo_result.confidence_score,
         "yoloStatus": normalize_yolo_status(yolo_result.yolo_status),
-        "analyzedAt": format_datetime(yolo_result.captured_at),
+        "analyzedAt": format_datetime(yolo_result.created_at),
         "capturedAt": format_datetime(yolo_result.captured_at),
         "createdAt": format_datetime(yolo_result.created_at),
     }
@@ -265,5 +265,8 @@ def drain_status_event_payload(
             "obstructionRatio": yolo_result.obstruction_ratio if yolo_result else None,
             "finalDecision": result.final_decision,
             "updatedAt": format_datetime(result.evaluated_at),
+            "sensorDataId": result.sensor_data_id,
+            "yoloResultId": result.yolo_result_id,
+            "xgboostResultId": result.id,
         },
     }

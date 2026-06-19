@@ -58,6 +58,46 @@ def list_yolo_results(drain_id: str, db: Session = Depends(get_db)):
     return api_list_response([yolo_result_dto(result) for result in results])
 
 
+@router.get("/drains/{drain_id}/analysis/yolo")
+def yolo_analysis_history(
+    drain_id: str,
+    limit: int = Query(default=10, ge=1),
+    db: Session = Depends(get_db),
+):
+    drain = get_drain_by_identifier(db, drain_id)
+    results = yolo_service.get_yolo_results_by_drain(db, drain.id, limit=limit)
+    return api_list_response([yolo_result_dto(result) for result in results])
+
+
+@router.get("/drains/{drain_id}/analysis/xgboost")
+def xgboost_analysis_history(
+    drain_id: str,
+    limit: int = Query(default=10, ge=1),
+    db: Session = Depends(get_db),
+):
+    drain = get_drain_by_identifier(db, drain_id)
+    results = xgboost_service.get_risk_history(db, drain.id, limit=limit)
+    return api_list_response([xgboost_result_dto(result) for result in results])
+
+
+@router.get("/drains/{drain_id}/analysis/history")
+def analysis_history(
+    drain_id: str,
+    limit: int = Query(default=10, ge=1),
+    db: Session = Depends(get_db),
+):
+    drain = get_drain_by_identifier(db, drain_id)
+    yolo_results = yolo_service.get_yolo_results_by_drain(db, drain.id, limit=limit)
+    xgboost_results = xgboost_service.get_risk_history(db, drain.id, limit=limit)
+    return api_response(
+        {
+            "drainId": drain.drain_code,
+            "yoloResults": [yolo_result_dto(result) for result in yolo_results],
+            "xgboostResults": [xgboost_result_dto(result) for result in xgboost_results],
+        }
+    )
+
+
 @router.get("/drains/{drain_id}/risk-history")
 def risk_history(
     drain_id: str,

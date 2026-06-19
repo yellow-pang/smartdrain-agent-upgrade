@@ -42,14 +42,16 @@ def create_yolo_result(db: Session, payload: YoloResultCreate) -> YoloResult:
     return result
 
 
-def get_yolo_results_by_drain(db: Session, drain_id: int) -> list[YoloResult]:
+def get_yolo_results_by_drain(db: Session, drain_id: int, limit: int | None = None) -> list[YoloResult]:
     get_drain(db, drain_id)
-    return (
+    query = (
         db.query(YoloResult)
         .filter(YoloResult.drain_id == drain_id)
         .order_by(YoloResult.captured_at.desc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 def get_latest_yolo_result(db: Session, drain_id: int) -> YoloResult | None:
