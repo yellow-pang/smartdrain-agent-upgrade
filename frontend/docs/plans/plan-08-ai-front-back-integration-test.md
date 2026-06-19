@@ -375,6 +375,101 @@ DevTools WS Messages에서 아래 이벤트를 확인한다.
 - 이벤트의 `payload.drainId`가 현재 상세 화면의 `DR-004`와 일치해야 한다.
 - AI Service가 반환하는 YOLO 상태 `good`, `dirty`, `blocked`는 백엔드에서 프론트 표시용 `clear`, `partially_blocked`, `blocked`로 정규화될 수 있다.
 
+#### Step 6-A. 자동화 실패 항목 수동 확인
+
+자동 테스트에서는 WebSocket 연결 `Open`까지는 확인했지만, PowerShell 자동 스크립트에서 메시지 본문을 안정적으로 잡지 못했다. 이 항목은 브라우저 DevTools에서 직접 확인한다.
+
+확인 순서:
+
+1. Chrome에서 대시보드를 연다.
+
+```text
+http://localhost:3000
+```
+
+2. DevTools를 열고 Network 탭으로 이동한다.
+
+```text
+F12 > Network > WS
+```
+
+3. 목록에서 아래 WebSocket 요청을 선택한다.
+
+```text
+/ws/drains/status
+```
+
+4. `Messages` 탭을 열어 둔다.
+5. 다른 탭에서 Swagger를 열고 아래 API를 실행한다.
+
+```text
+http://localhost:8000/docs
+POST /api/analysis/async-run
+```
+
+Request body:
+
+```json
+{
+    "drainId": "DR-004"
+}
+```
+
+6. DevTools의 WebSocket `Messages` 탭에 이벤트가 추가되는지 확인한다.
+
+반드시 확인할 이벤트:
+
+| 순서 | 이벤트 | 확인할 필드 |
+|---:|---|---|
+| 1 | `YOLO_RESULT_UPDATED` | `payload.drainId`, `payload.yoloResultId`, `payload.obstructionRatio`, `payload.confidenceScore`, `payload.yoloStatus` |
+| 2 | `XGBOOST_RESULT_UPDATED` | `payload.drainId`, `payload.xgboostResultId`, `payload.yoloResultId`, `payload.riskLevel`, `payload.riskScore`, `payload.finalDecision` |
+| 3 | `DRAIN_STATUS_UPDATED` | `payload.drainId`, `payload.riskLevel`, `payload.riskScore`, `payload.waterLevelCm`, `payload.flowVelocityMps`, `payload.obstructionRatio` |
+
+정상 판정 기준:
+
+| 항목 | 정상 기준 |
+|---|---|
+| 이벤트 수 | 3개 이벤트가 순서대로 오거나, 최소한 같은 분석 요청 직후 모두 도착 |
+| drainId | 모두 `DR-004` |
+| riskLevel | `good`, `caution`, `danger`, `unknown` 중 하나 |
+| riskScore | 0~1 숫자 |
+| obstructionRatio | 0~1 숫자 |
+| 최종 화면 반영 | 대시보드와 상세 화면의 위험도/점수/막힘률이 최신값으로 갱신 |
+
+기대 이벤트 예시는 아래 파일의 `expectedWebSocketMessages`를 기준으로 비교한다.
+
+```text
+frontend/docs/test/ai-front-back-integration/test-data.json
+```
+
+주의:
+
+- 테스트를 반복하면 `yoloResultId`, `xgboostResultId`, `sensorDataId`, timestamp 값은 계속 바뀐다.
+- 따라서 ID 숫자와 시간은 정확히 일치하지 않아도 된다.
+- `type`, `payload.drainId`, 위험도/점수/막힘률 필드 존재 여부를 우선 확인한다.
+- `imageUrl`이 `ai-server://mock/4`이면 현재 AI Service 목업 이미지 정책상 정상이다.
+
+기록 양식:
+
+| 항목 | 결과 | 실제 값 또는 메모 |
+|---|---|---|
+| WS 연결 |  | 예: connected / Open |
+| YOLO_RESULT_UPDATED 수신 |  |  |
+| XGBOOST_RESULT_UPDATED 수신 |  |  |
+| DRAIN_STATUS_UPDATED 수신 |  |  |
+| payload.drainId 일치 |  |  |
+| 대시보드 반영 |  |  |
+| 상세 화면 반영 |  |  |
+
+실패 시 기록할 내용:
+
+| 실패 유형 | 기록할 내용 |
+|---|---|
+| WS 요청이 없음 | Network 탭 스크린샷, 현재 URL, 프론트 콘솔 오류 |
+| WS 연결이 끊김 | Close code, 콘솔 오류, 백엔드 로그 |
+| 이벤트가 안 옴 | Swagger async-run 응답, AI 서버 callback 로그, 백엔드 로그 |
+| 이벤트는 오지만 화면 미반영 | 이벤트 payload, 현재 화면 URL, 새로고침 후 REST 값 |
+
 ### Step 7. 대시보드 화면 반영 확인
 
 | 영역 | 기대 결과 |

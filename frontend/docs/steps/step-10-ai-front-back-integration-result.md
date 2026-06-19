@@ -208,6 +208,62 @@ WS_CONNECTED=Open
 
 WebSocket endpoint 연결은 가능하지만, 이벤트 메시지 수신은 브라우저 DevTools에서 수동으로 확인하는 항목으로 남긴다.
 
+### 9.1 사용자가 직접 확인할 WebSocket 수동 테스트
+
+자동화에서 실패한 부분은 WebSocket 메시지 본문 수신이다. 아래 절차로 브라우저에서 직접 확인한다.
+
+준비:
+
+| 서버 | URL |
+|---|---|
+| Backend | `http://localhost:8000` |
+| AI Service | `http://localhost:9000` |
+| Frontend | `http://localhost:3000` |
+
+확인 순서:
+
+1. Chrome에서 `http://localhost:3000`을 연다.
+2. DevTools를 연다.
+3. `Network > WS`로 이동한다.
+4. `/ws/drains/status` 요청을 선택한다.
+5. `Messages` 탭을 열어 둔다.
+6. Swagger `http://localhost:8000/docs`에서 `POST /api/analysis/async-run`을 실행한다.
+
+Request body:
+
+```json
+{
+    "drainId": "DR-004"
+}
+```
+
+기대 결과:
+
+| 이벤트 | 확인할 핵심 값 |
+|---|---|
+| `YOLO_RESULT_UPDATED` | `payload.drainId`가 `DR-004`, YOLO 결과 ID와 막힘률 존재 |
+| `XGBOOST_RESULT_UPDATED` | `payload.drainId`가 `DR-004`, 위험도와 위험 점수 존재 |
+| `DRAIN_STATUS_UPDATED` | `payload.drainId`가 `DR-004`, 최종 위험도/센서값/막힘률 존재 |
+
+기록할 표:
+
+| 항목 | 결과 | 실제 값 또는 메모 |
+|---|---|---|
+| `/ws/drains/status` 연결 |  |  |
+| `YOLO_RESULT_UPDATED` 수신 |  |  |
+| `XGBOOST_RESULT_UPDATED` 수신 |  |  |
+| `DRAIN_STATUS_UPDATED` 수신 |  |  |
+| 이벤트 `payload.drainId` |  |  |
+| 대시보드 위험도/점수 반영 |  |  |
+| 상세 화면 위험도/점수 반영 |  |  |
+
+참고:
+
+- 기대 payload 예시는 `docs/test/ai-front-back-integration/test-data.json`의 `expectedWebSocketMessages`를 참고한다.
+- 테스트를 반복할 때마다 `yoloResultId`, `xgboostResultId`, timestamp는 바뀌는 것이 정상이다.
+- `imageUrl`이 `ai-server://mock/4`로 표시되면 현재 AI Service 목업 이미지 정책상 정상이다.
+- 이벤트가 오지 않으면 백엔드 로그의 callback 200 여부와 AI Service 로그의 callback delivery 성공 여부를 함께 확인한다.
+
 ## 10. 직접 AI Service 호출 시 주의점
 
 AI Service에 직접 아래 endpoint를 호출하면 accepted response는 받을 수 있다.
