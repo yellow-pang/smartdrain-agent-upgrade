@@ -25,7 +25,9 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - `ai_service/_yolo` now provides deterministic mock YOLO results for drain IDs `1`, `2`, `3`, and `4`.
 - The fake YOLO values are fixed from the first four samples of `yolo_results_json.json`.
 - Fake YOLO does not read images, CCTV APIs, model files, or the external sample JSON at runtime.
-- Next stage: 2단계 analysis orchestration 추가.
+- 2단계 analysis orchestration 추가 완료.
+- `ai_service/analysis` now builds accepted responses, YOLO callback payloads, and XGBoost callback payloads without HTTP or DB behavior.
+- Next stage: 3단계 요청/계약 세분화 또는 HTTP 연결 준비.
 
 ## 0단계: ai_service 개발 환경 정리
 

@@ -2,9 +2,9 @@
 
 This directory contains the SmartDrain AI server area.
 
-The current implementation provides a fake YOLO stub, the XGBoost inference contract, and a temporary rule-based XGBoost baseline predictor. It does not contain real YOLO execution or a trained XGBoost model.
+The current implementation provides analysis orchestration, a fake YOLO stub, the XGBoost inference contract, and a temporary rule-based XGBoost baseline predictor. It does not contain real YOLO execution or a trained XGBoost model.
 
-Next steps will add analysis orchestration so the backend-AI server connection flow can be tested before real YOLO and model integrations are ready.
+The internal analysis flow can now build accepted responses, YOLO callback payloads, and XGBoost callback payloads without HTTP endpoints or real callback sending.
 
 ## Planned Flow
 
@@ -31,6 +31,17 @@ The following are not implemented yet:
 ## Current Fake YOLO
 
 `ai_service/_yolo` contains deterministic mock YOLO results for MVP drain IDs `1`, `2`, `3`, and `4`. These values were copied from sample YOLO JSON output and fixed in code. The fake predictor does not read images, call CCTV APIs, load a YOLO model, or read the external sample JSON at runtime.
+
+## Current Analysis Orchestration
+
+`ai_service/analysis` accepts the backend analysis request shape, validates it, creates a deterministic job ID, calls fake YOLO, converts YOLO and sensor values into the XGBoost input contract, runs XGBoost, and returns callback-ready payload dictionaries.
+
+Sensor values are normalized with the current MVP policy:
+
+- `water_level = water_level_cm / 100.0`, clamped to `0.0` through `1.0`
+- `flow_velocity = flow_velocity_mps / 1.0`, clamped to `0.0` through `1.0`
+
+The orchestration layer does not create HTTP endpoints, send callbacks, or persist data.
 
 ## Local Setup
 
