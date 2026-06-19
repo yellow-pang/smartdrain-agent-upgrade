@@ -4,6 +4,18 @@ This document describes how the current internal AI service orchestration should
 
 No FastAPI, Flask, callback sender, database access, WebSocket, or server runtime code is implemented in this stage.
 
+## Contract Basis
+
+The current AI service direction follows the asynchronous backend-AI analysis API document:
+
+- `POST /ai/analysis/run`
+- `POST /api/ai-callback/yolo-result`
+- `POST /api/ai-callback/xgboost-result`
+
+The sensor-only synchronous endpoint shape such as `/ai/xgboost/predict` is not the current contract basis for this package.
+
+The backend sends latest sensor values only. It does not send image paths, snapshot URLs, or CCTV URLs. The AI server owns image-source selection by `drain_id`; in the current MVP code this is represented by deterministic fake YOLO results.
+
 ## Framework Status
 
 The AI server HTTP framework is not selected in this repository yet.
@@ -73,6 +85,19 @@ Import example:
 
 The future `/ai/analysis/run` endpoint should call this function after parsing the request body.
 
+## Job ID Policy
+
+The current MVP job ID is deterministic:
+
+`job_id = AI_JOB_{request_id}`
+
+Example:
+
+- `request_id = REQ_20260618_001`
+- `job_id = AI_JOB_REQ_20260618_001`
+
+This is an internal MVP policy. It can be replaced later with a UUID, sequence, database job table, or queue-generated job ID when the server runtime exists.
+
 ## Request Body
 
 The future `/ai/analysis/run` request body should match the current analysis payload:
@@ -97,6 +122,50 @@ The future `/ai/analysis/run` request body should match the current analysis pay
     "yolo_callback_payload": {...},
     "xgboost_callback_payload": {...}
 }
+
+`yolo_callback_payload` and `xgboost_callback_payload` are callback-ready dictionaries. They are not sent over HTTP by the current implementation.
+
+## Callback Payload Contracts
+
+YOLO callback payload:
+
+- `request_id`
+- `job_id`
+- `yolo_result.obstruction_ratio`
+- `yolo_result.confidence_score`
+- `yolo_result.yolo_status`
+
+Allowed `yolo_status` values:
+
+- `good`
+- `dirty`
+- `blocked`
+- `unknown`
+
+The source API document lists `good`, `dirty`, and `blocked` for MVP. This project additionally allows `unknown` for fallback or status-unavailable cases.
+
+XGBoost callback payload:
+
+- `request_id`
+- `job_id`
+- `xgboost_result.risk_score`
+- `xgboost_result.risk_level`
+- `xgboost_result.final_decision`
+- `xgboost_result.evaluated_at`
+
+Allowed `risk_level` values:
+
+- `good`
+- `caution`
+- `danger`
+- `unknown`
+
+Allowed backend `final_decision` values:
+
+- `normal`
+- `monitoring`
+- `field_check`
+- `dispatch_required`
 
 ## Future Endpoint Adapter Shape
 

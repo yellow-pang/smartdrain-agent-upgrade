@@ -4,6 +4,8 @@
 
 This package is the bridge between the backend request contract and the current fake YOLO plus XGBoost inference modules.
 
+`run_analysis_job(payload)` is the internal entrypoint for the future `POST /ai/analysis/run` endpoint. It is not an HTTP endpoint by itself.
+
 ## Input
 
 `run_analysis_job(payload)` accepts the backend analysis request shape:
@@ -40,6 +42,8 @@ The function returns callback-ready payload dictionaries:
 
 The returned dictionary is for internal orchestration tests. It does not mean callbacks were sent.
 
+`yolo_callback_payload` and `xgboost_callback_payload` are ready-to-send dictionaries only. The current implementation does not send HTTP callbacks.
+
 ## Accepted Response Example
 
 {
@@ -48,6 +52,19 @@ The returned dictionary is for internal orchestration tests. It does not mean ca
     "job_id": "AI_JOB_REQ_20260618_001",
     "status": "processing"
 }
+
+## Job ID Policy
+
+The current MVP job ID is deterministic:
+
+`job_id = AI_JOB_{request_id}`
+
+Example:
+
+- `request_id = REQ_20260618_001`
+- `job_id = AI_JOB_REQ_20260618_001`
+
+This can be replaced later by UUID, sequence, database job table, or queue-generated job IDs.
 
 ## YOLO Callback Payload Example
 
@@ -61,6 +78,17 @@ The returned dictionary is for internal orchestration tests. It does not mean ca
     }
 }
 
+Allowed `yolo_status` values:
+
+- `good`
+- `dirty`
+- `blocked`
+- `unknown`
+
+The asynchronous API source document lists `good`, `dirty`, and `blocked` for MVP. This project also allows `unknown` for fallback or status-unavailable cases.
+
+The callback payload does not include `drain_id`. The backend must resolve the drain through its stored `request_id` and `job_id` mapping.
+
 ## XGBoost Callback Payload Example
 
 {
@@ -73,6 +101,8 @@ The returned dictionary is for internal orchestration tests. It does not mean ca
         "evaluated_at": "2026-06-19T13:30:00+09:00"
     }
 }
+
+The XGBoost callback payload also does not include `drain_id`; backend persistence should use the original request mapping.
 
 `evaluated_at` is generated at runtime as a timezone-aware ISO string using the Korea Standard Time offset `+09:00`.
 

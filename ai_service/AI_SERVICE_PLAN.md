@@ -35,6 +35,10 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - 5단계 HTTP endpoint 스켈레톤 구현 여부 결정 완료.
 - No endpoint skeleton was added because no server framework or dependency standard is present in the repository.
 - Framework indicators were rechecked and endpoint implementation remains deferred.
+- 비동기 AI 분석 API 문서 기준으로 `ai_service` 문서 정렬 완료.
+- YOLO `unknown` status 허용 결정 완료.
+- `job_id = AI_JOB_{request_id}` deterministic MVP 정책 문서화 완료.
+- Endpoint and callback sender implementation remains blocked on server framework selection.
 - Next stage: 서버 프레임워크 확정 후 HTTP endpoint skeleton implementation.
 
 ## 0단계: ai_service 개발 환경 정리
