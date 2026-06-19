@@ -1,0 +1,165 @@
+{
+    "description": "SmartDrain AI-프론트-백엔드 통합 테스트용 예시 데이터입니다. 기본 테스트는 backend seed 데이터의 DR-004를 사용하고, 이 파일은 Swagger, curl, Postman에서 복사해 쓰는 payload와 기대 이벤트 구조를 정리합니다.",
+    "testedAt": "2026-06-19",
+    "defaultServers": {
+        "frontend": "http://localhost:3000",
+        "backend": "http://localhost:8000",
+        "aiService": "http://localhost:9000",
+        "webSocket": "ws://localhost:8000/ws/drains/status"
+    },
+    "defaultSeed": {
+        "seedFile": "backend/app/seeds/seed_mock_data.py",
+        "manualTestDrainCode": "DR-004",
+        "normalDrainCode": "DR-001",
+        "cautionDrainCode": "DR-003",
+        "dangerDrainCode": "DR-004"
+    },
+    "backendAsyncRunRequest": {
+        "endpoint": "POST /api/analysis/async-run",
+        "body": {
+            "drainId": "DR-004"
+        },
+        "expectedResponseShape": {
+            "success": true,
+            "data": {
+                "requestId": "REQ_yyyyMMddHHmmssffffff_4",
+                "jobId": "AI_JOB_REQ_yyyyMMddHHmmssffffff_4",
+                "drainId": "DR-004",
+                "status": "processing",
+                "sensorSummary": {
+                    "waterLevelCm": 128,
+                    "flowVelocityMps": 0.03,
+                    "measuredAt": "latest sensor measuredAt"
+                }
+            }
+        }
+    },
+    "directAiServiceRequest": {
+        "endpoint": "POST /ai/analysis/run",
+        "note": "백엔드를 거치지 않고 AI Service만 단독 smoke test할 때 사용합니다. drain_id는 DB 숫자 ID이며, 프론트 화면 URL의 drainCode와 다릅니다.",
+        "body": {
+            "request_id": "REQ_MANUAL_AI_FRONT_BACK_001",
+            "drain_id": 4,
+            "sensor_data": {
+                "measured_at": "2026-06-19T10:15:00+09:00",
+                "water_level_cm": 128,
+                "flow_velocity_mps": 0.03,
+                "quality_status": "valid"
+            }
+        },
+        "expectedResponseShape": {
+            "accepted": true,
+            "request_id": "REQ_MANUAL_AI_FRONT_BACK_001",
+            "job_id": "AI_JOB_REQ_MANUAL_AI_FRONT_BACK_001",
+            "status": "processing"
+        }
+    },
+    "manualCallbackPayloads": {
+        "note": "callback endpoint를 직접 검증할 때만 사용합니다. 실제 async-run 테스트에서는 AI Service가 자동으로 callback을 보냅니다. request_id와 job_id는 먼저 생성된 AnalysisJob 값으로 바꿔야 합니다.",
+        "yoloCallback": {
+            "endpoint": "POST /api/ai-callback/yolo-result",
+            "body": {
+                "request_id": "REQ_REPLACE_WITH_ACTUAL",
+                "job_id": "AI_JOB_REPLACE_WITH_ACTUAL",
+                "yolo_result": {
+                    "obstruction_ratio": 0.82,
+                    "confidence_score": 0.94,
+                    "yolo_status": "blocked"
+                }
+            }
+        },
+        "xgboostCallback": {
+            "endpoint": "POST /api/ai-callback/xgboost-result",
+            "body": {
+                "request_id": "REQ_REPLACE_WITH_ACTUAL",
+                "job_id": "AI_JOB_REPLACE_WITH_ACTUAL",
+                "xgboost_result": {
+                    "risk_score": 0.91,
+                    "risk_level": "danger",
+                    "final_decision": "dispatch_required",
+                    "evaluated_at": "2026-06-19T10:17:00+09:00"
+                }
+            }
+        }
+    },
+    "expectedWebSocketMessages": {
+        "yoloResultUpdated": {
+            "type": "YOLO_RESULT_UPDATED",
+            "payload": {
+                "drainId": "DR-004",
+                "yoloResultId": 1,
+                "imageUrl": "ai-server://mock/4",
+                "obstructionRatio": 0.82,
+                "confidenceScore": 0.94,
+                "yoloStatus": "blocked",
+                "capturedAt": "server generated timestamp",
+                "analyzedAt": "server generated timestamp",
+                "updatedAt": "server generated timestamp"
+            }
+        },
+        "xgboostResultUpdated": {
+            "type": "XGBOOST_RESULT_UPDATED",
+            "payload": {
+                "drainId": "DR-004",
+                "xgboostResultId": 1,
+                "sensorDataId": 1,
+                "yoloResultId": 1,
+                "riskLevel": "danger",
+                "riskScore": 0.91,
+                "finalDecision": "dispatch_required",
+                "evaluatedAt": "2026-06-19T10:17:00+09:00",
+                "updatedAt": "2026-06-19T10:17:00+09:00"
+            }
+        },
+        "drainStatusUpdated": {
+            "type": "DRAIN_STATUS_UPDATED",
+            "payload": {
+                "drainId": "DR-004",
+                "riskLevel": "danger",
+                "riskScore": 0.91,
+                "waterLevelCm": 128,
+                "flowVelocityMps": 0.03,
+                "obstructionRatio": 0.82,
+                "finalDecision": "dispatch_required",
+                "updatedAt": "server generated timestamp",
+                "sensorDataId": 1,
+                "yoloResultId": 1,
+                "xgboostResultId": 1
+            }
+        }
+    },
+    "manualVerificationUrls": {
+        "dashboard": "http://localhost:3000",
+        "detail": "http://localhost:3000/drains/DR-004",
+        "analysisHistory": "http://localhost:8000/api/drains/DR-004/analysis/history?limit=5",
+        "analysisLatest": "http://localhost:8000/api/drains/DR-004/analysis/latest",
+        "riskHistory": "http://localhost:8000/api/drains/DR-004/risk-history?limit=5"
+    },
+    "negativeCases": {
+        "aiServerStopped": {
+            "request": {
+                "drainId": "DR-004"
+            },
+            "expected": "AI server connection failed 또는 503 계열 오류"
+        },
+        "notFoundDrain": {
+            "request": {
+                "drainId": "DR-NOT-FOUND"
+            },
+            "expected": "Drain not found"
+        },
+        "xgboostBeforeYolo": {
+            "request": {
+                "request_id": "REQ_REPLACE_WITH_ACTUAL",
+                "job_id": "AI_JOB_REPLACE_WITH_ACTUAL",
+                "xgboost_result": {
+                    "risk_score": 0.7,
+                    "risk_level": "caution",
+                    "final_decision": "monitoring",
+                    "evaluated_at": "2026-06-19T10:18:00+09:00"
+                }
+            },
+            "expected": "YOLO result not found"
+        }
+    }
+}
