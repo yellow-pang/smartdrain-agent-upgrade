@@ -3,6 +3,7 @@ import type {
     AnalysisResultDto,
     DashboardSummaryDto,
     DrainDetailDto,
+    DrainStatusUpdatedEventDto,
     DrainListItemDto,
     RiskHistoryDto,
     SensorHistoryDto,
@@ -45,6 +46,8 @@ export function drainListItemDtoToFacility(
         flow: dto.flowVelocityMps,
         updatedAt: dto.updatedAt,
         judgement: dto.finalDecision,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
         x: mapPosition.x,
         y: mapPosition.y,
     };
@@ -130,6 +133,40 @@ export function sortFacilitiesByRisk(drains: DrainFacility[]): DrainFacility[] {
         if (riskDiff !== 0) return riskDiff;
         return b.blockage - a.blockage;
     });
+}
+
+export function mergeDrainStatusEventIntoFacility(
+    drain: DrainFacility,
+    event: DrainStatusUpdatedEventDto,
+): DrainFacility {
+    if (drain.id !== event.payload.drainId) return drain;
+
+    const {
+        riskLevel,
+        obstructionRatio,
+        waterLevelCm,
+        flowVelocityMps,
+        finalDecision,
+        updatedAt,
+    } = event.payload;
+
+    return {
+        ...drain,
+        status: riskLevel,
+        blockage:
+            obstructionRatio == null
+                ? drain.blockage
+                : ratioToPercent(obstructionRatio),
+        waterLevelPct:
+            waterLevelCm == null
+                ? drain.waterLevelPct
+                : waterLevelToPercent(waterLevelCm),
+        waterLevelM:
+            waterLevelCm == null ? drain.waterLevelM : cmToMeter(waterLevelCm),
+        flow: flowVelocityMps ?? drain.flow,
+        judgement: finalDecision ?? drain.judgement,
+        updatedAt,
+    };
 }
 
 function riskScoreToPoint(value: number) {

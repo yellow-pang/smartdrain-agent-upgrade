@@ -4,6 +4,7 @@ import type {
     ApiResponse,
     AnalysisResultDto,
     DashboardSummaryDto,
+    DrainAnalysisHistoryResponse,
     DrainDetailDto,
     DrainListItemDto,
     RiskHistoryDto,
@@ -56,5 +57,15 @@ export async function getLatestAnalysis(id: string) {
     const response = await apiClient.get<ApiResponse<AnalysisResultDto>>(
         `/api/drains/${id}/analysis/latest`,
     );
+    return response.data;
+}
+
+export async function getDrainAnalysisHistory(
+    id: string,
+    params?: { limit?: number },
+) {
+    const response = await apiClient.get<
+        ApiResponse<DrainAnalysisHistoryResponse>
+    >(`/api/drains/${id}/analysis/history`, { params });
     return response.data;
 }

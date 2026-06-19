@@ -17,6 +17,8 @@ export interface DrainFacility {
     flow: number; // 유량 (m³/min)
     updatedAt: string;
     judgement: string; // 판정 결과
+    latitude: number;
+    longitude: number;
     // normalized position on the mock map (0-100)
     x: number;
     y: number;
@@ -46,6 +48,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 1.35,
         updatedAt: "2024-05-23 14:30",
         judgement: "침수 가능성 높음",
+        latitude: 37.4991,
+        longitude: 127.0328,
         x: 52,
         y: 50,
     },
@@ -60,6 +64,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.92,
         updatedAt: "2024-05-23 14:25",
         judgement: "지속 관찰 필요",
+        latitude: 37.4969,
+        longitude: 127.0306,
         x: 30,
         y: 38,
     },
@@ -74,6 +80,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.71,
         updatedAt: "2024-05-23 14:20",
         judgement: "지속 관찰 필요",
+        latitude: 37.5001,
+        longitude: 127.0336,
         x: 60,
         y: 62,
     },
@@ -88,6 +96,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.42,
         updatedAt: "2024-05-23 14:18",
         judgement: "정상 범위",
+        latitude: 37.4993,
+        longitude: 127.0294,
         x: 18,
         y: 52,
     },
@@ -102,6 +112,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.31,
         updatedAt: "2024-05-23 14:15",
         judgement: "정상 범위",
+        latitude: 37.5011,
+        longitude: 127.0318,
         x: 42,
         y: 72,
     },
@@ -116,6 +128,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.22,
         updatedAt: "2024-05-23 14:12",
         judgement: "정상 범위",
+        latitude: 37.5017,
+        longitude: 127.0300,
         x: 24,
         y: 78,
     },
@@ -130,6 +144,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.34,
         updatedAt: "2024-05-23 14:10",
         judgement: "정상 범위",
+        latitude: 37.5009,
+        longitude: 127.0290,
         x: 14,
         y: 70,
     },
@@ -144,6 +160,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.66,
         updatedAt: "2024-05-23 14:08",
         judgement: "지속 관찰 필요",
+        latitude: 37.4961,
+        longitude: 127.0346,
         x: 70,
         y: 30,
     },
@@ -158,6 +176,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.27,
         updatedAt: "2024-05-23 14:05",
         judgement: "정상 범위",
+        latitude: 37.4997,
+        longitude: 127.0354,
         x: 78,
         y: 58,
     },
@@ -172,6 +192,8 @@ export const DRAINS: DrainFacility[] = [
         flow: 0.39,
         updatedAt: "2024-05-23 14:02",
         judgement: "정상 범위",
+        latitude: 37.4983,
+        longitude: 127.0362,
         x: 86,
         y: 44,
     },

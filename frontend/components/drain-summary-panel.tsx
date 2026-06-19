@@ -18,6 +18,7 @@ import { MetricProgress } from "@/components/metric-progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
+import { FallbackImage } from "@/components/fallback-image";
 
 export function DrainSummaryPanel({
     drain,
@@ -56,8 +57,9 @@ export function DrainSummaryPanel({
 
                 {/* CCTV snapshot */}
                 <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                    <img
+                    <FallbackImage
                         src={imageUrl}
+                        fallbackSrc={PLACEHOLDER_IMAGES.facility}
                         alt={`${drain.road} 빗물받이 CCTV 스냅샷`}
                         className="size-full object-cover grayscale"
                     />
