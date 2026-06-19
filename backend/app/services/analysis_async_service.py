@@ -23,6 +23,7 @@ from app.schemas.analysis_async import AnalysisAsyncRunRequest
 from app.schemas.api_response import drain_status_event_payload, format_datetime, sensor_summary_dto
 from app.services.ai_client import request_ai_analysis
 from app.services.drain_service import get_drain_by_identifier
+from app.websocket.events import DRAIN_STATUS_UPDATED, YOLO_RESULT_UPDATED
 
 RISK_LEVELS = {"good", "caution", "danger", "unknown"}
 FINAL_DECISIONS = {"normal", "monitoring", "field_check", "dispatch_required"}
@@ -69,7 +70,7 @@ async def start_async_analysis(db: Session, payload: AnalysisAsyncRunRequest) ->
     }
 
 
-def save_yolo_callback(db: Session, payload: AiYoloCallbackRequest) -> YoloResult:
+def save_yolo_callback(db: Session, payload: AiYoloCallbackRequest) -> tuple[YoloResult, dict[str, object]]:
     job = _get_analysis_job(db, payload.request_id, payload.job_id)
     yolo_payload = payload.yolo_result
     yolo_result = YoloResult(
@@ -88,7 +89,8 @@ def save_yolo_callback(db: Session, payload: AiYoloCallbackRequest) -> YoloResul
     job.error_message = None
     db.commit()
     db.refresh(yolo_result)
-    return yolo_result
+    event = _yolo_result_event_payload(job, yolo_result)
+    return yolo_result, event
 
 
 def save_xgboost_callback(db: Session, payload: AiXgboostCallbackRequest) -> tuple[XgboostResult, dict[str, object]]:
@@ -134,7 +136,42 @@ def save_xgboost_callback(db: Session, payload: AiXgboostCallbackRequest) -> tup
         sensor_data=job.sensor_data,
         yolo_result=job.yolo_result,
     )
+    _extend_drain_status_event(event, job, job.yolo_result)
     return result, event
+
+
+def _yolo_result_event_payload(job: AnalysisJob, yolo_result: YoloResult) -> dict[str, object]:
+    return {
+        "type": YOLO_RESULT_UPDATED,
+        "payload": {
+            "drainId": job.drain.drain_code,
+            "requestId": job.request_id,
+            "jobId": job.job_id,
+            "obstructionRatio": yolo_result.obstruction_ratio,
+            "confidenceScore": yolo_result.confidence_score,
+            "yoloStatus": yolo_result.yolo_status,
+            "updatedAt": format_datetime(yolo_result.captured_at),
+        },
+    }
+
+
+def _extend_drain_status_event(
+    event: dict[str, object],
+    job: AnalysisJob,
+    yolo_result: YoloResult | None,
+) -> None:
+    payload = event["payload"]
+    if not isinstance(payload, dict):
+        return
+    payload.update(
+        {
+            "requestId": job.request_id,
+            "jobId": job.job_id,
+            "confidenceScore": yolo_result.confidence_score if yolo_result else None,
+            "yoloStatus": yolo_result.yolo_status if yolo_result else None,
+        }
+    )
+    event["type"] = DRAIN_STATUS_UPDATED
 
 
 def _get_latest_sensor_data(db: Session, drain_id: int) -> SensorData | None:

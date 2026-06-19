@@ -22,8 +22,9 @@ router = APIRouter(prefix="/api/ai-callback", tags=["ai-callback"])
 
 
 @router.post("/yolo-result")
-def save_yolo_result(payload: AiYoloCallbackRequest, db: Session = Depends(get_db)):
-    analysis_async_service.save_yolo_callback(db, payload)
+async def save_yolo_result(payload: AiYoloCallbackRequest, db: Session = Depends(get_db)):
+    _, event = analysis_async_service.save_yolo_callback(db, payload)
+    await manager.broadcast(json.dumps(event))
     return api_response(data=None, message="YOLO result saved")
 
 

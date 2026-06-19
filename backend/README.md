@@ -44,7 +44,7 @@ python -m app.seeds.seed_mock_data
 
 ## Backend-AI Async Analysis
 
-백엔드는 최신 센서 데이터를 AI 서버로 보내 분석 job을 시작하고, AI 서버가 callback으로 전달하는 YOLO 중간 결과와 XGBoost 최종 결과를 DB에 저장합니다. XGBoost 최종 결과 저장 후에는 `/ws/drains/status` WebSocket으로 `DRAIN_STATUS_UPDATED` 이벤트를 발행합니다.
+백엔드는 최신 센서 데이터를 AI 서버로 보내 분석 job을 시작하고, AI 서버가 callback으로 전달하는 YOLO 중간 결과와 XGBoost 최종 결과를 DB에 저장합니다. callback 저장 후에는 `/ws/drains/status` WebSocket으로 프론트에 이벤트를 발행합니다.
 
 사용 endpoint:
 
@@ -108,6 +108,52 @@ WebSocket 이벤트 확인:
 const socket = new WebSocket("ws://localhost:8000/ws/drains/status");
 socket.onopen = () => console.log("ws connected");
 socket.onmessage = (event) => console.log(JSON.parse(event.data));
+```
+
+WebSocket 이벤트 타입:
+
+- `YOLO_RESULT_UPDATED`: YOLO 중간 결과 저장 후 전달
+- `DRAIN_STATUS_UPDATED`: XGBoost 최종 위험도 결과 저장 후 전달
+
+두 이벤트는 모두 `/ws/drains/status`로 전달되며, 프론트는 `type` 기준으로 분기 처리합니다.
+
+`YOLO_RESULT_UPDATED` 예시:
+
+```json
+{
+  "type": "YOLO_RESULT_UPDATED",
+  "payload": {
+    "drainId": "DR-004",
+    "requestId": "REQ_202606190001_4",
+    "jobId": "AI_JOB_001",
+    "obstructionRatio": 0.82,
+    "confidenceScore": 0.94,
+    "yoloStatus": "blocked",
+    "updatedAt": "2026-06-18T08:36:20+09:00"
+  }
+}
+```
+
+`DRAIN_STATUS_UPDATED` 예시:
+
+```json
+{
+  "type": "DRAIN_STATUS_UPDATED",
+  "payload": {
+    "drainId": "DR-004",
+    "requestId": "REQ_202606190001_4",
+    "jobId": "AI_JOB_001",
+    "riskLevel": "danger",
+    "riskScore": 0.91,
+    "waterLevelCm": 85,
+    "flowVelocityMps": 0.05,
+    "obstructionRatio": 0.82,
+    "confidenceScore": 0.94,
+    "yoloStatus": "blocked",
+    "finalDecision": "dispatch_required",
+    "updatedAt": "2026-06-18T08:36:25+09:00"
+  }
+}
 ```
 
 주의:

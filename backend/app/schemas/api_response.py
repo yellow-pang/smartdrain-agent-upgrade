@@ -16,6 +16,7 @@ from app.models.drain import Drain
 from app.models.sensor_data import SensorData
 from app.models.xgboost_result import XgboostResult
 from app.models.yolo_result import YoloResult
+from app.websocket.events import DRAIN_STATUS_UPDATED
 
 KST = timezone(timedelta(hours=9))
 RISK_LEVELS = {"good", "caution", "danger", "unknown"}
@@ -254,7 +255,7 @@ def drain_status_event_payload(
     sensor_data = sensor_data or latest_sensor_data(db, drain.id)
     yolo_result = yolo_result or latest_yolo_result(db, drain.id)
     return {
-        "type": "DRAIN_STATUS_UPDATED",
+        "type": DRAIN_STATUS_UPDATED,
         "payload": {
             "drainId": drain.drain_code,
             "riskLevel": normalize_risk_level(result.risk_level),
