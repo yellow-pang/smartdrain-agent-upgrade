@@ -6,6 +6,31 @@ This package is the bridge between the backend request contract and the current 
 
 `run_analysis_job(payload)` is the internal entrypoint for the future `POST /ai/analysis/run` endpoint. It is not an HTTP endpoint by itself.
 
+## Responsibility Boundary
+
+`analysis` orchestrates pure modules and builds payload dictionaries.
+
+It may:
+
+- validate backend-shaped payload dictionaries
+- call `_yolo`
+- call `xgboost`
+- normalize sensor values for XGBoost input
+- build accepted response dictionaries
+- build YOLO callback payload dictionaries
+- build XGBoost callback payload dictionaries
+
+It must not:
+
+- receive HTTP requests directly
+- send HTTP callbacks
+- import FastAPI or another server framework
+- call backend APIs
+- know backend base URLs
+- handle callback timeout, retry, or HTTP status codes
+
+Those network concerns belong to the future `ai_service/http` layer.
+
 ## Input
 
 `run_analysis_job(payload)` accepts the backend analysis request shape:

@@ -4,6 +4,31 @@
 
 It provides a deterministic fake YOLO predictor so the backend-AI server connection flow can be tested before image processing, CCTV API integration, and real YOLO inference are available.
 
+## Responsibility Boundary
+
+`_yolo` is a predictor-only module.
+
+It receives:
+
+- `drain_id`
+
+It returns:
+
+- `obstruction_ratio`
+- `confidence_score`
+- `yolo_status`
+
+It must not:
+
+- receive backend HTTP requests
+- send backend callbacks
+- import FastAPI or another server framework
+- call backend APIs
+- know backend URLs
+- handle timeout, retry, or HTTP status codes
+
+Those responsibilities belong to the future `ai_service/http` layer. `analysis` may call `_yolo` and wrap its returned values into callback payload dictionaries.
+
 ## Contract
 
 The fake predictor returns:

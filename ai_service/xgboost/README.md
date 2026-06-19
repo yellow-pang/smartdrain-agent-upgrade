@@ -6,6 +6,31 @@ This package does not contain a trained XGBoost model yet. It provides a tempora
 
 All current XGBoost contract code and tests are kept inside `ai_service/xgboost/`. Common pytest cache settings are managed at the `ai_service` level.
 
+## Responsibility Boundary
+
+`xgboost` is a predictor-only module.
+
+It receives:
+
+- a fixed dict-of-list feature batch
+
+It returns:
+
+- risk result dictionaries
+
+It must not:
+
+- receive backend HTTP requests
+- send backend callbacks
+- import FastAPI or another server framework
+- call backend APIs
+- know backend URLs
+- handle timeout, retry, or HTTP status codes
+
+Those responsibilities belong to the future `ai_service/http` layer. `analysis` may call `xgboost` and map its returned values into backend callback payload dictionaries.
+
+The current implementation is for MVP contract testing. It is not a trained XGBoost model.
+
 ## Input
 
 The input is a dict-of-list batch. All lists must have the same length.
@@ -52,6 +77,7 @@ Invalid batch shapes raise `ValueError`, including missing required keys and mis
 `case_code` is excluded from the current scope. Upstream/downstream cause estimation is also excluded.
 
 This package does not implement YOLO execution, image processing, database access, WebSocket communication, training data generation, or XGBoost training.
+It also does not implement backend communication or callback sending.
 
 ## Test
 

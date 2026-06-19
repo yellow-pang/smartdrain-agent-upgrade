@@ -8,6 +8,14 @@
 - `_yolo` owns the temporary fake YOLO stub and is the future integration point for real YOLO.
 - `xgboost` owns the flood-risk inference contract and predictor implementation.
 
+## Communication Boundaries
+
+- `http` is the only future layer that may receive backend HTTP requests or send backend HTTP callbacks.
+- `analysis` may orchestrate `_yolo` and `xgboost`, validate payload dictionaries, and build callback-ready payload dictionaries. It must not send HTTP callbacks directly.
+- `_yolo` must remain a predictor module: receive values such as `drain_id` and return YOLO result dictionaries. It must not import FastAPI, call backend APIs, send callbacks, or know backend URLs.
+- `xgboost` must remain a predictor module: receive feature batches and return risk result dictionaries. It must not import FastAPI, call backend APIs, send callbacks, or know backend URLs.
+- Network I/O, timeout, retry, HTTP status mapping, and callback delivery belong outside `_yolo`, `xgboost`, and `analysis`.
+
 ## Scope Rules
 
 Do not implement the following unless the task explicitly asks for it:

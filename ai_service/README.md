@@ -44,6 +44,19 @@ Currently implemented:
 - YOLO callback payload creation
 - XGBoost callback payload creation
 
+## Module Communication Boundaries
+
+Network communication with the backend belongs only in a future `ai_service/http` layer.
+
+Module responsibilities:
+
+- `ai_service/http`: future HTTP endpoint, background task registration, callback sender, timeout, retry, logging, and HTTP error mapping.
+- `ai_service/analysis`: request dictionary validation, fake YOLO call, XGBoost call, and callback-ready payload dictionary assembly.
+- `ai_service/_yolo`: predictor-only module. It receives `drain_id` and returns a YOLO result dictionary.
+- `ai_service/xgboost`: predictor-only module. It receives a fixed feature batch and returns risk result dictionaries.
+
+`_yolo` and `xgboost` must not call backend APIs, send callbacks, import FastAPI, know backend URLs, or handle HTTP status codes.
+
 ## Current Fake YOLO
 
 `ai_service/_yolo` contains deterministic mock YOLO results for MVP drain IDs `1`, `2`, `3`, and `4`. These values were copied from sample YOLO JSON output and fixed in code. The fake predictor does not read images, call CCTV APIs, load a YOLO model, or read the external sample JSON at runtime.

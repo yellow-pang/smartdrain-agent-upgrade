@@ -4,6 +4,17 @@ This document describes how the current internal AI service orchestration should
 
 No FastAPI, Flask, callback sender, database access, WebSocket, or server runtime code is implemented in this stage.
 
+## Layer Responsibility Rule
+
+Backend communication must be isolated to the future `ai_service/http` layer.
+
+- `http`: HTTP endpoint, background tasks, callback sender, timeout, retry, logging, and HTTP error mapping.
+- `analysis`: orchestration and callback-ready payload dictionary assembly only.
+- `_yolo`: predictor-only module that returns YOLO result values.
+- `xgboost`: predictor-only module that returns risk result values.
+
+`_yolo`, `xgboost`, and `analysis` must not send callbacks or know backend URLs.
+
 ## Contract Basis
 
 The current AI service direction follows the asynchronous backend-AI analysis API document:

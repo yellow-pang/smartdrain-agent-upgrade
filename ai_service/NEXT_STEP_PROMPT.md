@@ -41,6 +41,18 @@ dirty
 blocked
 unknown
 
+## 책임 경계
+
+백엔드 HTTP 통신은 future `ai_service/http` 계층에서만 수행한다.
+
+`analysis`는 orchestration과 callback-ready payload dict 생성까지만 담당한다.
+
+`_yolo`는 `drain_id`를 받아 YOLO 결과 dict를 반환하는 predictor-only 모듈이다.
+
+`xgboost`는 feature batch를 받아 risk 결과 dict를 반환하는 predictor-only 모듈이다.
+
+`_yolo`, `xgboost`, `analysis` 안에서 백엔드 API 호출, callback 전송, FastAPI import, backend URL 관리, timeout/retry 처리를 하지 않는다.
+
 ## 작업 범위
 
 수정 가능 범위:
