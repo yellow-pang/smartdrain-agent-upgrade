@@ -43,11 +43,11 @@ Currently implemented:
 
 ## Module Communication Boundaries
 
-Network communication with the backend belongs only in a future `ai_service/http` layer.
+Network communication with the backend belongs only in the `ai_service/http` layer.
 
 Module responsibilities:
 
-- `ai_service/http`: future HTTP endpoint, background task registration, callback sender, timeout, retry, logging, and HTTP error mapping.
+- `ai_service/http`: HTTP endpoint, background task registration, callback sender, timeout, retry, logging, and HTTP error mapping.
 - `ai_service/analysis`: request dictionary validation, fake YOLO call, XGBoost call, and callback-ready payload dictionary assembly.
 - `ai_service/_yolo`: predictor-only module. It receives `drain_id` and returns a YOLO result dictionary.
 - `ai_service/xgboost`: predictor-only module. It receives a fixed feature batch and returns risk result dictionaries.

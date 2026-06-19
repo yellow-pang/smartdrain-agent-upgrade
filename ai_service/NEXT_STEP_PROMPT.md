@@ -2,7 +2,7 @@
 
 You are a Python engineer responsible for the `ai_service/` area of the team project.
 
-This task is **callback sender integration test hardening or backend smoke-test preparation**.
+This task is **manual backend-AI smoke test execution or callback failure observability planning**.
 
 Before working, read the repository root `AGENTS.md` if it exists. Also read and follow `ai_service/AGENTS.md`.
 
@@ -12,7 +12,7 @@ After completing the task, commit according to the commit rules in `ai_service/A
 
 ## Current State
 
-FastAPI HTTP skeleton exists.
+FastAPI HTTP skeleton exists and callback flow tests are covered.
 
 AI server endpoint:
 
@@ -43,9 +43,9 @@ Backend HTTP communication must happen only in `ai_service/http`.
 
 ## Work Candidates
 
-1. Harden callback sender integration tests.
-2. Document smoke-test steps for when the real backend server is running.
-3. Add or clarify callback sender logging policy documentation.
+1. Run a manual smoke test with the real backend server on port `8000` and AI server on port `9000`.
+2. If the backend is not available, document the exact manual smoke-test checklist and expected callback payloads.
+3. Decide whether MVP callback failures need only logging or a future retry queue design.
 
 ## Do Not
 
@@ -61,11 +61,11 @@ Backend HTTP communication must happen only in `ai_service/http`.
 
 ## Verification
 
-The following command must pass:
+For HTTP-only changes, first run:
 
-python -m pytest ai_service
+ai_service\.venv\Scripts\python.exe -m pytest ai_service\http
 
-venv command:
+Before committing, run:
 
 ai_service\.venv\Scripts\python.exe -m pytest ai_service
 

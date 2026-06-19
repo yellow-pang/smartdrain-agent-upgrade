@@ -37,6 +37,7 @@ The agreed local ports are:
 - API contract alignment complete: asynchronous backend-AI API document reflected in service docs.
 - Contract tests complete: async API contract tests added.
 - Current implementation complete: FastAPI `/ai/analysis/run` skeleton and best-effort callback sender.
+- Current test hardening complete: callback flow tests verify YOLO callback URL, XGBoost callback URL, failure continuation, analysis failure handling, and `BACKEND_BASE_URL` override.
 
 ## Contract Notes
 
@@ -190,7 +191,7 @@ Done when:
 
 ## Next Work Candidates
 
-1. Add stronger callback sender integration tests.
-2. Document manual smoke test steps with backend running on port `8000` and AI server on port `9000`.
-3. Add optional callback sender logging policy documentation.
+1. Run manual smoke testing with the backend running on port `8000` and AI server on port `9000`.
+2. Add callback failure observability if the backend team needs clearer logs or metrics.
+3. Decide whether failed callbacks need a retry queue beyond the MVP best-effort sender.
 4. Later, replace fake YOLO and rule-based XGBoost only after their contracts are stable.
