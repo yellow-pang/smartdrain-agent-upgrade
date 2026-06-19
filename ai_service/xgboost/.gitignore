@@ -1,0 +1,34 @@
+# Python bytecode and runtime caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test and coverage output local to this package
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files
+.env
+.env.*
+
+# Temporary logs and scratch files
+*.log
+*.tmp
+*.temp
+
+# Future local model artifacts should not be committed from this package by accident.
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.bin
+*.onnx
+*.jsonl
+
