@@ -97,11 +97,11 @@ export type DrainStatusUpdatedEventDto = {
     payload: {
         drainId: string;
         riskLevel: RiskLevel;
-        riskScore: number;
-        waterLevelCm?: number;
-        flowVelocityMps?: number;
-        obstructionRatio?: number;
-        finalDecision?: string;
+        riskScore: number | null;
+        waterLevelCm?: number | null;
+        flowVelocityMps?: number | null;
+        obstructionRatio?: number | null;
+        finalDecision?: string | null;
         updatedAt: string;
     };
 };

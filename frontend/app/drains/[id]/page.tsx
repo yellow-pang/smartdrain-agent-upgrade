@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { notFound } from "next/navigation";
 import {
     AlertTriangle,
@@ -27,9 +27,11 @@ import {
     loadDrainDetailData,
     type DrainDetailData,
 } from "@/lib/api/drain-data";
+import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
 import { cn } from "@/lib/utils";
-import type { AnalysisResultDto, YoloStatus } from "@/lib/api/types";
+import type { DrainStatusUpdatedEventDto } from "@/lib/api/types";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
+import { useDrainStatusSocket } from "@/lib/websocket/drain-status-socket";
 
 export default function DrainDetailPage({
     params,
@@ -38,6 +40,29 @@ export default function DrainDetailPage({
 }) {
     const { id } = use(params);
     const [detailData, setDetailData] = useState<DrainDetailData | null>();
+
+    const applyRealtimeEvent = useCallback(
+        (event: DrainStatusUpdatedEventDto) => {
+            setDetailData((current) => {
+                if (
+                    !current ||
+                    current.source !== "api" ||
+                    current.drain.id !== event.payload.drainId
+                ) {
+                    return current;
+                }
+
+                return {
+                    ...current,
+                    drain: mergeDrainStatusEventIntoFacility(
+                        current.drain,
+                        event,
+                    ),
+                };
+            });
+        },
+        [],
+    );
 
     useEffect(() => {
         let mounted = true;
@@ -51,6 +76,11 @@ export default function DrainDetailPage({
             mounted = false;
         };
     }, [id]);
+
+    useDrainStatusSocket({
+        enabled: detailData?.source === "api",
+        onStatusUpdated: applyRealtimeEvent,
+    });
 
     const drain = detailData?.drain;
     const meta = drain ? STATUS_META[drain.status] : undefined;
@@ -125,7 +155,6 @@ export default function DrainDetailPage({
                             summary={sensorSummary}
                         />
                         <CurrentRiskCard drain={drain} meta={meta} />
-                        <AnalysisResultCard analysis={detailData.analysis} />
                     </div>
 
                     {/* Right column */}
@@ -233,10 +262,6 @@ function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
                         <DetailUnavailableCard
                             title="현재 위험 상태 연결 대기"
                             description="상세 API가 연결되면 상태, 막힘 정도, 수위, 유량이 표시됩니다."
-                        />
-                        <DetailUnavailableCard
-                            title="YOLO / XGBoost 분석 결과 연결 대기"
-                            description="최신 분석 API가 연결되면 막힘 상태와 최종 위험 판단이 표시됩니다."
                         />
                     </div>
 
@@ -450,77 +475,6 @@ function FacilityInfoCard({
     );
 }
 
-function AnalysisResultCard({
-    analysis,
-}: {
-    analysis?: AnalysisResultDto;
-}) {
-    const yolo = analysis?.yoloResult;
-    const xgboost = analysis?.xgboostResult;
-    const riskMeta = xgboost ? STATUS_META[xgboost.riskLevel] : undefined;
-
-    return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-bold text-slate-900">
-                YOLO / XGBoost 분석 결과
-            </h2>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <AnalysisMetric
-                    label="YOLO 막힘 상태"
-                    value={yolo ? getYoloStatusLabel(yolo.yoloStatus) : "없음"}
-                    tone={yolo ? "text-slate-900" : "text-slate-400"}
-                />
-                <AnalysisMetric
-                    label="YOLO 신뢰도"
-                    value={
-                        yolo
-                            ? `${Math.round(yolo.confidenceScore * 100)}%`
-                            : "없음"
-                    }
-                    tone={yolo ? "text-cyan-700" : "text-slate-400"}
-                />
-                <AnalysisMetric
-                    label="XGBoost 위험 점수"
-                    value={
-                        xgboost
-                            ? `${Math.round(xgboost.riskScore * 100)}점`
-                            : "없음"
-                    }
-                    tone={riskMeta?.text ?? "text-slate-400"}
-                />
-                <AnalysisMetric
-                    label="최종 판단"
-                    value={xgboost?.finalDecision ?? "분석 결과 없음"}
-                    tone={riskMeta?.text ?? "text-slate-400"}
-                />
-            </div>
-            {(yolo?.analyzedAt || xgboost?.predictedAt) && (
-                <p className="mt-3 text-xs text-slate-400">
-                    YOLO {yolo?.analyzedAt ?? "-"} · XGBoost{" "}
-                    {xgboost?.predictedAt ?? "-"}
-                </p>
-            )}
-        </div>
-    );
-}
-
-function AnalysisMetric({
-    label,
-    value,
-    tone,
-}: {
-    label: string;
-    value: string;
-    tone: string;
-}) {
-    return (
-        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-3">
-            <p className="text-xs text-slate-500">{label}</p>
-            <p className={cn("mt-1 text-sm font-bold", tone)}>{value}</p>
-        </div>
-    );
-}
-
 function RiskHistoryCard({
     riskHistory,
 }: {
@@ -667,12 +621,3 @@ function getSnapshots(detailData: DrainDetailData) {
     return [{ imageUrl, capturedAt }];
 }
 
-function getYoloStatusLabel(status: YoloStatus) {
-    const labels: Record<YoloStatus, string> = {
-        clear: "막힘 없음",
-        partially_blocked: "일부 막힘",
-        blocked: "심한 막힘",
-        unknown: "판단불가",
-    };
-    return labels[status];
-}
