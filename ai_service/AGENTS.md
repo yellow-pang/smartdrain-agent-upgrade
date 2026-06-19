@@ -34,7 +34,7 @@ Keep tests under `ai_service`. Keep common pytest settings and gitignore rules a
 
 When changing a contract, update the relevant README, `AI_SERVICE_PLAN.md`, and tests together.
 
-At the end of each staged task, update `ai_service/NEXT_STEP_PROMPT.md` for the next stage and include the same next-step prompt in the final chat response so the next task can be started without opening files. Do not use triple-backtick code fences in next-step prompts; write paths, commands, and examples as plain text or indented text so the whole prompt can be copied at once from chat.
+At the end of each staged task, update `ai_service/NEXT_STEP_PROMPT.md` for the next stage and also paste the same next-step prompt directly in the final chat response. Do both; do not rely on the file alone. The final chat response must let the user copy the next prompt without opening repository files. Do not use triple-backtick code fences in next-step prompts; write paths, commands, and examples as plain text or indented text so the whole prompt can be copied at once from chat.
 
 ## Commit Rules
 
