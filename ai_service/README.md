@@ -2,9 +2,9 @@
 
 This directory contains the SmartDrain AI server area.
 
-The current implementation provides the XGBoost inference contract and a temporary rule-based baseline predictor. It does not contain a trained XGBoost model.
+The current implementation provides a fake YOLO stub, the XGBoost inference contract, and a temporary rule-based XGBoost baseline predictor. It does not contain real YOLO execution or a trained XGBoost model.
 
-Next steps will add analysis orchestration and a fake YOLO stub so the backend-AI server connection flow can be tested before real YOLO and model integrations are ready.
+Next steps will add analysis orchestration so the backend-AI server connection flow can be tested before real YOLO and model integrations are ready.
 
 ## Planned Flow
 
@@ -28,6 +28,10 @@ The following are not implemented yet:
 - FastAPI or Flask endpoints.
 - Real XGBoost model loading or training.
 
+## Current Fake YOLO
+
+`ai_service/_yolo` contains deterministic mock YOLO results for MVP drain IDs `1`, `2`, `3`, and `4`. These values were copied from sample YOLO JSON output and fixed in code. The fake predictor does not read images, call CCTV APIs, load a YOLO model, or read the external sample JSON at runtime.
+
 ## Local Setup
 
 Windows cmd:
@@ -50,4 +54,3 @@ From the repository root, package tests can be run with:
 ```bash
 python -m pytest ai_service
 ```
-

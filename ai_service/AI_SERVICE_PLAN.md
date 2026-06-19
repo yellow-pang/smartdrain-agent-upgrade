@@ -18,6 +18,15 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - The backend callback document expects `final_decision` values of `normal`, `monitoring`, `field_check`, or `dispatch_required`.
 - Callback payload generation must include a decision mapper.
 
+## Current Stage Status
+
+- 0단계 ai_service 개발 환경 정리 완료.
+- 1단계 fake YOLO stub 추가 완료.
+- `ai_service/_yolo` now provides deterministic mock YOLO results for drain IDs `1`, `2`, `3`, and `4`.
+- The fake YOLO values are fixed from the first four samples of `yolo_results_json.json`.
+- Fake YOLO does not read images, CCTV APIs, model files, or the external sample JSON at runtime.
+- Next stage: 2단계 analysis orchestration 추가.
+
 ## 0단계: ai_service 개발 환경 정리
 
 목표:
