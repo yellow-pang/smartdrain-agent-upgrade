@@ -26,6 +26,23 @@ Therefore this repository currently keeps HTTP behavior as a design contract and
 
 The next implementation step should start only after the team confirms the framework and dependency management approach.
 
+## Latest Repository Check
+
+The repository was checked for framework indicators before adding endpoint code.
+
+No server framework or dependency-management standard is currently present:
+
+- No FastAPI, Flask, Django, Starlette, aiohttp, uvicorn, or gunicorn usage was found.
+- No requirements, pyproject, setup, Pipfile, poetry, uv, conda, or environment file was found at the repository root.
+- No AI server HTTP entrypoint exists yet.
+
+Decision:
+
+- Do not create `ai_service/http/` yet.
+- Do not add framework dependencies.
+- Keep `run_analysis_job(payload)` as the stable internal integration point.
+- Revisit endpoint implementation after the team confirms the server framework.
+
 ## Target Endpoints
 
 Backend to AI server:

@@ -34,6 +34,7 @@ The backend sends `request_id`, `drain_id`, and latest sensor values. The AI ser
 - `ai_service/HTTP_API_DESIGN.md` documents the future `/ai/analysis/run` adapter boundary, callback sender boundary, framework status, and import path for `run_analysis_job`.
 - 5단계 HTTP endpoint 스켈레톤 구현 여부 결정 완료.
 - No endpoint skeleton was added because no server framework or dependency standard is present in the repository.
+- Framework indicators were rechecked and endpoint implementation remains deferred.
 - Next stage: 서버 프레임워크 확정 후 HTTP endpoint skeleton implementation.
 
 ## 0단계: ai_service 개발 환경 정리

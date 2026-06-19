@@ -19,6 +19,7 @@ The AI service will receive the latest sensor values from the backend, resolve t
 The HTTP API layer is not implemented yet. The current HTTP connection design is documented in `ai_service/HTTP_API_DESIGN.md`.
 
 The endpoint skeleton is intentionally deferred until the team selects a server framework and dependency management approach.
+The repository currently has no server framework dependency or AI server HTTP entrypoint.
 
 ## Current Limits
 
