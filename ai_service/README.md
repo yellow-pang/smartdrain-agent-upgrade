@@ -1,102 +1,92 @@
 # SmartDrain AI Service
 
-This directory contains the SmartDrain AI server area.
+이 디렉터리는 SmartDrain 백엔드와 AI 서버 사이의 비동기 분석 흐름을 담당한다.
 
-The current implementation provides analysis orchestration, a fake YOLO stub, the XGBoost inference contract, and a temporary rule-based XGBoost baseline predictor. It does not contain real YOLO execution or a trained XGBoost model.
+현재 `ai_service`는 실제 YOLO/XGBoost 모델 학습 또는 완성된 모델 추론 서버가 아니다. 지금 구현된 목적은 백엔드가 AI 서버를 호출하고, AI 서버가 YOLO 단계와 XGBoost 단계를 거쳐 callback payload를 만들어 백엔드로 돌려보내는 연동 구조를 고정하는 것이다.
 
-The internal analysis flow can now build accepted responses, YOLO callback payloads, and XGBoost callback payloads. A FastAPI skeleton exposes `POST /ai/analysis/run` and sends callback payloads through a best-effort HTTP sender.
+## 현재 역할
 
-## Planned Flow
+`ai_service`가 현재 담당하는 흐름은 다음과 같다.
 
-The backend-AI server integration will follow this asynchronous shape:
+1. 백엔드에서 분석 요청을 받는다.
+2. 요청 payload를 검증한다.
+3. `drain_id` 기준으로 YOLO 단계를 호출한다.
+4. YOLO 결과와 센서값을 조합해 XGBoost 입력 feature로 변환한다.
+5. XGBoost 단계를 호출한다.
+6. YOLO/XGBoost 결과를 백엔드 callback payload로 구성한다.
+7. 백엔드 callback endpoint로 결과를 전송한다.
 
-- `POST /ai/analysis/run`
-- `POST /api/ai-callback/yolo-result`
-- `POST /api/ai-callback/xgboost-result`
+전체 비동기 연동 계약은 아래 endpoint를 기준으로 한다.
 
-This asynchronous contract is the current basis for `ai_service`. A sensor-only synchronous endpoint such as `/ai/xgboost/predict` is not the current target for this package.
+- Backend -> AI: `POST /ai/analysis/run`
+- AI -> Backend: `POST /api/ai-callback/yolo-result`
+- AI -> Backend: `POST /api/ai-callback/xgboost-result`
 
-The AI service will receive the latest sensor values from the backend, resolve the image source internally by `drain_id`, run YOLO, run XGBoost with YOLO and sensor features, and build callback payloads.
+센서값만 직접 넣는 동기 endpoint 형태인 `/ai/xgboost/predict`는 현재 이 패키지의 기준 계약이 아니다.
 
-The HTTP API layer is implemented as a minimal FastAPI adapter. The current HTTP connection design is documented in `ai_service/HTTP_API_DESIGN.md`.
+## 현재 구현 상태
 
-## Current Limits
+구현되어 있는 것:
 
-The following are not implemented yet:
+- FastAPI 기반 `POST /ai/analysis/run` endpoint skeleton
+- 백엔드 요청 payload 검증
+- accepted response 생성
+- 임시 fake YOLO predictor 호출
+- YOLO 결과를 XGBoost 입력 feature로 변환
+- 임시 rule-based XGBoost baseline 호출
+- YOLO callback payload 생성
+- XGBoost callback payload 생성
+- best-effort 방식의 백엔드 callback 전송
+- 위 흐름에 대한 테스트
 
-- Real YOLO execution.
-- CCTV API calls.
-- Image processing.
-- Database reads or writes.
-- Real XGBoost model loading or training.
+아직 구현되어 있지 않은 것:
 
-Currently implemented:
+- 실제 YOLO 모델 추론
+- CCTV API 연동
+- 이미지 다운로드 또는 이미지 전처리
+- YOLO weight 로딩
+- 실제 XGBoost 학습 모델 로딩
+- XGBoost model artifact 적용
+- AI 서버 자체 DB 저장
+- WebSocket 처리
 
-- fake YOLO for MVP drain IDs
-- rule-based XGBoost baseline
-- internal analysis orchestration
-- accepted response payload creation
-- YOLO callback payload creation
-- XGBoost callback payload creation
-- FastAPI `/ai/analysis/run` endpoint skeleton
-- best-effort backend callback sender
+## 디렉터리 책임
 
-## Module Communication Boundaries
+각 모듈은 아래 책임 경계를 지켜야 한다.
 
-Network communication with the backend belongs only in the `ai_service/http` layer.
+| 경로 | 책임 |
+| --- | --- |
+| `ai_service/http` | HTTP endpoint, background task 등록, callback 전송, timeout, retry, HTTP 오류 매핑 |
+| `ai_service/analysis` | 요청 검증, YOLO 호출, XGBoost 호출, feature 변환, callback-ready payload 생성 |
+| `ai_service/_yolo` | YOLO predictor 역할만 수행. 입력을 받아 YOLO 결과 dict 반환 |
+| `ai_service/xgboost` | XGBoost predictor 역할만 수행. feature batch를 받아 위험도 결과 dict 반환 |
 
-Module responsibilities:
+중요한 규칙:
 
-- `ai_service/http`: HTTP endpoint, background task registration, callback sender, timeout, retry, logging, and HTTP error mapping.
-- `ai_service/analysis`: request dictionary validation, fake YOLO call, XGBoost call, and callback-ready payload dictionary assembly.
-- `ai_service/_yolo`: predictor-only module. It receives `drain_id` and returns a YOLO result dictionary.
-- `ai_service/xgboost`: predictor-only module. It receives a fixed feature batch and returns risk result dictionaries.
+- `_yolo`는 백엔드 callback을 직접 보내면 안 된다.
+- `xgboost`는 백엔드 callback을 직접 보내면 안 된다.
+- `_yolo`와 `xgboost`는 FastAPI, backend URL, HTTP timeout/retry 정책을 알면 안 된다.
+- HTTP 통신은 `ai_service/http` 계층만 담당한다.
+- YOLO와 XGBoost 사이의 연결은 `ai_service/analysis` 계층이 담당한다.
 
-`_yolo` and `xgboost` must not call backend APIs, send callbacks, import FastAPI, know backend URLs, or handle HTTP status codes.
+## 실제 모델 담당자가 봐야 할 문서
 
-## Current Fake YOLO
+실제 YOLO/XGBoost 모델을 학습하고 적용할 담당자는 아래 문서를 우선 확인하면 된다.
 
-`ai_service/_yolo` contains deterministic mock YOLO results for MVP drain IDs `1`, `2`, `3`, and `4`. These values were copied from sample YOLO JSON output and fixed in code. The fake predictor does not read images, call CCTV APIs, load a YOLO model, or read the external sample JSON at runtime.
+- `ai_service/_yolo/README.md`: fake YOLO를 실제 YOLO 추론으로 교체할 때 지켜야 할 출력 계약
+- `ai_service/xgboost/README.md`: rule-based baseline을 실제 XGBoost 모델로 교체할 때 지켜야 할 입력/출력 계약
+- `ai_service/analysis/README.md`: YOLO 결과가 XGBoost 입력으로 변환되는 위치와 sensor normalization 정책
+- `ai_service/HTTP_API_DESIGN.md`: 백엔드와 AI 서버 사이의 HTTP 요청/응답/callback 계약
 
-Allowed YOLO statuses are `good`, `dirty`, `blocked`, and `unknown`. The asynchronous API source document lists `good`, `dirty`, and `blocked`; this project additionally allows `unknown` for fallback or status-unavailable cases.
+## 실행
 
-## Current Analysis Orchestration
-
-`ai_service/analysis` accepts the backend analysis request shape, validates it, creates a deterministic job ID, calls fake YOLO, converts YOLO and sensor values into the XGBoost input contract, runs XGBoost, and returns callback-ready payload dictionaries.
-
-Current job ID policy:
-
-`job_id = AI_JOB_{request_id}`
-
-This deterministic MVP policy can be replaced later by UUID, sequence, database, or queue-generated job IDs.
-
-Sensor values are normalized with the current MVP policy:
-
-- `water_level = water_level_cm / 100.0`, clamped to `0.0` through `1.0`
-- `flow_velocity = flow_velocity_mps / 1.0`, clamped to `0.0` through `1.0`
-
-The orchestration layer does not create HTTP endpoints, send callbacks, or persist data.
-The returned callback payload dictionaries also do not include `drain_id`; the backend should resolve `drain_id` through its stored `request_id` and `job_id` mapping.
-
-Detailed request, response, callback payload, error policy, and normalization examples are documented in `ai_service/analysis/README.md`. Static documentation fixtures are available under `ai_service/analysis/examples/`.
-
-HTTP endpoint code calls:
-
-`from ai_service.analysis.service import run_analysis_job`
-
-The `/ai/analysis/run` route should pass its parsed JSON body to `run_analysis_job(payload)` and return the `accepted_response` portion immediately.
-
-The FastAPI runtime package is `ai_service/http`.
-
-Run command:
+AI 서버 실행:
 
 ```cmd
 python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
 ```
 
-## Local Setup
-
-Windows cmd:
+로컬 테스트 환경 예시:
 
 ```cmd
 python -m venv ai_service\.venv
@@ -106,14 +96,8 @@ python -m pip install -r ai_service\requirements.txt
 python -m pytest ai_service
 ```
 
-Activate-free execution:
+가상환경을 활성화하지 않고 실행하는 경우:
 
 ```cmd
 ai_service\.venv\Scripts\python.exe -m pytest ai_service
-```
-
-From the repository root, package tests can be run with:
-
-```bash
-python -m pytest ai_service
 ```
