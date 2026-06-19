@@ -1,0 +1,10 @@
+{
+  "request_id": "REQ_20260618_001",
+  "drain_id": 2,
+  "sensor_data": {
+    "measured_at": "2026-06-18T08:36:13+09:00",
+    "water_level_cm": 98.13,
+    "flow_velocity_mps": 0.4512,
+    "quality_status": "valid"
+  }
+}
