@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.routers import analysis, dashboard, drains, sensor_data, websocket
+from app.routers import ai_callback, analysis, dashboard, drains, sensor_data, websocket
 from app.schemas.api_response import api_error_response, api_response
 
 
@@ -41,6 +41,18 @@ def _error_code(status_code: int, detail: object) -> str:
     if status_code == 404 and detail_text == "Sensor data not found":
         return "SENSOR_DATA_UNAVAILABLE"
     if status_code == 404 and detail_text in {"YOLO result not found", "Risk result not found"}:
+        return "ANALYSIS_UNAVAILABLE"
+    if status_code == 404 and detail_text == "Analysis request not found":
+        return "ANALYSIS_REQUEST_NOT_FOUND"
+    if status_code in {409, 503} and detail_text in {
+        "AI server is disabled",
+        "AI server request timed out",
+        "AI server connection failed",
+        "AI server rejected analysis request",
+        "YOLO result not found",
+    }:
+        return "ANALYSIS_UNAVAILABLE"
+    if status_code == 503 and detail_text.startswith("AI server returned"):
         return "ANALYSIS_UNAVAILABLE"
     if status_code == 422:
         return "VALIDATION_ERROR"
@@ -88,5 +100,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 app.include_router(drains.router)
 app.include_router(sensor_data.router)
 app.include_router(analysis.router)
+app.include_router(ai_callback.router)
 app.include_router(dashboard.router)
 app.include_router(websocket.router)

@@ -39,6 +39,10 @@ def normalize_risk_level(value: str | None) -> str:
 
 
 def normalize_yolo_status(value: str | None) -> str:
+    if value == "good":
+        return "clear"
+    if value == "dirty":
+        return "partially_blocked"
     return value if value in YOLO_STATUSES else "unknown"
 
 

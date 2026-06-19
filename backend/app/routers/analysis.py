@@ -23,11 +23,19 @@ from app.schemas.api_response import (
 )
 from app.schemas.xgboost_result import XgboostResultCreate
 from app.schemas.yolo_result import YoloResultCreate
+from app.schemas.analysis_async import AnalysisAsyncRunRequest
 from app.services import xgboost_service, yolo_service
+from app.services import analysis_async_service
 from app.services.drain_service import get_drain_by_identifier
 from app.websocket.manager import manager
 
 router = APIRouter(prefix="/api", tags=["analysis"])
+
+
+@router.post("/analysis/async-run")
+async def run_async_analysis(payload: AnalysisAsyncRunRequest, db: Session = Depends(get_db)):
+    result = await analysis_async_service.start_async_analysis(db, payload)
+    return api_response(result, message="Analysis request accepted")
 
 
 @router.post("/analysis/yolo", status_code=201)
