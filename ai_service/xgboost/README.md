@@ -4,7 +4,7 @@ Current version: `xgb_stub_v0`
 
 This package does not contain a trained XGBoost model yet. It provides a temporary rule-based baseline predictor so the backend and AI server can fix the inference contract before the trained model is ready.
 
-All current XGBoost contract code, tests, and local pytest cache settings are kept inside `ai_service/xgboost/`.
+All current XGBoost contract code and tests are kept inside `ai_service/xgboost/`. Common pytest cache settings are managed at the `ai_service` level.
 
 ## Input
 
@@ -58,10 +58,10 @@ This package does not implement YOLO execution, image processing, database acces
 Run the contract tests from the repository root:
 
 ```bash
-python -m pytest ai_service/xgboost
+python -m pytest ai_service
 ```
 
-The local pytest config stores pytest cache under `ai_service/xgboost/.pytest_cache`.
+The shared pytest config stores pytest cache under `ai_service/.pytest_cache`.
 
 ## Future Replacement
 
