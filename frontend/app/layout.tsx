@@ -1,4 +1,5 @@
 import { Analytics } from "@vercel/analytics/next";
+import { RealtimeDrainSync } from "@/components/realtime-drain-sync";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -52,6 +53,7 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} bg-slate-50`}
         >
             <body className="font-sans antialiased">
+                <RealtimeDrainSync />
                 {children}
                 {process.env.NODE_ENV === "production" && <Analytics />}
             </body>

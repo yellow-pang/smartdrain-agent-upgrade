@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AlertCircle, Info, RotateCcw } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { RiskMap } from "@/components/risk-map";
@@ -12,89 +12,29 @@ import {
 import { DrainSummaryPanel } from "@/components/drain-summary-panel";
 import { PlaceholderState } from "@/components/placeholder-state";
 import { Button } from "@/components/ui/button";
-import {
-    loadDashboardData,
-    type DashboardData,
-} from "@/lib/api/drain-data";
-import {
-    dashboardSummaryFromDrains,
-    mergeDrainStatusEventIntoFacility,
-    sortFacilitiesByRisk,
-} from "@/lib/api/adapters";
-import type { DashboardSummaryDto, DrainStatusUpdatedEventDto } from "@/lib/api/types";
+import type { DashboardData } from "@/lib/api/drain-data";
+import type { DashboardSummaryDto } from "@/lib/api/types";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
-import { useDrainStatusSocket } from "@/lib/websocket/drain-status-socket";
+import { useDrainStore } from "@/store/drain-store";
 
 export default function DashboardPage() {
-    const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-        null,
-    );
-    const [isLoading, setIsLoading] = useState(true);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-
-    const applyRealtimeEvent = useCallback(
-        (event: DrainStatusUpdatedEventDto) => {
-            setDashboardData((current) => {
-                if (!current || current.source !== "api") return current;
-
-                const drains = current.drains.map((drain) =>
-                    mergeDrainStatusEventIntoFacility(drain, event),
-                );
-
-                return {
-                    ...current,
-                    drains,
-                    sortedDrains: sortFacilitiesByRisk(drains),
-                    summary: dashboardSummaryFromDrains(drains),
-                };
-            });
-        },
-        [],
-    );
-
-    const reloadDashboard = useCallback(() => {
-        setIsLoading(true);
-        loadDashboardData().then((data) => {
-            setDashboardData(data);
-            setSelectedId((current) => {
-                if (data.source !== "api") return null;
-                return current ?? data.sortedDrains[0]?.id ?? null;
-            });
-            setIsLoading(false);
-        });
-    }, []);
-
-    useEffect(() => {
-        let mounted = true;
-
-        loadDashboardData().then((data) => {
-            if (!mounted) return;
-            setDashboardData(data);
-            setSelectedId(
-                data.source === "api" ? data.sortedDrains[0]?.id : null,
-            );
-            setIsLoading(false);
-        });
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    const realtimeStatus = useDrainStatusSocket({
-        enabled: dashboardData?.source === "api",
-        onStatusUpdated: applyRealtimeEvent,
-    });
+    const dashboardData = useDrainStore((state) => state.dashboard);
+    const storeStatus = useDrainStore((state) => state.status);
+    const selectedId = useDrainStore((state) => state.selectedDrainId);
+    const setSelectedId = useDrainStore((state) => state.selectDrain);
+    const reloadDashboard = useDrainStore((state) => state.initializeDashboard);
+    const realtimeStatus = useDrainStore((state) => state.socketStatus);
+    const isLoading = storeStatus === "loading";
 
     const selected = useMemo(() => {
-        if (!dashboardData || dashboardData.source !== "api" || !selectedId) {
+        if (!dashboardData || !selectedId) {
             return undefined;
         }
         return dashboardData.drains.find((drain) => drain.id === selectedId);
     }, [dashboardData, selectedId]);
 
     const sorted =
-        dashboardData?.source === "api" ? dashboardData.sortedDrains : [];
+        dashboardData?.sortedDrains ?? [];
     const riskListStatus = getRiskListStatus({
         dashboardData,
         isLoading,
@@ -113,7 +53,7 @@ export default function DashboardPage() {
             <main className="mx-auto max-w-[1600px] p-4 md:p-6">
                 {isLoading ? (
                     <DashboardSummarySkeleton />
-                ) : dashboardData?.source === "api" ? (
+                ) : dashboardData ? (
                     <DashboardSummaryBar
                         summary={dashboardData.summary}
                     />
@@ -135,19 +75,12 @@ export default function DashboardPage() {
                                     </span>
                                 )}
                             </div>
-                            {dashboardData?.source === "api" ? (
+                            {dashboardData ? (
                                 <RiskMap
                                     drains={dashboardData.drains}
                                     selectedId={selectedId}
                                     onSelect={setSelectedId}
                                     labelLocation={selected?.road}
-                                />
-                            ) : dashboardData?.source === "mock" ? (
-                                <PlaceholderState
-                                    image={PLACEHOLDER_IMAGES.map}
-                                    title="지도 API 연결 대기"
-                                    description="실제 백엔드 데이터가 도착하면 지도 마커가 표시됩니다."
-                                    statusLabel="mock fallback"
                                 />
                             ) : (
                                 <MapLoadingState />
@@ -180,12 +113,12 @@ export default function DashboardPage() {
                             <div className="max-h-[640px] shadow-sm">
                                 <DrainSummaryPanel drain={selected} />
                             </div>
-                        ) : dashboardData?.source === "mock" ? (
+                        ) : !isLoading ? (
                             <PlaceholderState
                                 image={PLACEHOLDER_IMAGES.facility}
-                                title="상세 정보 연결 대기"
-                                description="목록 API가 연결되면 선택한 시설의 상세 정보가 표시됩니다."
-                                statusLabel="mock fallback"
+                                title="상세 정보를 불러올 수 없습니다"
+                                description="백엔드 연결을 확인한 뒤 다시 시도해주세요."
+                                statusLabel="연결 오류"
                                 className="min-h-[420px]"
                             />
                         ) : null}
@@ -204,7 +137,7 @@ function getRiskListStatus({
     isLoading: boolean;
 }): DrainRiskListStatus {
     if (isLoading) return "loading";
-    if (!dashboardData || dashboardData.source === "mock") return "error";
+    if (!dashboardData) return "error";
     if (dashboardData.sortedDrains.length === 0) return "empty";
     return "success";
 }

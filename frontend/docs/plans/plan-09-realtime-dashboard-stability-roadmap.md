@@ -19,7 +19,7 @@
 | `AGENTS.md` | 중간 이상 작업은 plan 작성 후 사용자 승인, 상태 관리 방식/폴더 구조/API 연동 변경은 사전 확인이 필요하다. |
 | `docs/convention/documentation-convention.md` | plan에는 작업 범위, 변경 내용, 사용자 확인 항목, 추천 방향을 기록한다. |
 | 루트 `docs/08_기술스택선정근거.md` | 목표 아키텍처는 TanStack Query(서버 상태)와 Zustand(전역/WS 상태)를 사용한다고 정의한다. |
-| `frontend/package.json` | 실제 프론트 의존성에는 TanStack Query와 Zustand가 아직 없다. 문서와 구현 사이의 차이를 이번 계획에서 명시적으로 해소한다. |
+| `frontend/package.json` | 계획 작성 시 TanStack Query와 Zustand가 없었고, 사용자 승인 후 이번 브랜치에서 Zustand를 설치한다. TanStack Query는 후속 판단으로 둔다. |
 | `docs/contract/backend-contract-doc.md` | 단일 WS endpoint에서 `DRAIN_STATUS_UPDATED`, `YOLO_RESULT_UPDATED`, `XGBOOST_RESULT_UPDATED` 세 이벤트를 사용한다. |
 | `lib/websocket/drain-status-socket.ts` | cleanup과 3초 재연결은 있으나 재연결 후 REST 재동기화, backoff, 단일 상태원은 없다. |
 | `app/page.tsx`, `app/drains/[id]/page.tsx` | 대시보드와 상세가 각자 로컬 상태와 WS 구독을 가진다. 대시보드 내부 UI는 같은 상태를 공유하지만 상세는 별도 상태다. |
@@ -179,27 +179,41 @@ applyXgboostEvent()
 
 ## 6. 후속 브랜치 제안
 
+시나리오는 AI 모델과 백엔드 데이터 생성 방식이 확정된 뒤 설계한다. 따라서 지금은 특정 시설별 위험 시나리오나 데모 제어를 구현 목표로 고정하지 않는다.
+
+### 6.1 프론트엔드 단독으로 진행 가능한 후속 작업
+
 | 순서 | 추천 브랜치 | 목표 | 선행 조건 |
 | ---: | --- | --- | --- |
 | 1 | `feature/realtime-drain-store-hardening` | 이번 문서의 상태 정합성, 재연결 복구, 오류 UI 기반 구현 | 아래 사용자 확인 |
 | 2 | `refactor/dashboard-realtime-components` | `components/dashboard/*`로 표시 컴포넌트 분리, Zustand selector 사용, UI 회귀 최소화 | 1단계 공통 source 안정화 |
 | 3 | `feat/tanstack-query-server-state` | TanStack Query를 REST 서버 상태의 단일 cache로 도입하고 WS patch 경계를 정의 | REST 중심 화면 증가 및 cache/source 설계 합의 |
-| 4 | `feat/demo-scenario-controls` | start/stop/reset/scenario 제어 패널과 10개 시나리오 상태 표시 | 백엔드 demo API 계약과 권한/초기화 정책 확정 |
-| 5 | `test/realtime-dashboard-e2e` | WS 이벤트·재연결·10개 시나리오 브라우저 E2E 자동화 | Playwright 등 새 테스트 도구 설치 승인 |
-| 6 | `feat/analysis-progress-observability` | 분석 요청-진행-실패 UI와 요청 상관관계 표시 | 백엔드가 `requestId`와 processing/failed 계약을 제공 |
+| 4 | `test/realtime-dashboard-e2e` | 배포 후 실제 화면 변경을 반복 검증할 수 있는 E2E 기반을 마련한다. 시나리오 데이터는 백엔드가 제공하는 실제 데이터만 사용한다. | 화면 흐름 안정화, Playwright 설치 승인, 배포 환경 접근 방법 합의 |
+| 5 | `feat/analysis-progress-observability` | 분석 요청-진행-실패 UI와 요청 상관관계 표시 | 백엔드가 `requestId`와 processing/failed 계약을 제공 |
+
+### 6.2 팀 협의가 필요한 후속 작업
+
+| 후보 | 프론트에서 미리 할 수 있는 일 | 팀/백엔드와 확정할 내용 | 현재 결정 |
+| --- | --- | --- | --- |
+| AI 기반 시나리오 | 화면의 loading, unknown, 오류 placeholder를 유지 | 모델 출력 범위, 10개 시설별 입력 데이터, 이벤트 순서와 재현 방법 | 모델 확정 후 설계 |
+| 데모 제어 API | 제어 패널 UI 초안만 검토 가능 | start/stop/reset/scenario endpoint, 초기화 범위, 동시 실행 방지, 권한 | 구현 약속 없음. 필요 시 별도 브랜치 |
+| TanStack Query | 도입 경계와 cache invalidation/WS patch 초안 작성 | 서버 상태 source를 Query cache로 둘지 Zustand로 둘지 팀 합의 | 다음 리팩토링에서 재검토 |
+| 실제 이미지 URL | 현재 fallback placeholder를 정상 UX로 유지 | AI/백엔드가 브라우저 접근 가능한 이미지 URL, 보존 기간, CORS를 제공 | 백엔드 계약 후 반영 |
+| 분석 진행/실패 | pending/failed UI 공간과 상태 문구 준비 | `requestId`, processing/failed event 또는 job status API | 계약 확정 후 구현 |
+| 배포 후 E2E | 브라우저 검증 항목을 문서화 | 테스트 대상 배포 URL, seed/reset 방식, 테스트 계정/데이터 정책 | 필요 시 Playwright 도입 |
 
 ## 7. 사용자 확인 필요 항목
 
 코드 수정 전 다음 결정을 확인한다.
 
-1. **상태 관리 방식**: 루트 기술스택 문서에 맞춰 이번 브랜치에서 Zustand를 설치하고, `drainsById`·선택 시설·WS 연결 상태·REST/WS merge action의 공통 source로 사용한다. 이는 새 패키지 설치와 상태 관리 방식 변경 승인 항목이다.
+1. **상태 관리 방식**: 승인됨. 이번 브랜치에서 Zustand를 설치하고, `drainsById`·선택 시설·WS 연결 상태·REST/WS merge action의 공통 source로 사용한다.
 2. **재동기화 API**: 신규 `/status/latest` API를 만들지 않고, 현재 `GET /api/drains`와 `GET /api/dashboard/summary`로 재연결 복구를 구현한다.
-3. **mock 정책**: API 장애 시 자동 mock fallback을 중단하고, 명시적 mock mode와 오류 UI를 분리한다.
-4. **UI 범위**: 기존 디자인은 유지하되 연결 상태 배지, stale 안내, 재시도 버튼, 빈 분석/이력 상태를 추가한다.
+3. **mock 정책**: 승인됨. 자동 mock fallback을 제거한다. 실제 API 오류는 실패 상태와 기존 placeholder 이미지로 표현하며, 시나리오 데이터도 향후 백엔드가 제공한다.
+4. **UI 범위**: 승인됨. 기존 레이아웃과 디자인을 유지하고, 현재 UI를 과도하게 바꾸지 않는 범위에서 연결 상태 배지, stale 안내, 재시도 버튼, 빈 분석/이력 상태를 더한다.
 5. **TanStack Query 도입 시점**: 루트 문서의 목표 스택임은 유지하되 이번 브랜치에는 설치하지 않는다. Zustand store와 Query cache의 이중 source 방지 설계를 별도 브랜치에서 확정한 뒤 도입한다.
-6. **컴포넌트 이동 범위**: 이번 브랜치에서는 데이터 계층 중심으로 하고, `components/dashboard/*` 대규모 분리는 다음 브랜치로 미룬다.
-7. **데모 제어 API**: 백엔드에 start/stop/reset/scenario API가 아직 없으므로 이번 브랜치에는 UI를 만들지 않는다. 계약이 확정된 후 4단계에서 별도 구현한다.
-8. **테스트 도구**: 이번에는 기존 lint/build와 수동 WS 검증을 수행한다. Playwright 설치는 다음 단계에서 별도 승인받는다.
+6. **컴포넌트 이동 범위**: 승인됨. 이번 브랜치는 데이터 계층 중심으로 하고, v0 유래 컴포넌트 분리/리팩토링은 다음 프론트엔드 단독 브랜치에서 다룬다.
+7. **데모 제어 API**: 팀 회의가 필요한 항목이다. 후속 협의 후보로만 남기고 구현을 약속하지 않는다.
+8. **테스트 도구**: 현재는 도입하지 않는다. 배포 후 화면 변경을 반복 검증할 필요가 생기면 실제 백엔드 데이터를 대상으로 하는 E2E 도입을 팀과 협의한다.
 
 ## 8. 범위 밖 항목과 백엔드 확인 사항
 
@@ -209,7 +223,7 @@ applyXgboostEvent()
 | `eventId`, `analysisId`, top-level timestamp 추가 | 하지 않음 | 분석 진행/실패 UI가 필요해질 때 `requestId` 계약 검토 |
 | 실제 이미지 제공 | fallback 유지 | `ai-server://mock/*`을 브라우저 접근 가능한 URL로 바꾸는 백엔드/AI 과제 |
 | WS heartbeat | 프론트 reconnect 동작은 보강 | 프록시/장기 연결 환경 확정 후 ping/pong 또는 서버 keepalive 검토 |
-| 데모 제어 | UI 미구현 | API endpoint, reset 범위, 동시 실행 방지, 권한 여부를 백엔드와 확정 |
+| 데모 제어 | UI 미구현 | 팀 회의에서 필요성이 확정될 때만 API endpoint, reset 범위, 동시 실행 방지, 권한을 협의 |
 | 분석 실패 상태 | 현재 계약만으로 임의 추정하지 않음 | failed event 또는 REST job status 제공 여부 확인 |
 
 ## 9. 완료 후 기록 및 검증
