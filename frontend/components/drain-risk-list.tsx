@@ -64,10 +64,12 @@ export function DrainRiskList({
   }, [drains, sort]);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white">
-      <div className="border-b border-slate-100 px-4 py-3 md:px-5 md:py-4">
+    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800 md:px-5 md:py-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-slate-900">위험 시설 목록</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            위험 시설 목록
+          </h2>
           <RealtimeStatusChip status={realtimeStatus} />
         </div>
         <div className="mt-3 flex justify-end">
@@ -130,9 +132,9 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
       <button
         onClick={() => onSelect?.(drain.id)}
         className={cn(
-          "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow md:px-5 md:py-4",
+          "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/80 md:px-5 md:py-4",
           selected &&
-            "border-red-200 bg-red-50/70 shadow-red-100 ring-1 ring-red-100 hover:border-red-200 hover:bg-red-50/70",
+            "border-red-200 bg-red-50/70 shadow-red-100 ring-1 ring-red-100 hover:border-red-200 hover:bg-red-50/70 dark:border-red-900 dark:bg-red-950/30 dark:ring-red-950/70 dark:hover:border-red-900 dark:hover:bg-red-950/30",
         )}
         aria-pressed={selected}
       >
@@ -147,15 +149,15 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-2 md:items-center">
-              <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+              <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {drain.id}
               </span>
-              <span className="min-w-0 flex-1 text-sm font-semibold text-slate-900 break-words [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] md:[-webkit-line-clamp:2] overflow-hidden">
+              <span className="min-w-0 flex-1 text-sm font-semibold text-slate-900 break-words dark:text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] md:[-webkit-line-clamp:2] overflow-hidden">
                 {drain.road}
               </span>
               <StatusBadge status={drain.status} className="ml-auto shrink-0" />
             </div>
-            <p className="mt-1 text-[11px] text-slate-500 md:text-xs">
+            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 md:text-xs">
               판정 결과{" "}
               <span className={cn("font-semibold", meta.text)}>
                 {drain.judgement}
@@ -164,9 +166,9 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2.5 md:flex-nowrap md:gap-4">
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70 md:flex-nowrap md:gap-4">
           <div className="flex flex-1 items-center gap-2">
-            <span className="w-14 shrink-0 text-[11px] text-slate-500 md:text-xs">
+            <span className="w-14 shrink-0 text-[11px] text-slate-500 dark:text-slate-400 md:text-xs">
               막힘 정도
             </span>
             <MetricProgress
@@ -174,21 +176,23 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
               barClass={meta.bar}
               className="flex-1"
             />
-            <span className="w-9 shrink-0 text-right text-[11px] font-semibold text-slate-700 md:text-xs">
+            <span className="w-9 shrink-0 text-right text-[11px] font-semibold text-slate-700 dark:text-slate-200 md:text-xs">
               {drain.blockage}%
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="text-[11px] text-slate-500 md:text-xs">수위</span>
-            <span className="text-[11px] font-semibold text-slate-700 md:text-xs">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 md:text-xs">
+              수위
+            </span>
+            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 md:text-xs">
               {drain.waterLevelPct}%
             </span>
           </div>
         </div>
 
-        <p className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-slate-400 md:text-xs">
+        <p className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500 md:text-xs">
           <span>최근 업데이트</span>
-          <span className="text-slate-500">
+          <span className="text-slate-500 dark:text-slate-300">
             {formatDateTimeForDisplay(drain.updatedAt)}
           </span>
         </p>
@@ -294,14 +298,14 @@ function DrainRiskListEmptyState() {
 function DrainRiskListErrorState({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="flex flex-1 items-center justify-center px-5 py-10">
-      <div className="w-full rounded-lg border border-red-100 bg-red-50/60 p-4 text-center">
+      <div className="w-full rounded-lg border border-red-100 bg-red-50/60 p-4 text-center dark:border-red-950/60 dark:bg-red-950/30">
         <span className="mx-auto flex size-10 items-center justify-center rounded-lg bg-white text-red-500 shadow-sm">
           <AlertCircle className="size-5" />
         </span>
-        <p className="mt-3 text-sm font-bold text-red-700">
+        <p className="mt-3 text-sm font-bold text-red-700 dark:text-red-300">
           시설 목록을 불러오지 못했습니다.
         </p>
-        <p className="mt-1 text-xs text-red-600/80">
+        <p className="mt-1 text-xs text-red-600/80 dark:text-red-300/80">
           서버 연결을 확인한 뒤 다시 시도해주세요.
         </p>
         {onRetry && (

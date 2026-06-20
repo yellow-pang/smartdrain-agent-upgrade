@@ -72,7 +72,7 @@ export function RiskMap({
   });
 
   return (
-    <div className="relative h-full min-h-[280px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:min-h-[320px] md:min-h-[420px]">
+    <div className="relative h-full min-h-[280px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 sm:min-h-[320px] md:min-h-[420px]">
       {!appKey || validDrains.length === 0 ? (
         <FallbackRiskMap
           drains={drains}
@@ -181,14 +181,14 @@ function KakaoRiskMap({
             yAnchor={2.1}
             zIndex={30}
           >
-            <span className="whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white shadow-md">
+            <span className="whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white shadow-md dark:bg-slate-100 dark:text-slate-900">
               {labelLocation ?? selectedDrain.road}
             </span>
           </CustomOverlayMap>
         )}
       </Map>
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 text-sm font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           Kakao 지도를 불러오고 있습니다.
         </div>
       )}
@@ -213,33 +213,33 @@ function FallbackRiskMap({
   return (
     <>
       <MockStreetBackground />
-      <div className="absolute right-4 top-4 z-20 flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="absolute right-4 top-4 z-20 flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <button
-          className="flex size-9 items-center justify-center text-slate-600 hover:bg-slate-50"
+          className="flex size-9 items-center justify-center text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
           aria-label="확대"
           type="button"
         >
           <Plus className="size-4" />
         </button>
-        <div className="h-px w-full bg-slate-200" />
+        <div className="h-px w-full bg-slate-200 dark:bg-slate-800" />
         <button
-          className="flex size-9 items-center justify-center text-slate-600 hover:bg-slate-50"
+          className="flex size-9 items-center justify-center text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
           aria-label="축소"
           type="button"
         >
           <Minus className="size-4" />
         </button>
       </div>
-      <div className="absolute right-4 top-[120px] z-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="absolute right-4 top-[120px] z-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <button
-          className="flex size-9 items-center justify-center text-slate-600 hover:bg-slate-50"
+          className="flex size-9 items-center justify-center text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
           aria-label="현재 위치"
           type="button"
         >
           <Crosshair className="size-4" />
         </button>
       </div>
-      <div className="absolute bottom-4 left-4 right-4 z-20 flex items-start gap-2 rounded-lg border border-amber-200 bg-white/95 px-3 py-2 text-xs text-amber-700 shadow-sm backdrop-blur">
+      <div className="absolute bottom-4 left-4 right-4 z-20 flex items-start gap-2 rounded-lg border border-amber-200 bg-white/95 px-3 py-2 text-xs text-amber-700 shadow-sm backdrop-blur dark:border-amber-900 dark:bg-slate-900/95 dark:text-amber-300">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
         <span>{reason}</span>
       </div>
@@ -282,7 +282,7 @@ function FallbackRiskMap({
 
 function ClusterHint() {
   return (
-    <div className="absolute bottom-4 right-4 z-20 hidden items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur md:flex">
+    <div className="absolute bottom-4 right-4 z-20 hidden items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400 md:flex">
       <ZoomOut className="size-3.5" />
       <span>축소 시 밀집 마커를 묶어 표시</span>
       <ZoomIn className="size-3.5" />
@@ -296,7 +296,7 @@ function MapLegend({
   legendCounts: Record<RiskLevel, number>;
 }) {
   return (
-    <div className="absolute left-4 top-4 z-20 rounded-lg border border-slate-200 bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur">
+    <div className="absolute left-4 top-4 z-20 rounded-lg border border-slate-200 bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
       <ul className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
         <LegendRow
           color={STATUS_META.danger.dot}

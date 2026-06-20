@@ -36,13 +36,15 @@ export function DrainSummaryPanel({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 md:px-5 md:py-4">
-        <h2 className="text-base font-bold text-slate-900">상세 정보</h2>
+    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800 md:px-5 md:py-4">
+        <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+          상세 정보
+        </h2>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             aria-label="패널 닫기"
           >
             <X className="size-4" />
@@ -51,11 +53,11 @@ export function DrainSummaryPanel({
       </div>
 
       <div className="dashboard-scrollbar flex-1 overflow-y-auto px-4 py-3 [scrollbar-gutter:stable] md:px-5 md:py-4">
-        <p className="text-sm font-semibold text-slate-900 break-words">
+        <p className="text-sm font-semibold text-slate-900 break-words dark:text-slate-100">
           <span className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] md:[-webkit-line-clamp:2] overflow-hidden">
             {drain.road}
           </span>{" "}
-          <span className="font-normal text-slate-500 whitespace-nowrap">
+          <span className="font-normal text-slate-500 whitespace-nowrap dark:text-slate-400">
             (빗물받이)
           </span>
         </p>
@@ -77,9 +79,11 @@ export function DrainSummaryPanel({
           </PriorityBox>
         </div>
 
-        <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+        <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/70">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500">막힘 정도</span>
+            <span className="text-slate-500 dark:text-slate-400">
+              막힘 정도
+            </span>
             <span className={cn("font-semibold", meta.text)}>
               {drain.blockage}%
             </span>
@@ -91,13 +95,13 @@ export function DrainSummaryPanel({
             trackClass="bg-white"
           />
           <div className="mt-2 flex items-center justify-between text-xs">
-            <span className="text-slate-500">수위</span>
+            <span className="text-slate-500 dark:text-slate-400">수위</span>
             <span className={cn("font-semibold", meta.text)}>
               {drain.waterLevelPct}%
             </span>
           </div>
           <div className="mt-1 flex items-center justify-between text-xs">
-            <span className="text-slate-500">유량</span>
+            <span className="text-slate-500 dark:text-slate-400">유량</span>
             <span className={cn("font-semibold", meta.text)}>
               {drain.flow} m³/min
             </span>
@@ -106,7 +110,7 @@ export function DrainSummaryPanel({
 
         <button
           type="button"
-          className="mt-3 flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 lg:hidden"
+          className="mt-3 flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
           onClick={() => setIsExpanded((prev) => !prev)}
           aria-expanded={isExpanded}
         >
@@ -126,7 +130,7 @@ export function DrainSummaryPanel({
             isExpanded ? "mt-3" : "mt-0 hidden lg:block",
           )}
         >
-          <div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 md:aspect-[4/3]">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800 md:aspect-[4/3]">
             <FallbackImage
               src={imageUrl}
               fallbackSrc={PLACEHOLDER_IMAGES.facility}
@@ -168,7 +172,7 @@ export function DrainSummaryPanel({
         </div>
       </div>
 
-      <div className="border-t border-slate-100 p-4">
+      <div className="border-t border-slate-100 p-4 dark:border-slate-800">
         <Button
           nativeButton={false}
           className="w-full bg-cyan-700 text-white hover:bg-cyan-800"
@@ -197,11 +201,11 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="flex items-center gap-2 text-sm text-slate-500">
-        <Icon className="size-4 text-slate-400" />
+      <dt className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <Icon className="size-4 text-slate-400 dark:text-slate-500" />
         {label}
       </dt>
-      <dd className="max-w-[70%] text-right text-sm text-slate-800 break-words">
+      <dd className="max-w-[70%] text-right text-sm text-slate-800 break-words dark:text-slate-100">
         {children ?? <span className="font-medium">{value}</span>}
       </dd>
     </div>
@@ -220,12 +224,14 @@ function PriorityBox({
   return (
     <div
       className={cn(
-        "rounded-lg border border-slate-100 bg-slate-50 px-3 py-2",
+        "rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/70",
         className,
       )}
     >
-      <p className="text-[11px] text-slate-500">{label}</p>
-      <div className="mt-1 text-sm text-slate-800">{children}</div>
+      <p className="text-[11px] text-slate-500 dark:text-slate-400">{label}</p>
+      <div className="mt-1 text-sm text-slate-800 dark:text-slate-100">
+        {children}
+      </div>
     </div>
   );
 }
