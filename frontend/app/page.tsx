@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { AlertCircle, Info, RotateCcw } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { DrainMapPanel as RiskMap } from "@/components/dashboard/drain-map-panel";
@@ -24,11 +24,14 @@ export default function DashboardPage() {
     const selectedId = useDrainStore((state) => state.selectedDrainId);
     const setSelectedId = useDrainStore((state) => state.selectDrain);
     const realtimeStatus = useDrainStore((state) => state.socketStatus);
-    const isLoading = drainsQuery.isLoading || summaryQuery.isLoading;
+    const isLoading = drainsQuery.isLoading;
     const dashboardData = useMemo(() => {
-        if (!drainsQuery.data || !summaryQuery.data) return null;
-        return { drains: drainsQuery.data, sortedDrains: sortFacilitiesByRisk(drainsQuery.data), summary: summaryQuery.data };
-    }, [drainsQuery.data, summaryQuery.data]);
+        if (!drainsQuery.data) return null;
+        return {
+            drains: drainsQuery.data,
+            sortedDrains: sortFacilitiesByRisk(drainsQuery.data),
+        };
+    }, [drainsQuery.data]);
     const reloadDashboard = () => {
         void drainsQuery.refetch();
         void summaryQuery.refetch();
@@ -43,6 +46,22 @@ export default function DashboardPage() {
 
     const sorted =
         dashboardData?.sortedDrains ?? [];
+    const effectiveSelectedId =
+        selectedId && sorted.some((drain) => drain.id === selectedId)
+            ? selectedId
+            : sorted[0]?.id ?? null;
+
+    useEffect(() => {
+        if (effectiveSelectedId !== selectedId) {
+            setSelectedId(effectiveSelectedId);
+        }
+    }, [effectiveSelectedId, selectedId, setSelectedId]);
+
+    const effectiveSelected =
+        selected ??
+        (effectiveSelectedId
+            ? sorted.find((drain) => drain.id === effectiveSelectedId)
+            : undefined);
     const riskListStatus = getRiskListStatus({
         dashboardData,
         isLoading,
@@ -59,11 +78,11 @@ export default function DashboardPage() {
             <AppHeader />
 
             <main className="mx-auto max-w-[1600px] p-4 md:p-6">
-                {isLoading ? (
+                {summaryQuery.isLoading ? (
                     <DashboardSummarySkeleton />
-                ) : dashboardData ? (
+                ) : summaryQuery.data ? (
                     <DashboardSummaryBar
-                        summary={dashboardData.summary}
+                        summary={summaryQuery.data}
                     />
                 ) : (
                     <DashboardSummaryErrorState onRetry={reloadDashboard} />
@@ -86,9 +105,9 @@ export default function DashboardPage() {
                             {dashboardData ? (
                                 <RiskMap
                                     drains={dashboardData.drains}
-                                    selectedId={selectedId}
+                                    selectedId={effectiveSelectedId}
                                     onSelect={setSelectedId}
-                                    labelLocation={selected?.road}
+                                    labelLocation={effectiveSelected?.road}
                                 />
                             ) : (
                                 <MapLoadingState />
@@ -106,7 +125,7 @@ export default function DashboardPage() {
                         <div className="h-full max-h-[640px] shadow-sm">
                             <DrainRiskList
                                 drains={sorted}
-                                selectedId={selectedId}
+                                selectedId={effectiveSelectedId}
                                 onSelect={setSelectedId}
                                 status={riskListStatus}
                                 realtimeStatus={riskListRealtimeStatus}
@@ -117,11 +136,11 @@ export default function DashboardPage() {
 
                     {/* Detail panel */}
                     <section className="lg:col-span-12 2xl:col-span-2">
-                        {selected ? (
+                        {effectiveSelected ? (
                             <div className="max-h-[640px] shadow-sm">
-                                <DrainSummaryPanel drain={selected} />
+                                <DrainSummaryPanel drain={effectiveSelected} />
                             </div>
-                        ) : !isLoading ? (
+                        ) : !isLoading && sorted.length === 0 ? (
                             <PlaceholderState
                                 image={PLACEHOLDER_IMAGES.facility}
                                 title="상세 정보를 불러올 수 없습니다"
