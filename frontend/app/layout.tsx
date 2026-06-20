@@ -4,8 +4,23 @@ import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
+
+const themeInitScript = `
+  (function () {
+    var storageKey = 'smartdrain-theme-mode';
+    var stored = localStorage.getItem(storageKey);
+    var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+    var resolved = mode === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : mode;
+    var root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(resolved);
+    root.dataset.themeMode = mode;
+    root.style.colorScheme = resolved;
+  })();
+`;
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -56,24 +71,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="font-sans antialiased">
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`
-                        (function () {
-                            var storageKey = 'smartdrain-theme-mode';
-                            var stored = localStorage.getItem(storageKey);
-                            var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
-                            var resolved = mode === 'system'
-                                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-                                : mode;
-                            var root = document.documentElement;
-                            root.classList.remove('light', 'dark');
-                            root.classList.add(resolved);
-                            root.dataset.themeMode = mode;
-                            root.style.colorScheme = resolved;
-                        })();
-                    `}
-        </Script>
         <ThemeProvider>
           <QueryProvider>
             <RealtimeDrainSync />
