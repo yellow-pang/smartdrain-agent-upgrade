@@ -33,7 +33,7 @@ import {
 import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
-import { useDrainStatusSocket } from "@/lib/websocket/drain-status-socket";
+import { useDrainStore } from "@/store/drain-store";
 import type {
     DrainStatusUpdatedEventDto,
     XgboostResultDto,
@@ -49,6 +49,9 @@ export default function DrainDetailPage({
 }) {
     const { id } = use(params);
     const [detailData, setDetailData] = useState<DrainDetailData | null>();
+    const sharedDrain = useDrainStore((state) => state.dashboard?.drains.find((drain) => drain.id === id));
+    const yoloEvent = useDrainStore((state) => state.yoloEventsByDrainId[id]);
+    const xgboostEvent = useDrainStore((state) => state.xgboostEventsByDrainId[id]);
 
     const applyRealtimeEvent = useCallback(
         (event: DrainStatusUpdatedEventDto) => {
@@ -178,14 +181,22 @@ export default function DrainDetailPage({
         };
     }, [id]);
 
-    useDrainStatusSocket({
-        enabled: detailData?.source === "api",
-        onStatusUpdated: applyRealtimeEvent,
-        onYoloUpdated: applyYoloEvent,
-        onXgboostUpdated: applyXgboostEvent,
-    });
+    useEffect(() => {
+        if (!yoloEvent) return;
+        const timer = window.setTimeout(() => applyYoloEvent(yoloEvent), 0);
+        return () => window.clearTimeout(timer);
+    }, [applyYoloEvent, yoloEvent]);
 
-    const drain = detailData?.drain;
+    useEffect(() => {
+        if (!xgboostEvent) return;
+        const timer = window.setTimeout(
+            () => applyXgboostEvent(xgboostEvent),
+            0,
+        );
+        return () => window.clearTimeout(timer);
+    }, [applyXgboostEvent, xgboostEvent]);
+
+    const drain = sharedDrain ?? detailData?.drain;
     const meta = drain ? STATUS_META[drain.status] : undefined;
     const sensorSummary = useMemo(() => {
         if (!detailData) return undefined;
@@ -194,11 +205,7 @@ export default function DrainDetailPage({
 
     if (detailData === null) notFound();
 
-    if (detailData?.source === "mock") {
-        return <DrainDetailFallbackPage drainId={id} />;
-    }
-
-    if (!drain || !meta || !sensorSummary) {
+    if (!detailData || !drain || !meta || !sensorSummary) {
         return (
             <div className="min-h-screen bg-slate-50">
                 <AppHeader />
@@ -230,9 +237,7 @@ export default function DrainDetailPage({
                         {drain.id} · {drain.road}
                     </span>
                     <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
-                        {detailData.source === "api"
-                            ? "API 데이터"
-                            : "mock fallback"}
+                        API 데이터
                     </span>
                 </div>
 
