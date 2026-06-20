@@ -6,8 +6,6 @@ import {
   Crosshair,
   Minus,
   Plus,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import {
   CustomOverlayMap,
@@ -32,6 +30,8 @@ const DEFAULT_CENTER: MapCenter = {
   lat: 37.4979,
   lng: 127.0276,
 };
+
+const MARKER_CLUSTER_THRESHOLD = 30;
 
 const MARKER_COLORS: Record<RiskLevel, string> = {
   danger: "#ef4444",
@@ -126,6 +126,21 @@ function KakaoRiskMap({
   const center = selectedDrain
     ? drainToCenter(selectedDrain)
     : getMapCenter(validDrains);
+  const shouldClusterMarkers = validDrains.length >= MARKER_CLUSTER_THRESHOLD;
+  const markers = validDrains.map((drain) => (
+    <MapMarker
+      key={drain.id}
+      position={drainToCenter(drain)}
+      image={getMarkerImage({
+        status: drain.status,
+        selected: drain.id === selectedId,
+        alt: `${STATUS_META[drain.status].label} 시설 마커`,
+      })}
+      title={`${drain.id} ${drain.road}`}
+      zIndex={drain.id === selectedId ? 20 : 10}
+      onClick={() => onSelect?.(drain.id)}
+    />
+  ));
 
   if (error) {
     return (
@@ -152,29 +167,20 @@ function KakaoRiskMap({
         className="absolute inset-0 size-full"
       >
         <ZoomControl position="RIGHT" />
-        <MarkerClusterer
-          averageCenter
-          minLevel={6}
-          minClusterSize={8}
-          gridSize={80}
-          styles={CLUSTER_STYLES}
-          calculator={[10, 50, 100, 500]}
-        >
-          {validDrains.map((drain) => (
-            <MapMarker
-              key={drain.id}
-              position={drainToCenter(drain)}
-              image={getMarkerImage({
-                status: drain.status,
-                selected: drain.id === selectedId,
-                alt: `${STATUS_META[drain.status].label} 시설 마커`,
-              })}
-              title={`${drain.id} ${drain.road}`}
-              zIndex={drain.id === selectedId ? 20 : 10}
-              onClick={() => onSelect?.(drain.id)}
-            />
-          ))}
-        </MarkerClusterer>
+        {shouldClusterMarkers ? (
+          <MarkerClusterer
+            averageCenter
+            minLevel={6}
+            minClusterSize={8}
+            gridSize={80}
+            styles={CLUSTER_STYLES}
+            calculator={[10, 50, 100, 500]}
+          >
+            {markers}
+          </MarkerClusterer>
+        ) : (
+          markers
+        )}
         {selectedDrain && (
           <CustomOverlayMap
             position={drainToCenter(selectedDrain)}
@@ -192,7 +198,6 @@ function KakaoRiskMap({
           Kakao 지도를 불러오고 있습니다.
         </div>
       )}
-      <ClusterHint />
     </>
   );
 }
@@ -277,16 +282,6 @@ function FallbackRiskMap({
         );
       })}
     </>
-  );
-}
-
-function ClusterHint() {
-  return (
-    <div className="absolute bottom-4 right-4 z-20 hidden items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-medium text-slate-500 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400 md:flex">
-      <ZoomOut className="size-3.5" />
-      <span>축소 시 밀집 마커를 묶어 표시</span>
-      <ZoomIn className="size-3.5" />
-    </div>
   );
 }
 

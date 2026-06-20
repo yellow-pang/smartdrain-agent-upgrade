@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { FallbackImage } from "@/components/fallback-image";
+import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
 
 export function DrainSummaryPanel({
@@ -34,6 +35,7 @@ export function DrainSummaryPanel({
 }) {
   const meta = STATUS_META[drain.status];
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
     <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -137,9 +139,14 @@ export function DrainSummaryPanel({
               alt={`${drain.road} 빗물받이 CCTV 스냅샷`}
               className="size-full object-cover grayscale"
             />
-            <span className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-md bg-black/45 text-white">
+            <button
+              type="button"
+              className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-md bg-black/45 text-white hover:bg-black/60"
+              onClick={() => setIsPreviewOpen(true)}
+              aria-label="CCTV 이미지 확대"
+            >
               <Maximize2 className="size-3.5" />
-            </span>
+            </button>
           </div>
 
           {/* Info rows */}
@@ -171,6 +178,14 @@ export function DrainSummaryPanel({
           </dl>
         </div>
       </div>
+
+      <ImagePreviewDialog
+        open={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        src={imageUrl}
+        fallbackSrc={PLACEHOLDER_IMAGES.facility}
+        alt={`${drain.road} 빗물받이 CCTV 스냅샷 확대 이미지`}
+      />
 
       <div className="border-t border-slate-100 p-4 dark:border-slate-800">
         <Button
