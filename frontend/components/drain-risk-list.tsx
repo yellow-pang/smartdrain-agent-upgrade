@@ -96,7 +96,7 @@ export function DrainRiskList({
       {status === "empty" && <DrainRiskListEmptyState />}
       {status === "error" && <DrainRiskListErrorState onRetry={onRetry} />}
       {status === "success" && (
-        <ul className="flex-1 divide-y divide-slate-100 overflow-y-auto">
+        <ul className="dashboard-scrollbar flex-1 overflow-y-auto px-1.5 py-1.5 [scrollbar-gutter:stable]">
           {ordered.map((drain, idx) => (
             <DrainRiskListItem
               key={drain.id}
@@ -156,7 +156,10 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
               <StatusBadge status={drain.status} className="ml-auto shrink-0" />
             </div>
             <p className="mt-1 text-[11px] text-slate-500 md:text-xs">
-              판정 결과 <span className={cn("font-semibold", meta.text)}>{drain.judgement}</span>
+              판정 결과{" "}
+              <span className={cn("font-semibold", meta.text)}>
+                {drain.judgement}
+              </span>
             </p>
           </div>
         </div>

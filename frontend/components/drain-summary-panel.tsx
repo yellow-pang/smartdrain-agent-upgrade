@@ -50,7 +50,7 @@ export function DrainSummaryPanel({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 md:px-5 md:py-4">
+      <div className="dashboard-scrollbar flex-1 overflow-y-auto px-4 py-3 [scrollbar-gutter:stable] md:px-5 md:py-4">
         <p className="text-sm font-semibold text-slate-900 break-words">
           <span className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] md:[-webkit-line-clamp:2] overflow-hidden">
             {drain.road}

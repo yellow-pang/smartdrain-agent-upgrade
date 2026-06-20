@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { AlertCircle, ChevronRight, Info, RotateCcw } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { DrainMapPanel as RiskMap } from "@/components/dashboard/drain-map-panel";
@@ -31,6 +31,12 @@ export default function DashboardPage() {
   const selectedId = useDrainStore((state) => state.selectedDrainId);
   const setSelectedId = useDrainStore((state) => state.selectDrain);
   const realtimeStatus = useDrainStore((state) => state.socketStatus);
+  const handleSelectDrain = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+    },
+    [setSelectedId],
+  );
   const isLoading = drainsQuery.isLoading;
   const dashboardData = useMemo(() => {
     if (!drainsQuery.data) return null;
@@ -110,7 +116,7 @@ export default function DashboardPage() {
                 <RiskMap
                   drains={dashboardData.drains}
                   selectedId={effectiveSelectedId}
-                  onSelect={setSelectedId}
+                  onSelect={handleSelectDrain}
                   labelLocation={effectiveSelected?.road}
                 />
               ) : (
@@ -129,7 +135,7 @@ export default function DashboardPage() {
               <DrainRiskList
                 drains={sorted}
                 selectedId={effectiveSelectedId}
-                onSelect={setSelectedId}
+                onSelect={handleSelectDrain}
                 status={riskListStatus}
                 realtimeStatus={riskListRealtimeStatus}
                 onRetry={reloadDashboard}
@@ -174,7 +180,11 @@ export default function DashboardPage() {
   );
 }
 
-function MobileDrainInlineSummary({ drain }: { drain: DrainFacility }) {
+const MobileDrainInlineSummary = memo(function MobileDrainInlineSummary({
+  drain,
+}: {
+  drain: DrainFacility;
+}) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div>
@@ -226,7 +236,7 @@ function MobileDrainInlineSummary({ drain }: { drain: DrainFacility }) {
       </div>
     </section>
   );
-}
+});
 
 function getRiskListStatus({
   dashboardData,
