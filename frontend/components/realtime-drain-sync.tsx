@@ -8,6 +8,7 @@ import { useDrainsQuery } from "@/lib/query/drain-queries";
 import type { DrainFacility } from "@/lib/mock-data";
 import { useDrainStore } from "@/store/drain-store";
 import { useDrainStatusSocket } from "@/lib/websocket/drain-status-socket";
+import { isUrgentRiskLevel } from "@/lib/urgent-alert-policy";
 
 export function RealtimeDrainSync() {
     const queryClient = useQueryClient();
@@ -16,8 +17,14 @@ export function RealtimeDrainSync() {
     const applyXgboostEvent = useDrainStore((state) => state.applyXgboostEvent);
     const setSocketStatus = useDrainStore((state) => state.setSocketStatus);
     const markMessageReceived = useDrainStore((state) => state.markMessageReceived);
+    const upsertUrgentAlert = useDrainStore((state) => state.upsertUrgentAlert);
 
     const applyStatusEvent = useCallback((event: Parameters<typeof mergeDrainStatusEventIntoFacility>[1]) => {
+        const drains = queryClient.getQueryData<DrainFacility[]>(drainQueryKeys.all);
+        const facilityName = drains?.find(
+            (drain) => drain.id === event.payload.drainId,
+        )?.road;
+
         queryClient.setQueryData<DrainFacility[]>(drainQueryKeys.all, (drains) =>
             drains?.map((drain) => mergeDrainStatusEventIntoFacility(drain, event)),
         );
@@ -27,8 +34,11 @@ export function RealtimeDrainSync() {
                 detail ? { ...detail, drain: mergeDrainStatusEventIntoFacility(detail.drain, event) } : detail,
             );
         }
+        if (isUrgentRiskLevel(event.payload.riskLevel)) {
+            upsertUrgentAlert(event, facilityName);
+        }
         markMessageReceived();
-    }, [markMessageReceived, queryClient]);
+    }, [markMessageReceived, queryClient, upsertUrgentAlert]);
 
     const handleConnected = useCallback((reconnected: boolean) => {
         if (!reconnected) return;
