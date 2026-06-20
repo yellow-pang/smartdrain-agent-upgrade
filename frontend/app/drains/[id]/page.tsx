@@ -34,6 +34,7 @@ import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { useDrainStore } from "@/store/drain-store";
+import { useDrainsQuery } from "@/lib/query/drain-queries";
 import type {
     DrainStatusUpdatedEventDto,
     XgboostResultDto,
@@ -49,7 +50,8 @@ export default function DrainDetailPage({
 }) {
     const { id } = use(params);
     const [detailData, setDetailData] = useState<DrainDetailData | null>();
-    const sharedDrain = useDrainStore((state) => state.dashboard?.drains.find((drain) => drain.id === id));
+    const { data: drains } = useDrainsQuery();
+    const sharedDrain = drains?.find((drain) => drain.id === id);
     const yoloEvent = useDrainStore((state) => state.yoloEventsByDrainId[id]);
     const xgboostEvent = useDrainStore((state) => state.xgboostEventsByDrainId[id]);
 

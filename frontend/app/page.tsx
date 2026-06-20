@@ -3,28 +3,36 @@
 import { useMemo } from "react";
 import { AlertCircle, Info, RotateCcw } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
-import { RiskMap } from "@/components/risk-map";
+import { DrainMapPanel as RiskMap } from "@/components/dashboard/drain-map-panel";
 import {
     DrainRiskList,
     type DrainRealtimeStatus,
     type DrainRiskListStatus,
-} from "@/components/drain-risk-list";
-import { DrainSummaryPanel } from "@/components/drain-summary-panel";
+} from "@/components/dashboard/drain-risk-list";
+import { DrainDetailPanel as DrainSummaryPanel } from "@/components/dashboard/drain-detail-panel";
 import { PlaceholderState } from "@/components/placeholder-state";
 import { Button } from "@/components/ui/button";
-import type { DashboardData } from "@/lib/api/drain-data";
 import type { DashboardSummaryDto } from "@/lib/api/types";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { useDrainStore } from "@/store/drain-store";
+import { useDashboardSummaryQuery, useDrainsQuery } from "@/lib/query/drain-queries";
+import { sortFacilitiesByRisk } from "@/lib/api/adapters";
 
 export default function DashboardPage() {
-    const dashboardData = useDrainStore((state) => state.dashboard);
-    const storeStatus = useDrainStore((state) => state.status);
+    const drainsQuery = useDrainsQuery();
+    const summaryQuery = useDashboardSummaryQuery();
     const selectedId = useDrainStore((state) => state.selectedDrainId);
     const setSelectedId = useDrainStore((state) => state.selectDrain);
-    const reloadDashboard = useDrainStore((state) => state.initializeDashboard);
     const realtimeStatus = useDrainStore((state) => state.socketStatus);
-    const isLoading = storeStatus === "loading";
+    const isLoading = drainsQuery.isLoading || summaryQuery.isLoading;
+    const dashboardData = useMemo(() => {
+        if (!drainsQuery.data || !summaryQuery.data) return null;
+        return { drains: drainsQuery.data, sortedDrains: sortFacilitiesByRisk(drainsQuery.data), summary: summaryQuery.data };
+    }, [drainsQuery.data, summaryQuery.data]);
+    const reloadDashboard = () => {
+        void drainsQuery.refetch();
+        void summaryQuery.refetch();
+    };
 
     const selected = useMemo(() => {
         if (!dashboardData || !selectedId) {
@@ -133,7 +141,7 @@ function getRiskListStatus({
     dashboardData,
     isLoading,
 }: {
-    dashboardData: DashboardData | null;
+    dashboardData: { sortedDrains: import("@/lib/mock-data").DrainFacility[] } | null;
     isLoading: boolean;
 }): DrainRiskListStatus {
     if (isLoading) return "loading";
