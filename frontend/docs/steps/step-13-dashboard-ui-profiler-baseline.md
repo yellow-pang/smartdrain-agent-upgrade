@@ -175,3 +175,28 @@ UI 개선 전 기준선(Baseline) 렌더링 지표를 기록한다.
 - `git status -sb`로 변경 파일 확인
 - 변경 요약 3~5줄 정리
 - 한글 커밋 메시지 제목/본문 제안
+
+## 12. 단계 4 전/후 비교 초안
+
+메인 대시보드의 코드 변경은 완료되어 있어, Baseline 수치와 개선 근거를 먼저 정리한다. After 열의 실제 Profiler 수치는 Chrome React DevTools에서 같은 시나리오를 다시 녹화한 뒤 입력한다. 현재 작업 환경에서는 DevTools Profiler 세션을 직접 실행할 수 없으므로 측정하지 않은 값을 추정치로 기록하지 않는다.
+
+| 시나리오 | 개선 전 Baseline | 개선 후 구현 상태 | After Profiler 수치 | 판정 기준 |
+| --- | --- | --- | --- | --- |
+| A: 지도 마커 1회 클릭 | 1 commit, 목록 전체 item 갱신 관찰, 약 26.8ms | `DrainRiskListItem` memoization과 안정된 선택 콜백 적용 | 사용자 재측정 필요 | 선택 전/후 item 외 렌더가 보이지 않아야 함 |
+| B: 목록 item 1회 클릭 | 1 commit, 목록 전체 item 갱신 관찰, 약 25.5ms | 목록 item props 비교로 선택 상태가 바뀐 item만 갱신 | 사용자 재측정 필요 | 선택 전/후 item 외 렌더가 보이지 않아야 함 |
+| C: 지도 마커 3회 연속 클릭 | 1 commit, 목록 갱신 관찰, 약 33.5ms | 목록 데이터 정렬과 선택 상태의 파생 값을 분리 | 사용자 재측정 필요 | 연속 선택에서도 불필요한 item 렌더가 누적되지 않아야 함 |
+
+코드 기준 확인 사항:
+
+- `DashboardPage` 자체는 `selectedDrainId`를 사용하므로 선택마다 다시 렌더되는 것이 정상이다.
+- `DrainRiskListItem`은 `memo`와 `areRiskListItemPropsEqual`을 사용하며, `onSelect`는 `useCallback`으로 안정화되어 있다.
+- 따라서 After 측정의 핵심은 상위 컴포넌트의 렌더 횟수 감소가 아니라 비선택 목록 item 렌더 범위 감소다.
+
+재측정 후 기록할 항목:
+
+1. A/B/C별 commit 수와 최대 commit duration
+2. `DashboardPage`, `DrainRiskList`, 선택 전/후 item의 렌더 횟수
+3. 비선택 item이 렌더된 경우 해당 원인(정렬, 데이터 참조 변경, 부모 props 변경)
+4. `after-A.png`, `after-B.png`, `after-C.png`를 `docs/images/`에 저장하고 본 문서에 링크
+
+현재 판정: 전/후 비교 문서의 코드 근거와 재측정 기준은 정리했으며, 단계 4의 수치 확정은 사용자 Profiler 캡처가 추가될 때 완료한다.

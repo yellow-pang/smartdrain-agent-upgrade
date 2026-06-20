@@ -33,6 +33,7 @@ import {
 import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
+import { formatDateTimeForDisplay } from "@/lib/date-format";
 import { useDrainStore } from "@/store/drain-store";
 import { useDrainsQuery } from "@/lib/query/drain-queries";
 import type {
@@ -209,7 +210,7 @@ export default function DrainDetailPage({
 
     if (!detailData || !drain || !meta || !sensorSummary) {
         return (
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
                 <AppHeader />
                 <main className="mx-auto max-w-[1600px] p-4 md:p-6">
                     <DetailLoadingState />
@@ -219,26 +220,26 @@ export default function DrainDetailPage({
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <AppHeader />
 
             <main className="mx-auto max-w-[1600px] p-4 md:p-6">
                 <Link
                     href="/"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                     <ArrowLeft className="size-4" />
                     대시보드로 돌아가기
                 </Link>
 
-                <div className="mt-2 flex flex-wrap items-baseline gap-3">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-slate-100">
                         하수구 상세 정보
                     </h1>
-                    <span className="text-sm font-medium text-slate-500">
+                    <span className="min-w-0 break-words text-sm font-medium text-slate-500 dark:text-slate-400">
                         {drain.id} · {drain.road}
                     </span>
-                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                         API 데이터
                     </span>
                 </div>
@@ -292,14 +293,14 @@ function LocationMapCard({
     source: DrainDetailData["source"];
 }) {
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-base font-bold text-slate-900">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
                 위치 지도{" "}
-                <span className="text-sm font-normal text-slate-400">
+                <span className="text-sm font-normal text-slate-400 dark:text-slate-500">
                     (고정)
                 </span>
             </h2>
-            <div className="h-[260px]">
+            <div className="h-[220px] sm:h-[260px]">
                 {source === "api" ? (
                     <RiskMap
                         drains={[{ ...drain, x: 50, y: 48 }]}
@@ -316,9 +317,9 @@ function LocationMapCard({
                     />
                 )}
             </div>
-            <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
-                <MapPin className="size-3.5 text-slate-400" />
-                {fullAddress}
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                <span className="break-words">{fullAddress}</span>
             </p>
         </div>
     );
@@ -326,26 +327,26 @@ function LocationMapCard({
 
 function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <AppHeader />
 
             <main className="mx-auto max-w-[1600px] p-4 md:p-6">
                 <Link
                     href="/"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                     <ArrowLeft className="size-4" />
                     대시보드로 돌아가기
                 </Link>
 
                 <div className="mt-2 flex flex-wrap items-baseline gap-3">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                    <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-slate-100">
                         하수구 상세 정보
                     </h1>
-                    <span className="text-sm font-medium text-slate-500">
+                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
                         {drainId}
                     </span>
-                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                         mock fallback
                     </span>
                 </div>
@@ -410,13 +411,13 @@ function AnalysisSummaryCard({
             : ratioToPercent(yoloResult.obstructionRatio);
 
     return (
-        <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                         Detail dashboard
                     </p>
-                    <h2 className="mt-1 text-lg font-bold text-slate-900">
+                    <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
                         현재 분석 요약
                     </h2>
                 </div>
@@ -443,7 +444,7 @@ function AnalysisSummaryCard({
                 <SummaryMetricTile
                     icon={Gauge}
                     label="유속"
-                    value={`${drain.flow} m/s`}
+                    value={`${drain.flow} m³/min`}
                     metaText={meta.text}
                 />
                 <SummaryMetricTile
@@ -454,16 +455,16 @@ function AnalysisSummaryCard({
                     progress={riskScore}
                     barClass={meta.bar}
                 />
-                <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <AlertTriangle className="size-4 text-slate-400" />
+                <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/70">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <AlertTriangle className="size-4 text-slate-400 dark:text-slate-500" />
                         최종 판단
                     </div>
                     <p className={cn("mt-2 text-sm font-bold", meta.text)}>
                         {xgboostResult?.finalDecision ?? drain.judgement}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                        {formatDisplayTime(
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                        {formatDateTimeForDisplay(
                             xgboostResult?.evaluatedAt ??
                                 xgboostResult?.predictedAt ??
                                 drain.updatedAt,
@@ -493,9 +494,9 @@ function SummaryMetricTile({
     barClass?: string;
 }) {
     return (
-        <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Icon className="size-4 text-slate-400" />
+        <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/70">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <Icon className="size-4 text-slate-400 dark:text-slate-500" />
                 {label}
             </div>
             <div className="mt-2 flex items-baseline gap-2">
@@ -503,7 +504,7 @@ function SummaryMetricTile({
                     {value}
                 </span>
                 {subValue ? (
-                    <span className="text-xs font-semibold text-slate-400">
+                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
                         {subValue}
                     </span>
                 ) : null}
@@ -537,21 +538,21 @@ function AiAnalysisTabs({
     ] as const;
 
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-bold text-slate-900">
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                     AI 모델 판단 정보
                 </h2>
-                <div className="grid grid-cols-4 rounded-lg bg-slate-100 p-1">
+                <div className="grid grid-cols-4 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             type="button"
                             onClick={() => setActiveTab(tab.id)}
                             className={cn(
-                                "flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold text-slate-500 transition-colors",
+                                "flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold text-slate-500 transition-colors dark:text-slate-400",
                                 activeTab === tab.id &&
-                                    "bg-white text-slate-900 shadow-sm",
+                                    "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100",
                             )}
                         >
                             <tab.icon className="size-3.5 shrink-0" />
@@ -603,11 +604,11 @@ function YoloAnalysisPanel({ detailData }: { detailData: DrainDetailData }) {
             />
             <AnalysisInfoRow
                 label="촬영 시각"
-                value={formatDisplayTime(yoloResult.capturedAt)}
+                value={formatDateTimeForDisplay(yoloResult.capturedAt)}
             />
             <AnalysisInfoRow
                 label="분석 시각"
-                value={formatDisplayTime(yoloResult.analyzedAt)}
+                value={formatDateTimeForDisplay(yoloResult.analyzedAt)}
             />
         </dl>
     );
@@ -647,15 +648,15 @@ function XgboostAnalysisPanel({
             />
             <AnalysisInfoRow
                 label="판단 시각"
-                value={formatDisplayTime(
+                value={formatDateTimeForDisplay(
                     xgboostResult.evaluatedAt ?? xgboostResult.predictedAt,
                 )}
             />
-            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 md:col-span-2">
-                <dt className="text-xs font-medium text-slate-500">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 md:col-span-2 dark:border-slate-800 dark:bg-slate-800/70">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     최종 판단 문구
                 </dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-800">
+                <dd className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {xgboostResult.finalDecision ?? "-"}
                 </dd>
             </div>
@@ -682,7 +683,7 @@ function AnalysisHistoryPanel({
                 items={yoloResults.map((item) => ({
                     key: `yolo-${item.id ?? item.analyzedAt}`,
                     title: `${formatRatioPercent(item.obstructionRatio)} / ${getYoloStatusLabel(item.yoloStatus)}`,
-                    meta: formatDisplayTime(item.analyzedAt ?? item.createdAt),
+                    meta: formatDateTimeForDisplay(item.analyzedAt ?? item.createdAt),
                 }))}
             />
             <HistoryList
@@ -690,7 +691,7 @@ function AnalysisHistoryPanel({
                 items={xgboostResults.map((item) => ({
                     key: `xgboost-${item.id ?? item.evaluatedAt}`,
                     title: `${riskScoreToPoint(item.riskScore)}점 / ${STATUS_META[item.riskLevel].label}`,
-                    meta: formatDisplayTime(item.evaluatedAt ?? item.createdAt),
+                    meta: formatDateTimeForDisplay(item.evaluatedAt ?? item.createdAt),
                 }))}
             />
         </div>
@@ -705,9 +706,9 @@ function AnalysisInfoRow({
     value: React.ReactNode;
 }) {
     return (
-        <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-            <dt className="text-xs font-medium text-slate-500">{label}</dt>
-            <dd className="mt-1 text-sm font-semibold text-slate-800">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/70">
+            <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</dt>
+            <dd className="mt-1 break-words text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {value}
             </dd>
         </div>
@@ -716,7 +717,7 @@ function AnalysisInfoRow({
 
 function EmptyAnalysisState({ label }: { label: string }) {
     return (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
             {label}
         </div>
     );
@@ -731,17 +732,17 @@ function HistoryList({
 }) {
     return (
         <div>
-            <h3 className="mb-2 text-sm font-bold text-slate-800">{title}</h3>
-            <ul className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
+            <h3 className="mb-2 text-sm font-bold text-slate-800 dark:text-slate-100">{title}</h3>
+            <ul className="dashboard-scrollbar max-h-[220px] space-y-2 overflow-y-auto pr-1">
                 {items.map((item) => (
                     <li
                         key={item.key}
-                        className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                        className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/70"
                     >
-                        <p className="text-sm font-semibold text-slate-800">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                             {item.title}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                             {item.meta}
                         </p>
                     </li>
@@ -764,11 +765,11 @@ function CurrentRiskCard({
         <div
             className={cn(
                 !compact &&
-                    "rounded-xl border border-slate-200 bg-white p-5 shadow-sm",
+                    "rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900",
             )}
         >
             {!compact ? (
-                <h2 className="mb-4 text-base font-bold text-slate-900">
+                <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
                     현재 위험 상태
                 </h2>
             ) : null}
@@ -779,7 +780,7 @@ function CurrentRiskCard({
                 <RiskTile icon={Globe} label="막힘 정도">
                     <div className="w-full">
                         <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-slate-900">
+                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {drain.blockage}%
                             </span>
                             <span
@@ -801,7 +802,7 @@ function CurrentRiskCard({
                 <RiskTile icon={Waves} label="수위">
                     <div className="w-full">
                         <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-slate-900">
+                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                                 {drain.waterLevelPct}%
                             </span>
                             <span
@@ -822,7 +823,7 @@ function CurrentRiskCard({
                 </RiskTile>
                 <RiskTile icon={Gauge} label="유량">
                     <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-slate-900">
+                        <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                             {drain.flow} m³/min
                         </span>
                         <span
@@ -833,8 +834,8 @@ function CurrentRiskCard({
                     </div>
                 </RiskTile>
                 <RiskTile icon={Clock} label="최근 업데이트">
-                    <span className="text-sm font-semibold text-slate-700">
-                        {drain.updatedAt}
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        {formatDateTimeForDisplay(drain.updatedAt)}
                     </span>
                 </RiskTile>
                 <RiskTile icon={AlertTriangle} label="판정 결과">
@@ -857,12 +858,12 @@ function RiskTile({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white text-slate-400 shadow-sm">
+        <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-3 dark:border-slate-800 dark:bg-slate-800/70">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white text-slate-400 shadow-sm dark:bg-slate-700 dark:text-slate-500">
                 <Icon className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-500">{label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
                 <div className="mt-0.5">{children}</div>
             </div>
         </div>
@@ -885,13 +886,13 @@ function FacilityInfoCard({
             icon: Clipboard,
             label: "시설 ID",
             node: (
-                <span className="font-semibold text-slate-800">{drain.id}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">{drain.id}</span>
             ),
         },
         {
             icon: MapPin,
             label: "주소",
-            node: <span className="text-slate-700">{drain.fullAddress}</span>,
+            node: <span className="break-words text-slate-700 dark:text-slate-200">{drain.fullAddress}</span>,
         },
         {
             icon: ShieldCheck,
@@ -928,25 +929,25 @@ function FacilityInfoCard({
         {
             icon: Clock,
             label: "최근 업데이트",
-            node: <span className="text-slate-700">{drain.updatedAt}</span>,
+            node: <span className="text-slate-700 dark:text-slate-200">{formatDateTimeForDisplay(drain.updatedAt)}</span>,
         },
     ];
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-base font-bold text-slate-900">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
                 시설 정보 및 현재 상태
             </h2>
-            <dl className="divide-y divide-slate-100">
+            <dl className="divide-y divide-slate-100 dark:divide-slate-800">
                 {rows.map((r) => (
                     <div
                         key={r.label}
                         className="flex items-center justify-between gap-3 py-2.5"
                     >
-                        <dt className="flex items-center gap-2 text-sm text-slate-500">
-                            <r.icon className="size-4 text-slate-400" />
+                        <dt className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                            <r.icon className="size-4 text-slate-400 dark:text-slate-500" />
                             {r.label}
                         </dt>
-                        <dd className="text-right text-sm">{r.node}</dd>
+                        <dd className="max-w-[62%] text-right text-sm">{r.node}</dd>
                     </div>
                 ))}
             </dl>
@@ -960,10 +961,10 @@ function RiskHistoryCard({
     riskHistory: DrainDetailData["riskHistory"];
 }) {
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-base font-bold text-slate-900">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
                 과거 위험 이력{" "}
-                <span className="text-sm font-normal text-slate-400">
+                <span className="text-sm font-normal text-slate-400 dark:text-slate-500">
                     (최근 7일)
                 </span>
             </h2>
@@ -973,7 +974,7 @@ function RiskHistoryCard({
                     return (
                         <li
                             key={item.time}
-                            className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50"
+                            className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
                         >
                             <span
                                 className={cn(
@@ -981,14 +982,14 @@ function RiskHistoryCard({
                                     meta.dot,
                                 )}
                             />
-                            <span className="text-sm text-slate-600">
-                                {item.time}
+                            <span className="min-w-0 text-sm text-slate-600 dark:text-slate-300">
+                                {formatDateTimeForDisplay(item.time)}
                             </span>
                             <StatusBadge
                                 status={item.status}
                                 className="ml-auto"
                             />
-                            <span className="w-10 shrink-0 text-right text-sm font-semibold text-slate-700">
+                            <span className="w-10 shrink-0 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
                                 {item.score}점
                             </span>
                         </li>
@@ -1007,19 +1008,19 @@ function DetailUnavailableCard({
     description: string;
 }) {
     return (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                     <AlertTriangle className="size-5" />
                 </span>
                 <div>
-                    <h2 className="text-base font-bold text-slate-900">
+                    <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                         {title}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {description}
                     </p>
-                    <span className="mt-3 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                    <span className="mt-3 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                         mock fallback
                     </span>
                 </div>
@@ -1030,16 +1031,16 @@ function DetailUnavailableCard({
 
 function RiskHistoryUnavailableCard() {
     return (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-base font-bold text-slate-900">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
                 과거 위험 이력
             </h2>
-            <div className="rounded-lg bg-slate-50 px-4 py-5 text-center">
-                <Clock className="mx-auto size-6 text-slate-400" />
-                <p className="mt-2 text-sm font-bold text-slate-700">
+            <div className="rounded-lg bg-slate-50 px-4 py-5 text-center dark:bg-slate-800/70">
+                <Clock className="mx-auto size-6 text-slate-400 dark:text-slate-500" />
+                <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
                     위험 이력 연결 대기
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     실제 위험 이력 API가 연결되면 이곳에 이력 row가 표시됩니다.
                 </p>
             </div>
@@ -1049,7 +1050,7 @@ function RiskHistoryUnavailableCard() {
 
 function DetailLoadingState() {
     return (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-10 text-center text-sm font-medium text-slate-400">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-10 text-center text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500">
             배수 시설 상세 데이터를 불러오고 있습니다.
         </div>
     );
@@ -1208,17 +1209,6 @@ function formatRatioPercent(value?: number | null) {
 
 function formatNullable(value?: number | string | null) {
     return value == null || value === "" ? "-" : String(value);
-}
-
-function formatDisplayTime(value?: string | null) {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hour = String(date.getHours()).padStart(2, "0");
-    const minute = String(date.getMinutes()).padStart(2, "0");
-    return `${month}-${day} ${hour}:${minute}`;
 }
 
 function getYoloStatusLabel(status: YoloResultDto["yoloStatus"]) {
