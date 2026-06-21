@@ -10,6 +10,8 @@
 | 이번 계획 범위 | VM 디렉터리·권한·포트·도메인 분리, Jenkins pipeline, 환경변수/secret, 배포·롤백·검증 절차를 문서화하고 필요한 설정 파일의 작업 범위를 확정한다. |
 | 비목표         | Jenkins 신규 설치/재생성, 운영 AWS 배포, RDS/ECS 전환, Kubernetes, 실제 운영 비밀값의 저장 또는 문서화                                          |
 
+> 구현 완료 내용과 VM/Jenkins/Cloudflare 적용 절차는 `../steps/step-15-dev-vm-jenkins-cicd.md`를 기준으로 확인한다. 이 문서는 계획과 결정 기록만 유지한다.
+
 ## 2. 현재 VM 확인 사항
 
 VM에는 `/apps` 아래 여러 프로젝트가 있고, 기존 컨테이너는 VM 재시작 후에도 자동 기동하도록 구성되어 있다. Jenkins는 SmartDrain 전용이 아니라 `health-center` 프로젝트에서 실행 중인 공용 Jenkins 컨테이너다.

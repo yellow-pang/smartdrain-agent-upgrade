@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    triggers {
-        // 기존 Jenkins Job과 동일한 polling 주기로 조정한다.
-        pollSCM('H/5 * * * *')
-    }
-
     options {
         disableConcurrentBuilds()
         timestamps()
@@ -29,10 +24,15 @@ pipeline {
         DEPLOY_DIR = '/deploy/smart-drain'
         DEPLOY_BRANCH = 'develop'
         COMPOSE_PROJECT_NAME = 'smartdrain-dev'
-        GIT_CREDENTIAL_ID = 'smartdrain-github-deploy-key'
     }
 
     stages {
+        stage('Checkout pipeline scripts') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Preflight') {
             steps {
                 sh '.jenkins/scripts/preflight.sh'
@@ -42,7 +42,7 @@ pipeline {
         stage('Sync deployment source') {
             steps {
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: "${GIT_CREDENTIAL_ID}",
+                    credentialsId: 'smartdrain-github-deploy-key',
                     keyFileVariable: 'GIT_SSH_KEY',
                     usernameVariable: 'GIT_SSH_USER'
                 )]) {
