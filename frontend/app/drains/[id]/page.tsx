@@ -306,6 +306,7 @@ function LocationMapCard({
                         drains={[{ ...drain, x: 50, y: 48 }]}
                         selectedId={drain.id}
                         labelLocation={road}
+                        variant="detail"
                     />
                 ) : (
                     <PlaceholderState
