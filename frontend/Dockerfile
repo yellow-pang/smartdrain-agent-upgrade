@@ -14,6 +14,11 @@ COPY frontend/ ./
 EXPOSE 3000
 CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
 
+FROM dependencies AS lint
+
+COPY frontend/ ./
+RUN pnpm lint
+
 FROM dependencies AS builder
 
 ARG COMPOSE_FRONTEND_API_BASE_URL=
