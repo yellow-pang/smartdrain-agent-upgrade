@@ -23,7 +23,7 @@ docker compose -p smartdrain-dev up -d --build
 | 항목 | health-center | SmartDrain 최종 방식 |
 | --- | --- | --- |
 | Git checkout | `checkout scm` | `checkout scm` |
-| SSH 인증 | Jenkins Job SCM Credential | Jenkins Job SCM Credential |
+| Git 인증 | Jenkins Job SCM Credential | Jenkins Job SCM Credential (`Username with password` + GitHub PAT) |
 | `.env` | Jenkins Secret File 복사 | Jenkins Secret File 복사 |
 | 실행 폴더 | Jenkins 기본 workspace | `/deploy/smart-drain` Custom Workspace |
 | Compose | workspace에서 실행 | Custom Workspace에서 실행 |
@@ -78,7 +78,7 @@ Jenkins container는 Docker socket을 사용하므로 같은 VM의 Docker daemon
 1. VM에 빈 `/apps/smart-drain` 디렉터리를 만든다.
 2. 전용 Jenkins Compose에 정의된 `/apps/smart-drain:/deploy/smart-drain` mount를 사용한다.
 3. Jenkins Job을 `Pipeline script from SCM`으로 만들고 SmartDrain `develop` 브랜치를 지정한다.
-4. Job의 SSH SCM Credential을 등록한다.
+4. HTTPS repository URL과 GitHub 사용자명/PAT를 사용하는 `Username with password` SCM Credential을 등록한다.
 5. `.env` 내용으로 Jenkins Secret File credential `smartdrain-dev-env-file`을 등록한다.
 6. 기존 Job과 같은 주기로 Poll SCM을 설정한다.
 
