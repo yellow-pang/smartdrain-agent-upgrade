@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -13,6 +13,15 @@ COPY ai_service/ ./ai_service/
 
 RUN useradd --create-home appuser \
     && chown -R appuser:appuser /app
+
+FROM base AS test
+
+USER root
+RUN pip install --no-cache-dir pytest
+USER appuser
+CMD ["python", "-m", "pytest", "ai_service"]
+
+FROM base AS runtime
 
 USER appuser
 EXPOSE 9000
