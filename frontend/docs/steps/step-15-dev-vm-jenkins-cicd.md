@@ -205,10 +205,10 @@ Docker Desktop daemon이 꺼진 상태에서 Docker API named pipe를 찾을 수
 
 ## 7. 다음 작업
 
-1. health-center Jenkins Compose/Dockerfile의 외부 수정 사항을 적용한다.
-2. Jenkins image를 재생성하고 SmartDrain deployment mount를 확인한다.
-3. GitHub Deploy Key와 Jenkins Credential/Job을 만든다.
-4. VM `.env`를 만든 뒤 첫 배포와 선택 seed를 실행한다.
+1. health-center Jenkins Compose에 SmartDrain deployment mount를 추가한다.
+2. Jenkins를 재생성하고 SmartDrain deployment mount를 확인한다.
+3. GitHub Deploy Key, Jenkins SCM Credential, `.env` Secret File Credential과 Job을 만든다.
+4. Secret File Credential을 사용한 첫 배포와 선택 seed를 실행한다.
 5. Cloudflare Tunnel hostname을 연결하고, 팀 합류 뒤 Zero Trust 이메일 제한을 추가한다.
 
 ## 8. 제안 커밋 메시지
@@ -218,7 +218,56 @@ feat: 개발 VM Jenkins 기반 SmartDrain CI/CD 구성 추가
 ```
 
 ```text
-- SSH Deploy Key 기반 저장소 동기화와 Jenkins 배포 파이프라인을 추가한다.
+- Custom Workspace와 Jenkins SCM checkout 기반 배포 파이프라인을 추가한다.
+- Jenkins Secret File로 배포 환경변수를 checkout 직후 주입한다.
 - Docker lint와 AI pytest 전용 CI target을 분리한다.
 - VM, Jenkins, seed, Cloudflare Tunnel 적용 절차를 문서화한다.
 ```
+
+## 9. 설계 변경: Custom Workspace 혼합 방식 적용
+
+기존 1차 구현은 `/apps/smart-drain`을 실제 배포 source로 유지하기 위해 `checkout scm` 후 별도 SSH clone/fetch 스크립트를 실행했다. health-center 방식과 비교한 결과, Git 동기화가 두 번 발생하고 Deploy Key·최초 clone parameter·VM `.env` 관리가 추가되어 운영 복잡도가 높았다.
+
+사용자 결정에 따라 Jenkinsfile을 아래 방식으로 변경했다.
+
+```text
+Jenkins Job SCM checkout
+        ↓
+Custom Workspace /deploy/smart-drain
+        ↓
+Jenkins Secret File credential을 .env로 복사
+        ↓
+Compose 검증 · build · 배포 · smoke test
+```
+
+| 항목 | 이전 1차 구현 | 현재 적용 방식 |
+| --- | --- | --- |
+| Jenkins agent workspace | 기본 Jenkins workspace | `/deploy/smart-drain` Custom Workspace |
+| Git 동기화 | `checkout scm` + SSH clone/fetch | `checkout scm` 한 번 |
+| `.env` | VM에 사전 생성·보존 | Secret File을 checkout 직후 매 배포 복사 |
+| Git SSH credential | SCM credential + script용 별도 credential | Jenkins Job SCM credential 하나 |
+| 제거된 입력 | `GIT_REPOSITORY_SSH_URL` 최초 clone parameter | 제거 |
+
+`/deploy/smart-drain`은 Jenkins 컨테이너 내부 경로이고, host `/apps/smart-drain`을 mount해 사용한다. 따라서 기존 health-center의 checkout·Credential 기반 환경변수 관리 방식은 유지하면서 SmartDrain source를 VM `/apps/smart-drain`에서 직접 점검할 수 있다.
+
+### 9.1 최종 VM/Jenkins 적용 사항
+
+1. host `/apps/smart-drain`은 최초 Jenkins checkout 전 비어 있어야 한다. `.env`를 사전에 만들지 않는다.
+2. `C:\Dev\health-center-smart-reservation\infra\jenkins\docker-compose.jenkins.yml`의 Jenkins volume에 다음 한 줄을 추가한다.
+
+   ```yaml
+   - /apps/smart-drain:/deploy/smart-drain
+   ```
+
+3. Jenkins Credential에 SmartDrain repository용 SSH credential과 아래 Secret File을 등록한다.
+
+   ```text
+   Credential ID: smartdrain-dev-env-file
+   파일 내용: SmartDrain 개발 VM용 .env
+   ```
+
+4. SmartDrain Job은 `Pipeline script from SCM`, `*/develop`, `Jenkinsfile`로 만들고 기존 Job과 같은 Poll SCM 주기를 설정한다.
+
+이번 방식에서는 Jenkins가 직접 `git fetch` 또는 `ssh` 명령을 실행하지 않는다. 따라서 기존 health-center Jenkins Dockerfile에 `git`이나 `openssh-client`를 추가할 필요가 없다. 외부 프로젝트에서 필요한 변경은 Jenkins Compose의 deployment mount 한 줄뿐이다.
+
+Notion용 최종 정리 문서는 `../deployment/jenkins-custom-workspace-guide.md`에 기록했다.

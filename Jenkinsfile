@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        node {
+            customWorkspace '/deploy/smart-drain'
+        }
+    }
 
     options {
         disableConcurrentBuilds()
@@ -8,11 +12,6 @@ pipeline {
     }
 
     parameters {
-        string(
-            name: 'GIT_REPOSITORY_SSH_URL',
-            defaultValue: '',
-            description: '최초 배포 시에만 입력합니다. 예: git@github.com:owner/smartdrain.git'
-        )
         booleanParam(
             name: 'SEED_MOCK_DATA',
             defaultValue: false,
@@ -33,21 +32,23 @@ pipeline {
             }
         }
 
-        stage('Preflight') {
+        stage('Prepare environment') {
             steps {
-                sh '.jenkins/scripts/preflight.sh'
+                withCredentials([file(
+                    credentialsId: 'smartdrain-dev-env-file',
+                    variable: 'ENV_FILE'
+                )]) {
+                    sh '''
+                        cp "$ENV_FILE" "$DEPLOY_DIR/.env"
+                        chmod 600 "$DEPLOY_DIR/.env"
+                    '''
+                }
             }
         }
 
-        stage('Sync deployment source') {
+        stage('Preflight') {
             steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'smartdrain-github-deploy-key',
-                    keyFileVariable: 'GIT_SSH_KEY',
-                    usernameVariable: 'GIT_SSH_USER'
-                )]) {
-                    sh '.jenkins/scripts/sync-deployment-source.sh'
-                }
+                sh '.jenkins/scripts/preflight.sh'
             }
         }
 
