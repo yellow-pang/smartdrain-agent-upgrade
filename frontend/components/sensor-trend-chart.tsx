@@ -164,7 +164,7 @@ export function SensorTrendChart({
             )}
 
             {!isFallback && (
-                <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="mt-4 grid grid-cols-2 gap-3 2xl:grid-cols-4">
                     <SummaryCard
                         label="현재 수위"
                         value={`${summary.currentLevel} m`}
@@ -227,11 +227,11 @@ function SummaryCard({
     return (
         <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-800/70">
             <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-            <div className="mt-1 flex items-center gap-2">
-                <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="whitespace-nowrap text-lg font-bold text-slate-900 dark:text-slate-100">
                     {value}
                 </span>
-                {badge && <StatusBadge status={badge} />}
+                {badge && <StatusBadge status={badge} className="shrink-0 whitespace-nowrap" />}
             </div>
             {sub && <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
         </div>
