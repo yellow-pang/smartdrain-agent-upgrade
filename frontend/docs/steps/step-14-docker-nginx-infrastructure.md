@@ -75,6 +75,53 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 3. 실제 YOLO/XGBoost 모델 도입 시 GPU/CUDA 및 모델 artifact를 backend가 아닌 AI 서비스 이미지에 별도로 설계해야 한다.
 4. 테스트 후 컨테이너는 `docker compose down`으로 종료했고 PostgreSQL named volume은 보존했다.
 
+## 환경변수 및 CI/CD 확장 정리
+
+### 환경변수 책임 분리
+
+기존 root `.env`는 backend 설정 파일로도 읽혔지만 Docker Compose는 이를 직접 사용하지 않아 책임이 섞여 있었다. 이번에 root `.env`를 Compose/배포 입력값으로 전환하고, backend 설정은 `backend/.env`, AI 설정은 `ai_service/.env`로 분리했다.
+
+| 위치 | 책임 | 예시 파일 | 비밀값 저장 여부 |
+| --- | --- | --- | --- |
+| `/.env` | Compose project 이름, host port, DB 컨테이너 값, Compose가 주입하는 backend/AI 설정 | `/.env.example` | 로컬·Jenkins VM만 사용. 운영 비밀값은 저장하지 않음 |
+| `/backend/.env` | Docker 없이 backend를 실행할 때의 DB, CORS, AI URL | `/backend/.env.example` | 로컬 개발 전용 |
+| `/ai_service/.env` | Docker 없이 AI를 실행할 때의 backend callback URL | `/ai_service/.env.example` | 로컬 개발 전용 |
+| `/frontend/.env.local` | 브라우저 공개 API URL과 Kakao JavaScript 키 | `/frontend/.env.example` | 공개 가능한 값만 저장 |
+
+backend는 더 이상 root `.env`를 읽지 않으며 `backend/.env`만 읽는다. AI 서비스는 `ai_service/.env`를 자동으로 읽되, Docker Compose가 전달한 환경변수가 우선한다.
+
+### AWS, Vercel, CI/CD 적용 기준
+
+| 대상 | 지금 준비한 사항 | 실제 연결 시 할 일 |
+| --- | --- | --- |
+| AWS | Compose 값에 `${VARIABLE}` 치환과 port/DB 연결 변수 분리를 적용 | RDS 접속 정보, 배포 키는 AWS Secrets Manager에 보관하고 ECS/EC2 배포 시 secret 참조로 주입 |
+| Vercel | frontend 공개 변수와 same-origin `/api` 정책을 구분 | Vercel 환경변수에 `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_KAKAO_MAP_APP_KEY`를 환경별 등록하고 Kakao 허용 도메인 추가 |
+| GitHub Actions | Docker context에서 `.github/`와 secret 파일을 제외 | Actions Secrets에는 AWS 자격증명·배포용 secret, Variables에는 리전·이미지 이름처럼 비밀이 아닌 값 저장 |
+| Jenkins + 개인 Notebook VM | Jenkins/notebook 경로를 Docker context에서 제외 | Jenkins는 개발 검증/이미지 build만 담당하고, Notebook VM의 데이터·노트북·자격증명은 애플리케이션 이미지에 넣지 않음 |
+
+`NEXT_PUBLIC_*` 변수는 브라우저 코드에 포함되므로 AWS access key, DB URL, 비밀번호, webhook secret처럼 비밀인 값에는 절대 사용하지 않는다.
+
+### Docker build context 제외 정책
+
+`.dockerignore`에 기존 docs·node_modules·Python cache 외에 아래 항목을 추가했다.
+
+```text
+.github/ .jenkins/ jenkins/ Jenkinsfile
+notebook/ notebooks/ *.ipynb **/.ipynb_checkpoints/
+terraform/ infra/ k8s/ kubernetes/ helm/ ansible/
+.aws/ *.pem *.key *.crt secrets/
+```
+
+이는 CI/CD 정의, 개인 Notebook VM 산출물, IaC, AWS 자격증명, 인증서가 애플리케이션 Docker 이미지에 실수로 포함되는 것을 막는다. 향후 Docker build에 IaC 또는 배포 스크립트가 실제로 필요해지면 해당 파일 전체를 허용하지 말고, 필요한 파일만 별도 build context 또는 artifact로 전달한다.
+
+## 이번 추가 검증
+
+| 검증 | 결과 |
+| --- | --- |
+| 운영 Compose 환경변수 치환 `docker compose config --quiet` | 통과 |
+| 개발 Compose 환경변수 치환 `docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet` | 통과 |
+| `docker compose build ai-service` | 통과 — `python-dotenv`을 포함한 AI 이미지 재빌드 성공 |
+
 ## 추천 커밋 메시지
 
 제목:

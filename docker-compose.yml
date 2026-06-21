@@ -2,13 +2,13 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: smartdrain
-      POSTGRES_PASSWORD: smartdrain123
-      POSTGRES_DB: smartdrain_db
+      POSTGRES_USER: ${POSTGRES_USER:-smartdrain}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smartdrain123}
+      POSTGRES_DB: ${POSTGRES_DB:-smartdrain_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartdrain -d smartdrain_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smartdrain} -d ${POSTGRES_DB:-smartdrain_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -18,7 +18,7 @@ services:
   migrate:
     image: smartdrain-backend
     environment:
-      DATABASE_URL: postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db}
     depends_on:
       db:
         condition: service_healthy
@@ -31,12 +31,12 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db
-      CORS_ORIGINS: '["http://localhost","http://localhost:8080"]'
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db}
+      CORS_ORIGINS: '${COMPOSE_CORS_ORIGINS:-["http://localhost","http://localhost:8080"]}'
       AI_SERVER_BASE_URL: http://ai-service:9000
       AI_CALLBACK_BASE_URL: http://backend:8000
-      AI_SERVER_TIMEOUT_SECONDS: 10
-      AI_SERVER_ENABLED: "true"
+      AI_SERVER_TIMEOUT_SECONDS: ${COMPOSE_AI_SERVER_TIMEOUT_SECONDS:-10}
+      AI_SERVER_ENABLED: ${COMPOSE_AI_SERVER_ENABLED:-true}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -54,8 +54,8 @@ services:
       dockerfile: ai_service/Dockerfile
     environment:
       BACKEND_BASE_URL: http://backend:8000
-      BACKEND_CALLBACK_TIMEOUT_SECONDS: 10
-      BACKEND_CALLBACK_RETRY_COUNT: 1
+      BACKEND_CALLBACK_TIMEOUT_SECONDS: ${COMPOSE_BACKEND_CALLBACK_TIMEOUT_SECONDS:-10}
+      BACKEND_CALLBACK_RETRY_COUNT: ${COMPOSE_BACKEND_CALLBACK_RETRY_COUNT:-1}
     depends_on:
       backend:
         condition: service_healthy
@@ -89,7 +89,7 @@ services:
       frontend:
         condition: service_healthy
     ports:
-      - "80:80"
+      - "${NGINX_HTTP_PORT:-80}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     healthcheck:
@@ -104,7 +104,7 @@ services:
     profiles: ["seed"]
     image: smartdrain-backend
     environment:
-      DATABASE_URL: postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db
+      DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db}
     depends_on:
       migrate:
         condition: service_completed_successfully
