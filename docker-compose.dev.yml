@@ -17,7 +17,8 @@ services:
       - frontend_node_modules:/app/node_modules
     command: ["pnpm", "dev", "--hostname", "0.0.0.0"]
     environment:
-      NEXT_PUBLIC_API_BASE_URL: /api
+      COMPOSE_FRONTEND_API_BASE_URL: ${COMPOSE_FRONTEND_API_BASE_URL-}
+      COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY: ${COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY:-}
 
   nginx:
     ports: !override

@@ -128,6 +128,16 @@ terraform/ infra/ k8s/ kubernetes/ helm/ ansible/
 
 `docs/deployment/development-production-guide.md`에는 VirtualBox Ubuntu·Jenkins·Cloudflare 개발 환경과 AWS·GitHub Actions·Vercel 운영 환경, EC2 Compose에서 RDS/ECS로 확장하는 인턴 프로젝트 기준, 테스트·secret 관리·배포 체크리스트를 기록했다.
 
+## frontend Docker·로컬 환경변수 우선순위 정리
+
+Docker 개발 컨테이너는 frontend 폴더를 bind mount하므로 팀원의 `frontend/.env.local`이 함께 보인다. 이 파일의 `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`이 Docker same-origin API 설정과 섞이면 브라우저가 공개되지 않은 host port로 요청해 loading skeleton이 유지될 수 있다.
+
+이를 막기 위해 root `.env`에는 Compose 전용 `COMPOSE_FRONTEND_API_BASE_URL`, `COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY`를 선언하고, Compose는 이 두 공개 값만 frontend에 전달한다. `next.config.mjs`는 Compose 실행일 때 해당 값을 `NEXT_PUBLIC_*`로 명시 주입한다. Docker 없이 frontend를 실행할 때만 `frontend/.env.local`의 `NEXT_PUBLIC_*`를 사용한다.
+
+개발 Nginx의 `location /`에는 Next.js Hot Reload WebSocket용 `Upgrade`/`Connection` 헤더와 timeout도 추가했다. `/ws/drains/status`는 업무용 backend WebSocket이고, `/_next/webpack-hmr`은 frontend 개발용 HMR WebSocket이라는 점을 구분한다.
+
+same-origin API base는 `/api`가 아니라 빈 값으로 고정했다. 각 API 함수가 이미 `/api/drains`, `/api/dashboard/summary` 같은 전체 경로를 가지고 있어 `/api`를 base로 쓰면 `/api/api/...`라는 잘못된 주소가 만들어진다. 빈 base URL에서도 업무 WebSocket은 현재 브라우저 origin의 `/ws/drains/status`를 사용하도록 보완했다.
+
 ## Compose 첫 기동 이미지 pull 오류 수정
 
 `migrate`와 `seed` 서비스가 build 설정 없이 `smartdrain-backend` 이미지 이름만 참조해 첫 `docker compose up --build` 시 Docker Hub pull을 시도하는 문제가 확인됐다. backend와 같은 Dockerfile을 쓰되 `smartdrain-migrate`, `smartdrain-seed`라는 별도 로컬 image tag와 build 설정을 부여했다.

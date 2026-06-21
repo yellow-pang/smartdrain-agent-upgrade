@@ -146,7 +146,12 @@ function getDrainStatusSocketUrl() {
     if (explicitUrl) return withDrainStatusPath(explicitUrl);
 
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!apiBaseUrl) return null;
+    if (apiBaseUrl === undefined) return null;
+
+    if (apiBaseUrl === "") {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        return `${protocol}//${window.location.host}${DRAIN_STATUS_SOCKET_PATH}`;
+    }
 
     if (apiBaseUrl.startsWith("/")) {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";

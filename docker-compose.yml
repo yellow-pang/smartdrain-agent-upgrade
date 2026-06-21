@@ -75,7 +75,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: /api
+        COMPOSE_FRONTEND_API_BASE_URL: ${COMPOSE_FRONTEND_API_BASE_URL-}
+        COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY: ${COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ > /dev/null"]
       interval: 10s

@@ -138,6 +138,8 @@ Vercel에는 frontend에서 실제 사용하는 공개 변수만 등록한다.
 
 `NEXT_PUBLIC_*` 값은 브라우저 번들에 포함되므로 비밀번호·AWS 키·DB URL 같은 비밀값을 넣으면 안 된다.
 
+Docker Compose는 root `.env`의 `COMPOSE_FRONTEND_API_BASE_URL`과 `COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY`만 frontend에 전달합니다. `COMPOSE_FRONTEND_API_BASE_URL`을 빈 값으로 두면 브라우저와 Nginx의 same-origin을 사용하며, API 함수가 포함한 `/api/*` 경로를 그대로 요청합니다. frontend의 `.env.local`은 Docker 없이 `pnpm dev`를 실행할 때만 사용하며, 이때는 `http://localhost:8000`처럼 backend 직접 주소를 설정합니다.
+
 ## 배포 방향
 
 ```text
