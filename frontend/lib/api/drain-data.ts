@@ -138,7 +138,7 @@ function mapDetailResponses({
 }
 
 function ensureApiBaseUrl() {
-    if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+    if (process.env.NEXT_PUBLIC_API_BASE_URL === undefined) {
         throw new Error("NEXT_PUBLIC_API_BASE_URL is required");
     }
 }
