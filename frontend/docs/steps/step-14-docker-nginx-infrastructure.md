@@ -1,5 +1,32 @@
 # 14 Docker Compose 및 Nginx 인프라 구성 결과
 
+## 인수인계 요약 (먼저 읽기)
+
+이 브랜치는 frontend·backend·AI·PostgreSQL을 Docker Compose로 실행하고 Nginx 단일 진입점으로 연결한 인프라 브랜치다. 개발은 `http://localhost:8080`, 운영 기준 검증은 `http://localhost`를 사용한다.
+
+| 바로 확인할 항목 | 파일 또는 명령 | 목적 |
+| --- | --- | --- |
+| 실행 방법 | `README.md` | 개발/운영 Compose, seed, 환경변수 사용법 |
+| 개발·운영 가이드 | `frontend/docs/deployment/development-production-guide.md` | Jenkins/Cloudflare/AWS/Vercel 운영 경계 |
+| 운영 Compose | `docker-compose.yml` | production image, migration, Nginx 80 포트 |
+| 개발 Compose | `docker-compose.dev.yml` | bind mount, Hot Reload, Nginx 8080 포트 |
+| root 환경변수 | `.env.example` | Compose/배포 입력값의 예시 |
+| 서비스별 로컬 환경변수 | `backend/.env.example`, `ai_service/.env.example`, `frontend/.env.example` | Docker 없이 각 서비스를 실행할 때의 설정 |
+
+### 브랜치 종료 전 팀 확인
+
+1. `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build` 후 대시보드·상세 화면을 확인한다.
+2. `GET /api/drains`, `GET /api/dashboard/summary`, `GET /drains/DR-004`와 `/ws/drains/status`를 확인한다.
+3. `.env`, `backend/.env`, `ai_service/.env`, `frontend/.env.local` 같은 실제 설정 파일은 커밋하지 않는다.
+4. 이 문서의 **파일 소유권과 팀 동기화**를 읽고 담당 서비스의 예시 파일을 기준으로 로컬 설정을 맞춘다.
+
+## 문서 읽는 순서
+
+1. 인수인계 요약: 빠른 실행과 브랜치 종료 확인
+2. 작업 결과·변경 파일: 이번 PR의 실제 변경 범위
+3. 환경변수 및 파일 소유권: 팀원별 로컬/Compose 설정 통일
+4. 검증 결과·남은 리스크: 배포 전 확인과 후속 작업
+
 ## 작업 결과
 
 프런트엔드, 백엔드, AI 서비스, PostgreSQL을 Docker Compose로 실행하고 Nginx를 유일한 외부 진입점으로 구성했다.
@@ -145,3 +172,59 @@ same-origin API base는 `/api`가 아니라 빈 값으로 고정했다. 각 API 
 `migrate`와 `seed` 서비스가 build 설정 없이 `smartdrain-backend` 이미지 이름만 참조해 첫 `docker compose up --build` 시 Docker Hub pull을 시도하는 문제가 확인됐다. backend와 같은 Dockerfile을 쓰되 `smartdrain-migrate`, `smartdrain-seed`라는 별도 로컬 image tag와 build 설정을 부여했다.
 
 세 이미지는 Docker layer cache를 공유한다. 따라서 외부에 존재하지 않는 `smartdrain-backend` 이미지를 pull하지 않고, 첫 실행에서도 backend/migration/seed 실행 이미지가 로컬에서 만들어진다.
+
+## 파일 소유권과 팀 동기화
+
+### 이번 인프라 작업의 변경 범위
+
+| 영역 | 이번에 건드린 대표 파일 | 담당자가 알아야 할 점 |
+| --- | --- | --- |
+| Docker/Compose | `.dockerignore`, `docker-compose.yml`, `docker-compose.dev.yml`, `.env.example` | 서비스 이름, 내부 DNS, 포트, build argument는 Compose가 기준 |
+| Nginx | `nginx/default.conf`, `nginx/default.dev.conf` | 운영은 `/docs` 차단, 개발은 HMR과 Swagger 허용 |
+| Frontend | `frontend/Dockerfile`, `next.config.mjs`, `.env.example`, `lib/api/drain-data.ts`, `lib/websocket/drain-status-socket.ts` | Docker는 `COMPOSE_FRONTEND_*`, 단독 local 실행은 `NEXT_PUBLIC_*` 사용 |
+| Backend | `backend/Dockerfile`, `backend/requirements.txt`, `.env.example`, `app/core/config.py` | runtime 의존성과 로컬 FastAPI 설정은 backend 경로가 기준 |
+| AI Service | `ai_service/Dockerfile`, `requirements.txt`, `.env.example`, `http/app.py`, `http/config.py` | callback URL·healthcheck와 AI 로컬 설정은 AI service 경로가 기준 |
+| 문서 | `README.md`, `frontend/docs/deployment/*`, plan/step/PR 문서 | 실행 방법과 운영 판단 기준은 문서 변경 시 함께 갱신 |
+
+### 팀원이 로컬 설정을 통일하는 방법
+
+```powershell
+# Compose 개발/운영 입력값
+Copy-Item .env.example .env
+
+# Docker 없이 backend 또는 AI를 직접 실행할 때만 필요
+Copy-Item backend\.env.example backend\.env
+Copy-Item ai_service\.env.example ai_service\.env
+
+# Docker 없이 frontend를 직접 실행할 때만 필요
+Copy-Item frontend\.env.example frontend\.env.local
+```
+
+| 실행 방식 | 기준 환경변수 | 주의 |
+| --- | --- | --- |
+| Docker Compose | root `.env`의 `COMPOSE_*` | frontend에는 필요한 `COMPOSE_FRONTEND_*` 공개 값만 전달 |
+| backend 단독 실행 | `backend/.env` | root `.env`를 backend 설정으로 사용하지 않음 |
+| AI 단독 실행 | `ai_service/.env` | backend callback 주소는 단독 실행 주소를 사용 |
+| frontend 단독 실행 | `frontend/.env.local` | `NEXT_PUBLIC_*`은 브라우저에 공개됨 |
+
+### `alembic.ini`과 root `requirements.txt` 판단
+
+| 파일 | 현재 상태 | 이번 PR 결정 | 후속 정리 권장안 |
+| --- | --- | --- | --- |
+| `/alembic.ini` | backend Alembic migration 설정이지만 루트 경로·`backend/alembic` 경로·Dockerfile이 모두 이 위치를 참조 | **루트 유지**. 지금 이동하면 Dockerfile, migration command, 문서와 path 계산을 함께 바꿔야 하므로 브랜치 종료 직전 변경은 위험 | 별도 `refactor/backend-tooling-layout` 브랜치에서 `backend/alembic.ini` 이동, `script_location`, Docker workdir, migration 명령, README를 한 번에 변경 |
+| `/requirements.txt` | FastAPI와 ML/CUDA 계열을 포함한 과거 통합/실험 의존성 목록 | **루트 유지, Compose 미사용으로 명시**. runtime Docker 이미지는 `backend/requirements.txt`만 사용 | 실제 소유자를 합의한 뒤 `requirements-ml-experiment.txt`처럼 목적이 드러나는 이름으로 변경하거나, 더 이상 쓰지 않으면 제거 |
+| `/backend/requirements.txt` | 현재 backend Docker runtime 의존성 | backend runtime의 단일 기준 | backend 담당자가 API/DB 의존성 변경 시 갱신 |
+| `/ai_service/requirements.txt` | 현재 AI FastAPI callback service 의존성 | AI runtime의 단일 기준 | 모델 추론 패키지 도입 시 backend가 아닌 이 파일/AI 전용 image에 추가 |
+
+root `requirements.txt`의 `ultralytics`, `xgboost`, `opencv-python` 등은 현재 Compose backend image에 설치하지 않는다. 실제 YOLO/XGBoost 모델을 도입할 때 AI 담당자가 모델 artifact, GPU/CUDA 필요 여부, image 크기를 함께 검토해 AI service 전용 의존성으로 추가한다.
+
+### 에이전트 사용 시 서비스 경계
+
+| 담당 경로 | 변경 전 확인할 기준 | 에이전트 작업 원칙 |
+| --- | --- | --- |
+| `frontend/` | `frontend/AGENTS.md`, frontend docs convention | frontend 밖 파일이 필요한 경우 인프라 담당 승인과 관련 Compose 영향 확인 |
+| `backend/` | backend `.env.example`, `backend/requirements.txt`, Alembic 경로 | DB schema/migration·API 계약·Dockerfile 영향을 함께 점검 |
+| `ai_service/` | AI `.env.example`, `ai_service/requirements.txt`, HTTP callback 계약 | callback payload와 backend URL 호환성을 유지하고 모델 의존성은 AI image에 한정 |
+| root/`nginx`/Compose | README, deployment guide, `.env.example` | 서비스 이름, 외부 포트, 환경변수 이름을 독단적으로 변경하지 않고 frontend/backend/AI 담당자와 확인 |
+
+향후 반복 작업을 줄이려면 다음 브랜치에서 `backend/AGENTS.md`, `ai_service/AGENTS.md`, root `AGENTS.md`를 추가해 각 서비스의 실행 명령, 환경변수, 의존성 파일, 변경 승인 기준을 명시하는 것을 권장한다. 이번 브랜치에서는 기존 frontend 규칙을 유지하고, 파일 이동 같은 구조 개편은 포함하지 않는다.
