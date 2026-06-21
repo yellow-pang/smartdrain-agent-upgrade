@@ -122,6 +122,18 @@ terraform/ infra/ k8s/ kubernetes/ helm/ ansible/
 | 개발 Compose 환경변수 치환 `docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet` | 통과 |
 | `docker compose build ai-service` | 통과 — `python-dotenv`을 포함한 AI 이미지 재빌드 성공 |
 
+## README 및 개발·운영 가이드 보강
+
+루트 README를 프로젝트 소개, 구성도, Docker 빠른 시작, 개발/운영 테스트 구분, 환경변수 원칙, 배포 방향을 포함한 첫 진입 문서로 재구성했다. 생성형 AI 도구가 일부 설정과 문서 초안에 사용됐다는 고지도 추가했다.
+
+`docs/deployment/development-production-guide.md`에는 VirtualBox Ubuntu·Jenkins·Cloudflare 개발 환경과 AWS·GitHub Actions·Vercel 운영 환경, EC2 Compose에서 RDS/ECS로 확장하는 인턴 프로젝트 기준, 테스트·secret 관리·배포 체크리스트를 기록했다.
+
+## Compose 첫 기동 이미지 pull 오류 수정
+
+`migrate`와 `seed` 서비스가 build 설정 없이 `smartdrain-backend` 이미지 이름만 참조해 첫 `docker compose up --build` 시 Docker Hub pull을 시도하는 문제가 확인됐다. backend와 같은 Dockerfile을 쓰되 `smartdrain-migrate`, `smartdrain-seed`라는 별도 로컬 image tag와 build 설정을 부여했다.
+
+세 이미지는 Docker layer cache를 공유한다. 따라서 외부에 존재하지 않는 `smartdrain-backend` 이미지를 pull하지 않고, 첫 실행에서도 backend/migration/seed 실행 이미지가 로컬에서 만들어진다.
+
 ## 추천 커밋 메시지
 
 제목:

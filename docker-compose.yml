@@ -16,7 +16,10 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: smartdrain-backend
+    image: smartdrain-migrate
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db}
     depends_on:
@@ -102,7 +105,10 @@ services:
 
   seed:
     profiles: ["seed"]
-    image: smartdrain-backend
+    image: smartdrain-seed
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       DATABASE_URL: ${COMPOSE_DATABASE_URL:-postgresql+psycopg://smartdrain:smartdrain123@db:5432/smartdrain_db}
     depends_on:
