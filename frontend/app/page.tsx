@@ -86,10 +86,10 @@ export default function DashboardPage() {
         : realtimeStatus;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-dvh flex-col bg-background">
       <AppHeader />
 
-      <main className="mx-auto max-w-[1600px] p-4 md:p-6">
+      <main className="mx-auto w-full max-w-[1600px] flex-1 p-4 md:p-6">
         {summaryQuery.isLoading ? (
           <DashboardSummarySkeleton />
         ) : summaryQuery.data ? (
@@ -100,8 +100,8 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           {/* Map */}
-          <section className="lg:col-span-6 xl:col-span-7">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <section className="lg:col-span-6 xl:col-span-7 xl:h-[clamp(32rem,calc(100dvh-11rem),42rem)] 2xl:h-[clamp(34rem,calc(100dvh-10rem),46rem)]">
+            <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                   도시 배수 시설 위험도 지도
@@ -112,16 +112,18 @@ export default function DashboardPage() {
                   </span>
                 )}
               </div>
-              {dashboardData ? (
-                <RiskMap
-                  drains={dashboardData.drains}
-                  selectedId={effectiveSelectedId}
-                  onSelect={handleSelectDrain}
-                  labelLocation={effectiveSelected?.road}
-                />
-              ) : (
-                <MapLoadingState />
-              )}
+              <div className="min-h-0 flex-1">
+                {dashboardData ? (
+                  <RiskMap
+                    drains={dashboardData.drains}
+                    selectedId={effectiveSelectedId}
+                    onSelect={handleSelectDrain}
+                    labelLocation={effectiveSelected?.road}
+                  />
+                ) : (
+                  <MapLoadingState />
+                )}
+              </div>
               <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
                 <Info className="size-3.5" />
                 지도에서 배수 시설을 클릭하면 상세 정보를 확인할 수 있습니다.
@@ -130,8 +132,8 @@ export default function DashboardPage() {
           </section>
 
           {/* Risk list */}
-          <section className="lg:col-span-6 xl:col-span-5 2xl:col-span-3">
-            <div className="h-full max-h-[460px] shadow-sm md:max-h-[560px] xl:max-h-[640px]">
+          <section className="lg:col-span-6 xl:col-span-5 xl:h-[clamp(32rem,calc(100dvh-11rem),42rem)] 2xl:col-span-3 2xl:h-[clamp(34rem,calc(100dvh-10rem),46rem)]">
+            <div className="h-full shadow-sm">
               <DrainRiskList
                 drains={sorted}
                 selectedId={effectiveSelectedId}
@@ -159,9 +161,9 @@ export default function DashboardPage() {
           </section>
 
           {/* Detail panel */}
-          <section className="hidden xl:col-span-12 xl:block 2xl:col-span-2">
+          <section className="hidden xl:col-span-12 xl:block 2xl:col-span-2 2xl:h-[clamp(34rem,calc(100dvh-10rem),46rem)]">
             {effectiveSelected ? (
-              <div className="max-h-[520px] shadow-sm md:max-h-[640px]">
+              <div className="h-full shadow-sm">
                 <DrainSummaryPanel drain={effectiveSelected} />
               </div>
             ) : !isLoading && sorted.length === 0 ? (

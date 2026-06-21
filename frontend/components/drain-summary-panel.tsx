@@ -65,20 +65,29 @@ export function DrainSummaryPanel({
         </p>
 
         {/* Priority summary */}
-        <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
-          <PriorityBox label="상태">
-            <StatusBadge status={drain.status} />
-          </PriorityBox>
-          <PriorityBox label="판정 결과">
-            <span className={cn("font-bold", meta.text)}>
-              {drain.judgement}
-            </span>
-          </PriorityBox>
-          <PriorityBox label="최근 업데이트" className="md:col-span-2">
-            <span className="font-medium text-slate-700">
+        <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/70">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                상태
+              </span>
+              <StatusBadge status={drain.status} className="whitespace-nowrap" />
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
               {formatDateTimeForDisplay(drain.updatedAt)}
             </span>
-          </PriorityBox>
+          </div>
+          <div className="mt-2 border-t border-slate-200 pt-2 dark:border-slate-700">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              판정 결과
+            </p>
+            <p
+              className={cn("mt-1 line-clamp-3 text-sm font-bold leading-5", meta.text)}
+              title={drain.judgement}
+            >
+              {drain.judgement}
+            </p>
+          </div>
         </div>
 
         <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/70">
@@ -216,37 +225,17 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <dt className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
         <Icon className="size-4 text-slate-400 dark:text-slate-500" />
         {label}
       </dt>
-      <dd className="max-w-[70%] text-right text-sm text-slate-800 break-words dark:text-slate-100">
-        {children ?? <span className="font-medium">{value}</span>}
+      <dd className="min-w-0 flex-1 text-right text-sm text-slate-800 dark:text-slate-100">
+        {children ?? (
+          <span className="block break-keep font-medium" title={value}>
+            {value}
+          </span>
+        )}
       </dd>
-    </div>
-  );
-}
-
-function PriorityBox({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/70",
-        className,
-      )}
-    >
-      <p className="text-[11px] text-slate-500 dark:text-slate-400">{label}</p>
-      <div className="mt-1 text-sm text-slate-800 dark:text-slate-100">
-        {children}
-      </div>
     </div>
   );
 }

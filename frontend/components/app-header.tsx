@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AlertTriangle, Bell, Droplet, Menu, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ComingSoonPopover } from "@/components/coming-soon-popover";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
 import { useDrainStore } from "@/store/drain-store";
 
 export function AppHeader() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [comingSoonTarget, setComingSoonTarget] = useState<
+    "menu" | "user" | null
+  >(null);
   const urgentAlerts = useDrainStore((state) => state.urgentAlerts);
   const markUrgentAlertRead = useDrainStore(
     (state) => state.markUrgentAlertRead,
@@ -18,18 +22,32 @@ export function AppHeader() {
     (state) => state.markAllUrgentAlertsRead,
   );
   const unreadCount = urgentAlerts.filter((alert) => !alert.read).length;
+  const closeComingSoon = useCallback(() => setComingSoonTarget(null), []);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-3 sm:h-16 sm:px-4 md:px-6 dark:border-slate-800 dark:bg-slate-950/95">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-          aria-label="메뉴 열기"
-        >
-          <Menu className="size-5" />
-        </Button>
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            aria-label="메뉴 열기"
+            aria-expanded={comingSoonTarget === "menu"}
+            onClick={() => {
+              setIsAlertOpen(false);
+              setComingSoonTarget("menu");
+            }}
+          >
+            <Menu className="size-5" />
+          </Button>
+          {comingSoonTarget === "menu" && (
+            <ComingSoonPopover
+              message="메뉴 기능은 준비 중입니다."
+              onClose={closeComingSoon}
+            />
+          )}
+        </div>
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-cyan-600 text-white sm:size-8">
             <Droplet className="size-4 sm:size-5" fill="currentColor" />
@@ -127,14 +145,28 @@ export function AppHeader() {
           )}
         </div>
         <div className="mx-0.5 h-5 w-px bg-slate-200 dark:bg-slate-800 sm:mx-1 sm:h-6" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 sm:size-9"
-          aria-label="사용자 메뉴"
-        >
-          <User className="size-4 sm:size-5" />
-        </Button>
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 sm:size-9"
+            aria-label="사용자 메뉴"
+            aria-expanded={comingSoonTarget === "user"}
+            onClick={() => {
+              setIsAlertOpen(false);
+              setComingSoonTarget("user");
+            }}
+          >
+            <User className="size-4 sm:size-5" />
+          </Button>
+          {comingSoonTarget === "user" && (
+            <ComingSoonPopover
+              message="사용자 기능은 준비 중입니다."
+              onClose={closeComingSoon}
+              align="end"
+            />
+          )}
+        </div>
       </div>
     </header>
   );

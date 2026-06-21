@@ -50,6 +50,8 @@
 
 :root {
   color-scheme: light;
+  --chart-grid: #f1f5f9;
+  --chart-axis: #94a3b8;
   --scrollbar-thumb: rgba(148, 163, 184, 0.45);
   --scrollbar-thumb-hover: rgba(100, 116, 139, 0.55);
   --background: oklch(1 0 0);
@@ -88,6 +90,8 @@
 
 .dark {
   color-scheme: dark;
+  --chart-grid: rgba(148, 163, 184, 0.16);
+  --chart-axis: #94a3b8;
   --scrollbar-thumb: rgba(71, 85, 105, 0.65);
   --scrollbar-thumb-hover: rgba(100, 116, 139, 0.82);
   --background: oklch(0.145 0 0);
@@ -126,6 +130,8 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     color-scheme: dark;
+    --chart-grid: rgba(148, 163, 184, 0.16);
+    --chart-axis: #94a3b8;
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -166,11 +172,13 @@
   }
   body {
     @apply bg-background text-foreground;
+    min-height: 100dvh;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
   html {
     @apply font-sans;
+    min-height: 100%;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }

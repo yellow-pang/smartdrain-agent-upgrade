@@ -45,11 +45,13 @@ export function RiskMap({
   selectedId,
   onSelect,
   labelLocation,
+  variant = "dashboard",
 }: {
   drains?: DrainFacility[];
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   labelLocation?: string;
+  variant?: "dashboard" | "detail";
 }) {
   const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
   const validDrains = useMemo(
@@ -72,7 +74,12 @@ export function RiskMap({
   });
 
   return (
-    <div className="relative h-full min-h-[280px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 sm:min-h-[320px] md:min-h-[420px]">
+    <div
+      className={cn(
+        "relative h-full w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900",
+        variant === "dashboard" && "min-h-[280px] sm:min-h-[320px] md:min-h-[420px]",
+      )}
+    >
       {!appKey || validDrains.length === 0 ? (
         <FallbackRiskMap
           drains={drains}
