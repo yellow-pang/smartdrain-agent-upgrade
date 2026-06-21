@@ -1,0 +1,19 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: smartdrain-jenkins:lts-docker
+    container_name: smartdrain-jenkins
+    user: root
+    ports:
+      - "8082:8080"
+      - "50001:50000"
+    volumes:
+      - smartdrain-jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /apps/smart-drain:/deploy/smart-drain
+    restart: unless-stopped
+
+volumes:
+  smartdrain-jenkins-home:

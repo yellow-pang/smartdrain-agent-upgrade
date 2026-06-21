@@ -271,3 +271,24 @@ Compose 검증 · build · 배포 · smoke test
 이번 방식에서는 Jenkins가 직접 `git fetch` 또는 `ssh` 명령을 실행하지 않는다. 따라서 기존 health-center Jenkins Dockerfile에 `git`이나 `openssh-client`를 추가할 필요가 없다. 외부 프로젝트에서 필요한 변경은 Jenkins Compose의 deployment mount 한 줄뿐이다.
 
 Notion용 최종 정리 문서는 `../deployment/jenkins-custom-workspace-guide.md`에 기록했다.
+
+## 10. 설계 변경: SmartDrain 전용 Jenkins 분리
+
+health 프로젝트는 개인 저장소이고 SmartDrain은 팀 프로젝트이므로, Jenkins Job·Credential·plugin·log 관리 범위를 분리하기 위해 SmartDrain 전용 Jenkins 컨테이너를 추가했다. VM 자원이 충분하고 동일 인프라 담당자가 관리하는 조건에서는 공용 Jenkins의 접근 권한을 세밀하게 나누는 것보다 전용 Jenkins가 인수인계와 운영 경계를 더 명확하게 만든다.
+
+| 항목 | health Jenkins | SmartDrain Jenkins |
+| --- | --- | --- |
+| container | `health-center-jenkins` | `smartdrain-jenkins` |
+| UI host port | `8081` | `8082` |
+| agent host port | `50000` | `50001` |
+| Jenkins home | 기존 `jenkins-home` | `smartdrain-jenkins-home` |
+| 저장소/팀 Credential | health 프로젝트 전용 | SmartDrain 팀 전용 |
+| 배포 source | health Jenkins workspace | `/apps/smart-drain` Custom Workspace |
+
+전용 Jenkins의 Compose와 Dockerfile은 SmartDrain 저장소의 `/jenkins/`에 추가했다. 현재 Jenkinsfile의 Custom Workspace, Secret File `.env`, Compose project `smartdrain-dev` 설정은 전용 Jenkins에서도 그대로 사용한다.
+
+두 Jenkins는 같은 VM Docker socket을 사용한다. 따라서 Jenkins 설정과 Credential은 분리되지만, Docker daemon 권한은 공유한다. Docker 권한까지 완전히 분리하려면 별도 VM 또는 별도 Docker daemon/agent가 필요하다.
+
+### 10.1 health Jenkins 변경 복구
+
+전용 Jenkins 방식에서는 health-center 프로젝트에 SmartDrain mount나 SSH 패키지 추가가 필요 없다. 이전 방향으로 이미 health Jenkins Compose/Dockerfile을 수정했다면 SmartDrain을 위해 추가한 부분만 제거하고 health Jenkins를 재생성한다. `down -v`는 실행하지 않아야 기존 Jenkins home volume과 health Job/Credential이 보존된다.

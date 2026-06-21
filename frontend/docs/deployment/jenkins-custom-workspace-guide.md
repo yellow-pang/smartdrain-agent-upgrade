@@ -50,27 +50,53 @@ Destination: /deploy/smart-drain/.env
 
 따라서 `.env`는 Git에 저장되지 않으며, Git checkout이나 workspace 정리로 사라져도 매 배포마다 다시 생성된다.
 
+## 전용 Jenkins 구성
+
+SmartDrain은 `health-center-jenkins`를 재사용하지 않고 전용 Jenkins 컨테이너를 사용한다. Jenkins 설정, Job, Credential, log, plugin 관리 범위는 SmartDrain 팀으로 분리된다.
+
+| 항목 | SmartDrain 전용 값 |
+| --- | --- |
+| Compose 파일 | `/jenkins/docker-compose.jenkins.yml` |
+| Dockerfile | `/jenkins/Dockerfile` |
+| container name | `smartdrain-jenkins` |
+| Jenkins UI | VM host `8082` → container `8080` |
+| Agent port | VM host `50001` → container `50000` |
+| Jenkins home volume | `smartdrain-jenkins-home` |
+| 배포 source mount | `/apps/smart-drain:/deploy/smart-drain` |
+
+VM에서 SmartDrain 저장소를 `/apps/smart-drain`에 최초 clone한 뒤 다음 명령으로 전용 Jenkins를 시작한다.
+
+```bash
+cd /apps/smart-drain/jenkins
+docker compose -f docker-compose.jenkins.yml up -d --build
+```
+
+Jenkins container는 Docker socket을 사용하므로 같은 VM의 Docker daemon에 접근한다. 따라서 Jenkins UI·Credential은 분리되지만 Docker daemon 자체의 권한은 health 프로젝트와 완전히 격리되지 않는다. 완전한 격리가 필요하면 별도 VM 또는 별도 Docker daemon/agent가 필요하다.
+
 ## VM과 Jenkins에서 필요한 설정
 
 1. VM에 빈 `/apps/smart-drain` 디렉터리를 만든다.
-2. 기존 Jenkins Compose 파일에 아래 mount를 추가한다.
+2. 전용 Jenkins Compose에 정의된 `/apps/smart-drain:/deploy/smart-drain` mount를 사용한다.
+3. Jenkins Job을 `Pipeline script from SCM`으로 만들고 SmartDrain `develop` 브랜치를 지정한다.
+4. Job의 SSH SCM Credential을 등록한다.
+5. `.env` 내용으로 Jenkins Secret File credential `smartdrain-dev-env-file`을 등록한다.
+6. 기존 Job과 같은 주기로 Poll SCM을 설정한다.
 
-```yaml
-- /apps/smart-drain:/deploy/smart-drain
+## 기존 health-center Jenkins를 원래대로 유지하는 방법
+
+SmartDrain 전용 Jenkins 방식에서는 health-center 프로젝트 파일을 수정할 필요가 없다.
+
+이미 아래 변경을 health-center에 적용했다면 되돌려도 된다.
+
+- `infra/jenkins/docker-compose.jenkins.yml`의 `- /apps/smart-drain:/deploy/smart-drain` mount 제거
+- `infra/jenkins/Dockerfile`에 SmartDrain을 위해 추가한 `git`, `openssh-client` 패키지 제거
+
+health-center Jenkins를 재생성할 때는 Jenkins 설정 volume을 지우지 않는다.
+
+```bash
+cd /path/to/health-center-smart-reservation/infra/jenkins
+docker compose -f docker-compose.jenkins.yml up -d --build
+# down -v 는 실행하지 않는다.
 ```
 
-3. Jenkins를 재생성한다. 기존 `jenkins-home`, Docker socket, Maven/npm cache volume은 그대로 유지한다.
-4. Jenkins Job을 `Pipeline script from SCM`으로 만들고 SmartDrain `develop` 브랜치를 지정한다.
-5. Job의 SSH SCM Credential을 등록한다.
-6. `.env` 내용으로 Jenkins Secret File credential `smartdrain-dev-env-file`을 등록한다.
-7. 기존 Job과 같은 주기로 Poll SCM을 설정한다.
-
-## 외부 health-center 프로젝트 변경 범위
-
-수정이 필요한 것은 아래 Compose 파일의 mount 한 줄뿐이다.
-
-```text
-C:\Dev\health-center-smart-reservation\infra\jenkins\docker-compose.jenkins.yml
-```
-
-이번 최종 방식에서는 Jenkins가 별도 `git fetch`나 `ssh` 명령을 실행하지 않는다. 따라서 health-center Jenkins Dockerfile에 `openssh-client`를 추가할 필요가 없다.
+기존 `jenkins-home` named volume을 유지하면 health Jenkins의 Job, Credential, plugin 설정은 그대로 남는다.
