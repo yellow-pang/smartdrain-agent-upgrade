@@ -21,6 +21,7 @@ type DrainStore = {
     socketStatus: DrainSocketStatus;
     lastMessageAt: string | null;
     lastError: string | null;
+    statusEventsByDrainId: Record<string, DrainStatusUpdatedEventDto>;
     yoloEventsByDrainId: Record<string, YoloResultUpdatedEventDto>;
     xgboostEventsByDrainId: Record<string, XgboostResultUpdatedEventDto>;
     urgentAlerts: UrgentDrainAlert[];
@@ -28,6 +29,7 @@ type DrainStore = {
     setDetailPanelOpen: (open: boolean) => void;
     setSocketStatus: (status: DrainSocketStatus) => void;
     markMessageReceived: () => void;
+    applyStatusEvent: (event: DrainStatusUpdatedEventDto) => void;
     applyYoloEvent: (event: YoloResultUpdatedEventDto) => void;
     applyXgboostEvent: (event: XgboostResultUpdatedEventDto) => void;
     upsertUrgentAlert: (
@@ -44,6 +46,7 @@ export const useDrainStore = create<DrainStore>((set) => ({
     socketStatus: "waiting",
     lastMessageAt: null,
     lastError: null,
+    statusEventsByDrainId: {},
     yoloEventsByDrainId: {},
     xgboostEventsByDrainId: {},
     urgentAlerts: [],
@@ -57,6 +60,13 @@ export const useDrainStore = create<DrainStore>((set) => ({
                 socketStatus === "error" ? "실시간 연결에 실패했습니다." : null,
         }),
     markMessageReceived: () => set({ lastMessageAt: new Date().toISOString() }),
+    applyStatusEvent: (event) =>
+        set((state) => ({
+            statusEventsByDrainId: {
+                ...state.statusEventsByDrainId,
+                [event.payload.drainId]: event,
+            },
+        })),
     applyYoloEvent: (event) => set((state) => ({ yoloEventsByDrainId: { ...state.yoloEventsByDrainId, [event.payload.drainId]: event } })),
     applyXgboostEvent: (event) => set((state) => ({ xgboostEventsByDrainId: { ...state.xgboostEventsByDrainId, [event.payload.drainId]: event } })),
     upsertUrgentAlert: (event, facilityName) =>

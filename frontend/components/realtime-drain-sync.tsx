@@ -13,6 +13,7 @@ import { isUrgentRiskLevel } from "@/lib/urgent-alert-policy";
 export function RealtimeDrainSync() {
     const queryClient = useQueryClient();
     const { isSuccess } = useDrainsQuery();
+    const storeStatusEvent = useDrainStore((state) => state.applyStatusEvent);
     const applyYoloEvent = useDrainStore((state) => state.applyYoloEvent);
     const applyXgboostEvent = useDrainStore((state) => state.applyXgboostEvent);
     const setSocketStatus = useDrainStore((state) => state.setSocketStatus);
@@ -37,8 +38,9 @@ export function RealtimeDrainSync() {
         if (isUrgentRiskLevel(event.payload.riskLevel)) {
             upsertUrgentAlert(event, facilityName);
         }
+        storeStatusEvent(event);
         markMessageReceived();
-    }, [markMessageReceived, queryClient, upsertUrgentAlert]);
+    }, [markMessageReceived, queryClient, storeStatusEvent, upsertUrgentAlert]);
 
     const handleConnected = useCallback((reconnected: boolean) => {
         if (!reconnected) return;
