@@ -1,5 +1,12 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+
+AI_SERVICE_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(AI_SERVICE_DIR / ".env")
 
 
 @dataclass(frozen=True)
