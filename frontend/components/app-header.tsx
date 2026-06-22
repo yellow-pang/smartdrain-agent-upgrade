@@ -81,7 +81,7 @@ export function AppHeader() {
           </Button>
           {isAlertOpen && (
             <section
-              className="absolute right-0 top-10 z-50 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+              className="fixed left-3 right-3 top-16 z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[22rem] dark:border-slate-700 dark:bg-slate-900"
               aria-label="긴급 알림 목록"
             >
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
