@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: smartdrain-postgres
+    environment:
+      POSTGRES_USER: smartdrain
+      POSTGRES_PASSWORD: smartdrain123
+      POSTGRES_DB: smartdrain_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
