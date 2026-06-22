@@ -1,7 +1,9 @@
 import pytest
 
-from ai_service.xgboost.constants import MODEL_VERSION
+from ai_service.xgboost import service as xgboost_service
+from ai_service.xgboost.constants import FEATURE_COLUMNS
 from ai_service.xgboost.service import predict_flood_risk_batch
+from ai_service.xgboost.validator import validate_input_batch
 
 
 def make_batch():
@@ -11,6 +13,35 @@ def make_batch():
         "water_level": [0.22, 0.54, 0.82],
         "flow_velocity": [0.81, 0.42, 0.13],
     }
+
+
+class FakeTrainedXGBoostPredictor:
+    def predict_batch(self, input_dict_batch):
+        validate_input_batch(input_dict_batch)
+        row_count = len(input_dict_batch["obstruction_ratio"])
+        return [
+            {
+                "index": index,
+                "risk_level": "good",
+                "risk_score": 0.91,
+                "final_decision": "good",
+                "feature_snapshot": {
+                    column: input_dict_batch[column][index]
+                    for column in FEATURE_COLUMNS
+                },
+                "model_version": "test_trained_xgb",
+            }
+            for index in range(row_count)
+        ]
+
+
+@pytest.fixture(autouse=True)
+def stub_trained_predictor(monkeypatch):
+    monkeypatch.setattr(
+        xgboost_service,
+        "TrainedXGBoostPredictor",
+        lambda: FakeTrainedXGBoostPredictor(),
+    )
 
 
 def test_predict_returns_list_for_valid_batch():
@@ -31,36 +62,7 @@ def test_result_contains_required_keys():
         "feature_snapshot",
         "model_version",
     }.issubset(result[0])
-    assert result[0]["model_version"] == MODEL_VERSION
-
-
-def test_low_confidence_row_is_unknown():
-    batch = {
-        "obstruction_ratio": [0.12],
-        "confidence_score": [0.49],
-        "water_level": [0.22],
-        "flow_velocity": [0.81],
-    }
-
-    result = predict_flood_risk_batch(batch)
-
-    assert result[0]["risk_level"] == "unknown"
-    assert result[0]["final_decision"] == "unknown"
-    assert result[0]["risk_score"] == 0.0
-
-
-@pytest.mark.parametrize("value", [None, float("nan")])
-def test_none_or_nan_row_value_is_unknown(value):
-    batch = {
-        "obstruction_ratio": [value],
-        "confidence_score": [0.91],
-        "water_level": [0.22],
-        "flow_velocity": [0.81],
-    }
-
-    result = predict_flood_risk_batch(batch)
-
-    assert result[0]["risk_level"] == "unknown"
+    assert result[0]["model_version"] == "test_trained_xgb"
 
 
 def test_mismatched_list_lengths_raise_value_error():

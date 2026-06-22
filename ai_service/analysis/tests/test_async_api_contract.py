@@ -1,4 +1,7 @@
-from ai_service._yolo.constants import YOLO_STATUSES
+import pytest
+
+from ai_service.yolo.constants import YOLO_STATUSES
+from ai_service.analysis import service as analysis_service
 from ai_service.analysis.callback_payloads import (
     build_xgboost_callback_payload,
     build_yolo_callback_payload,
@@ -22,6 +25,47 @@ def make_payload():
             "quality_status": "valid",
         },
     }
+
+
+def fake_yolo_result(image_path):
+    return {
+        "obstruction_ratio": 0.057,
+        "confidence_score": 0.9404,
+        "yolo_status": "good",
+    }
+
+
+def fake_xgboost_result(input_dict_batch):
+    return [
+        {
+            "index": 0,
+            "risk_score": 0.65,
+            "risk_level": "caution",
+            "final_decision": "caution",
+            "feature_snapshot": {},
+            "model_version": "test_xgb",
+        }
+    ]
+
+
+@pytest.fixture(autouse=True)
+def stub_model_predictors(monkeypatch):
+    monkeypatch.setattr(
+        analysis_service,
+        "resolve_image_source_by_drain_id",
+        lambda drain_id: FakeImageSource(
+            source_url=f"mock://storage/drain-{drain_id}-latest.jpg",
+            local_path=f"ai_service/samples/drain_{drain_id}.jpg",
+        ),
+    )
+    monkeypatch.setattr(analysis_service, "predict_yolo_by_image_path", fake_yolo_result)
+    monkeypatch.setattr(analysis_service, "predict_flood_risk_batch", fake_xgboost_result)
+
+
+class FakeImageSource:
+    def __init__(self, source_url, local_path):
+        self.source_url = source_url
+        self.local_path = local_path
 
 
 def test_job_id_policy_is_request_id_based():

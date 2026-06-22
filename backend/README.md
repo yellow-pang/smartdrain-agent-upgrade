@@ -1,5 +1,84 @@
 # SmartDrain Backend
 
+## Backend 실행 방법
+
+처음 실행하는 팀원은 아래 순서대로 진행합니다. Windows PowerShell 기준 명령어입니다.
+
+### 1. backend 폴더로 이동
+
+```bash
+cd C:\AI_agent\LMG_WORK2026\smartdrain\backend
+```
+
+### 2. Python 가상환경 생성
+
+```bash
+python -m venv .venv
+```
+
+### 3. 가상환경 활성화
+
+```bash
+.venv\Scripts\activate
+```
+
+### 4. requirements 설치
+
+`requirements.txt`는 프로젝트 루트에 있습니다.
+
+```bash
+pip install -r ..\requirements.txt
+```
+
+### 5. PostgreSQL Docker 실행 확인
+
+프로젝트 루트에서 Docker Compose를 실행합니다.
+
+```bash
+cd C:\AI_agent\LMG_WORK2026\smartdrain
+docker compose up -d
+```
+
+### 6. Alembic 마이그레이션 실행
+
+`alembic.ini`가 프로젝트 루트에 있으므로 루트에서 실행합니다.
+
+```bash
+python -m alembic upgrade head
+```
+
+### 7. mock seed 데이터 삽입
+
+seed 스크립트는 `backend` 폴더 기준으로 실행합니다.
+
+```bash
+cd C:\AI_agent\LMG_WORK2026\smartdrain\backend
+python -m app.seeds.seed_mock_data
+```
+
+### 8. FastAPI 백엔드 서버 실행
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+### 9. Swagger 접속 확인
+
+```txt
+http://localhost:8000/docs
+```
+
+## AI 서버 실행 안내
+
+`POST /api/analysis/async-run`은 백엔드가 AI 서버로 분석 요청을 보내는 API입니다. 이 API가 정상 동작하려면 실제 AI 서버 또는 mock AI 서버가 `9000`번 포트에서 실행 중이어야 합니다.
+
+```bash
+cd C:\AI_agent\LMG_WORK2026\smartdrain
+uvicorn mock_ai_server.main:app --reload --port 9000
+```
+
+환경변수 예시는 아래 Backend-AI Async Analysis 섹션의 값을 사용합니다.
+
 ## Seed Mock Data
 
 프론트-백엔드 연동 테스트 전에 PostgreSQL DB에 대시보드와 상세 화면 확인용 목 데이터를 넣기 위한 seed 스크립트입니다.
@@ -14,22 +93,13 @@
 
 각 빗물받이에 대해 `sensor_data`, `yolo_result`, `xgboost_result`가 함께 생성됩니다. 이미 같은 `drain_code`가 있으면 중복 생성하지 않고 건너뜁니다.
 
-## 실행 전 준비
-
-DB 테이블은 Alembic 마이그레이션으로 먼저 생성되어 있어야 합니다.
-
-프로젝트 루트에서:
-
-```bash
-python -m alembic upgrade head
-```
-
 ## 실행 명령어
 
-프로젝트 루트에서:
+DB 테이블은 먼저 Alembic 마이그레이션으로 생성되어 있어야 합니다. 전체 실행 순서는 위의 Backend 실행 방법을 참고합니다.
+
+`backend` 폴더 기준:
 
 ```bash
-cd backend
 python -m app.seeds.seed_mock_data
 ```
 

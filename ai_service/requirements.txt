@@ -1,3 +1,9 @@
 fastapi
 uvicorn
 python-dotenv
+numpy
+opencv-python
+ultralytics
+pandas
+xgboost
+pytest
