@@ -49,19 +49,19 @@ pipeline {
 
         stage('Preflight') {
             steps {
-                sh '.jenkins/scripts/preflight.sh'
+                sh 'sh .jenkins/scripts/preflight.sh'
             }
         }
 
         stage('Validate') {
             steps {
-                sh '.jenkins/scripts/validate.sh'
+                sh 'sh .jenkins/scripts/validate.sh'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh '.jenkins/scripts/deploy.sh'
+                sh 'sh .jenkins/scripts/deploy.sh'
             }
         }
 
@@ -70,20 +70,20 @@ pipeline {
                 expression { return params.SEED_MOCK_DATA }
             }
             steps {
-                sh '.jenkins/scripts/seed.sh'
+                sh 'sh .jenkins/scripts/seed.sh'
             }
         }
 
         stage('Smoke test') {
             steps {
-                sh '.jenkins/scripts/smoke-test.sh'
+                sh 'sh .jenkins/scripts/smoke-test.sh'
             }
         }
     }
 
     post {
         failure {
-            sh '.jenkins/scripts/collect-logs.sh || true'
+            sh 'sh .jenkins/scripts/collect-logs.sh || true'
         }
     }
 }
