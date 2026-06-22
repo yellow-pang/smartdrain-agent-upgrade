@@ -257,29 +257,42 @@ function getRiskListStatus({
 
 function DashboardSummaryBar({ summary }: { summary: DashboardSummaryDto }) {
   const items = [
-    { label: "전체", value: summary.totalCount, className: "text-slate-900" },
-    { label: "위험", value: summary.dangerCount, className: "text-red-600" },
+    {
+      label: "전체",
+      value: summary.totalCount,
+      className: "text-slate-900",
+      layoutClassName: "col-span-2 sm:col-span-2 lg:col-span-1",
+    },
+    {
+      label: "위험",
+      value: summary.dangerCount,
+      className: "text-red-600",
+      layoutClassName: "sm:col-span-4 lg:col-span-2",
+    },
     {
       label: "주의",
       value: summary.cautionCount,
       className: "text-amber-600",
+      layoutClassName: "sm:col-span-2 lg:col-span-1",
     },
     {
       label: "양호",
       value: summary.goodCount,
       className: "text-emerald-600",
+      layoutClassName: "sm:col-span-2 lg:col-span-1",
     },
     {
       label: "판단불가",
       value: summary.unknownCount,
       className: "text-slate-500",
+      layoutClassName: "sm:col-span-2 lg:col-span-1",
     },
   ];
 
   return (
     <section className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:px-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+        <div className="min-w-0 lg:w-52 lg:shrink-0">
           <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
             대시보드 현황
           </p>
@@ -290,11 +303,11 @@ function DashboardSummaryBar({ summary }: { summary: DashboardSummaryDto }) {
               : ""}
           </p>
         </div>
-        <dl className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto lg:grid-cols-5">
+        <dl className="grid w-full grid-cols-2 gap-2 sm:grid-cols-6 lg:flex-1">
           {items.map((item) => (
             <div
               key={item.label}
-              className="rounded-lg bg-slate-50 px-3 py-2 text-center dark:bg-slate-800/80"
+              className={`rounded-lg bg-slate-50 px-3 py-2 text-center dark:bg-slate-800/80 ${item.layoutClassName}`}
             >
               <dt className="text-xs text-slate-500 dark:text-slate-400">
                 {item.label}
@@ -311,16 +324,27 @@ function DashboardSummaryBar({ summary }: { summary: DashboardSummaryDto }) {
 }
 
 function DashboardSummarySkeleton() {
+  const layoutClassNames = [
+    "col-span-2 sm:col-span-2 lg:col-span-1",
+    "sm:col-span-4 lg:col-span-2",
+    "sm:col-span-2 lg:col-span-1",
+    "sm:col-span-2 lg:col-span-1",
+    "sm:col-span-2 lg:col-span-1",
+  ];
+
   return (
     <section className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:px-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+        <div className="lg:w-52 lg:shrink-0">
           <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
           <div className="mt-2 h-3 w-44 animate-pulse rounded bg-slate-100" />
         </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto lg:grid-cols-5">
+        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-6 lg:flex-1">
           {Array.from({ length: 5 }, (_, index) => (
-            <div key={index} className="rounded-lg bg-slate-50 px-3 py-2">
+            <div
+              key={index}
+              className={`rounded-lg bg-slate-50 px-3 py-2 ${layoutClassNames[index]}`}
+            >
               <div className="mx-auto h-3 w-10 animate-pulse rounded bg-slate-100" />
               <div className="mx-auto mt-2 h-5 w-8 animate-pulse rounded bg-slate-200" />
             </div>
