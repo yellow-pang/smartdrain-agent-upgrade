@@ -1,2 +1,8 @@
 fastapi
 uvicorn
+numpy
+opencv-python
+ultralytics
+pandas
+xgboost
+pytest
