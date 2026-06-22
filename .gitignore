@@ -183,3 +183,4 @@ backend/alembic/versions/__pycache__/
 # =========================
 backend/static/uploads/
 backend/uploads/
+ai-vision/
