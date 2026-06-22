@@ -1,0 +1,92 @@
+[
+  {
+    "sample_id": "danger_001",
+    "obstruction_ratio": 0.935,
+    "confidence_score": 0.883,
+    "water_level": 0.944,
+    "flow_velocity": 0.162,
+    "stagnation_score": 0.791,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_002",
+    "obstruction_ratio": 0.918,
+    "confidence_score": 0.898,
+    "water_level": 0.834,
+    "flow_velocity": 0.04,
+    "stagnation_score": 0.801,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_003",
+    "obstruction_ratio": 0.838,
+    "confidence_score": 0.865,
+    "water_level": 0.965,
+    "flow_velocity": 0.298,
+    "stagnation_score": 0.677,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_004",
+    "obstruction_ratio": 0.878,
+    "confidence_score": 0.955,
+    "water_level": 0.821,
+    "flow_velocity": 0.144,
+    "stagnation_score": 0.703,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_005",
+    "obstruction_ratio": 0.801,
+    "confidence_score": 0.919,
+    "water_level": 0.871,
+    "flow_velocity": 0.083,
+    "stagnation_score": 0.799,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_006",
+    "obstruction_ratio": 0.789,
+    "confidence_score": 0.879,
+    "water_level": 0.923,
+    "flow_velocity": 0.094,
+    "stagnation_score": 0.836,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_007",
+    "obstruction_ratio": 0.895,
+    "confidence_score": 0.938,
+    "water_level": 0.97,
+    "flow_velocity": 0.294,
+    "stagnation_score": 0.685,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_008",
+    "obstruction_ratio": 0.951,
+    "confidence_score": 0.868,
+    "water_level": 0.919,
+    "flow_velocity": 0.075,
+    "stagnation_score": 0.85,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_009",
+    "obstruction_ratio": 0.77,
+    "confidence_score": 0.935,
+    "water_level": 0.901,
+    "flow_velocity": 0.142,
+    "stagnation_score": 0.773,
+    "label": "danger"
+  },
+  {
+    "sample_id": "danger_010",
+    "obstruction_ratio": 0.864,
+    "confidence_score": 0.941,
+    "water_level": 0.968,
+    "flow_velocity": 0.271,
+    "stagnation_score": 0.706,
+    "label": "danger"
+  }
+]
