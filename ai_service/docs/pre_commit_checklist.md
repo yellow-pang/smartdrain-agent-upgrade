@@ -1,0 +1,147 @@
+# AI Service Pre-Commit Checklist
+
+Use this checklist before committing the `ai_service` integration changes.
+
+Do not commit from this checklist step unless explicitly requested.
+
+## Contract Check
+
+- [ ] Backend request body contains:
+  - `request_id`
+  - `drain_id`
+  - `sensor_data`
+- [ ] Backend request body does not use `image_path`.
+- [ ] `sensor_data` contains:
+  - `measured_at`
+  - `water_level_cm`
+  - `flow_velocity_mps`
+  - `quality_status`
+- [ ] `quality_status` is currently `valid`.
+- [ ] HTTP callback payload shape is unchanged:
+  - YOLO callback: `request_id`, `job_id`, `yolo_result`
+  - XGBoost callback: `request_id`, `job_id`, `xgboost_result`
+
+## Image Source Check
+
+- [ ] `ai_service/image_source` resolves images by `drain_id`.
+- [ ] Mock provider supports `drain_id` values `1` through `5`.
+- [ ] Unknown `drain_id` is treated as an unregistered drain or CCTV/storage image source configuration problem.
+- [ ] Unknown `drain_id` is rejected before background callback processing.
+- [ ] `source_url` remains a future CCTV/storage placeholder.
+- [ ] `local_path` remains the current YOLO-readable local image path.
+
+## Sample Image Check
+
+Required local files for real YOLO smoke tests:
+
+```text
+ai_service/samples/drain_1.jpg
+ai_service/samples/drain_2.jpg
+ai_service/samples/drain_3.jpg
+ai_service/samples/drain_4.jpg
+ai_service/samples/drain_5.jpg
+```
+
+- [ ] Sample image files are present if running real YOLO smoke.
+- [ ] Missing sample image files are acceptable when only checking code/docs.
+- [ ] No real CCTV images are committed unless sanitized fixtures are explicitly approved.
+
+## Model Path Check
+
+- [ ] YOLO model path exists:
+
+```text
+ai_service/model/best.pt
+```
+
+- [ ] XGBoost model path exists:
+
+```text
+ai_service/model/sewer_xgboost_model.json
+```
+
+- [ ] Production YOLO code path:
+
+```text
+ai_service/yolo/analyzer.py
+```
+
+- [ ] Production XGBoost code path:
+
+```text
+ai_service/xgboost/model_predictor.py
+```
+
+- [ ] Legacy fake YOLO is reference/test-only:
+
+```text
+ai_service/yolo_legacy_example
+```
+
+- [ ] Rule baseline XGBoost is reference-only:
+
+```text
+ai_service/xgboost/rule_baseline_predictor.py
+```
+
+## Environment Check
+
+- [ ] Python 3.12 venv is active.
+- [ ] Requirements are installed:
+
+```powershell
+python -m pip install -r .\ai_service\requirements.txt
+```
+
+- [ ] The current shell can import runtime dependencies if running real model smoke:
+  - `fastapi`
+  - `uvicorn`
+  - `numpy`
+  - `opencv-python`
+  - `ultralytics`
+  - `pandas`
+  - `xgboost`
+  - `pytest`
+
+## Verification Commands
+
+Syntax compile:
+
+```powershell
+python -m compileall ai_service
+```
+
+Unit tests:
+
+```powershell
+python -m pytest ai_service
+```
+
+Sample file check:
+
+```powershell
+python -m ai_service.scripts.check_samples
+```
+
+No-callback analysis smoke:
+
+```powershell
+python -m ai_service.scripts.smoke_analysis --drain-id 2
+```
+
+## Expected Command Outcomes
+
+- `compileall` should pass.
+- `pytest` should pass only after `pytest` and runtime dependencies are installed.
+- `check_samples` returns non-zero if sample images are missing. That is acceptable before sample images are placed.
+- `smoke_analysis` returns:
+  - `0` when local image exists and analysis completes
+  - `1` when `drain_id` cannot resolve
+  - `2` when local sample image is missing
+
+## Commit Readiness
+
+- [ ] No code outside `ai_service` was modified for this integration.
+- [ ] No generated `__pycache__` files remain.
+- [ ] No accidental real CCTV images are staged.
+- [ ] The final diff is reviewed before committing.

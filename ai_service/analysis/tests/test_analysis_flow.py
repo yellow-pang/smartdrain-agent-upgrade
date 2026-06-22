@@ -3,6 +3,7 @@ import re
 import pytest
 
 from ai_service.analysis.decision_mapper import map_risk_level_to_backend_decision
+from ai_service.analysis import service as analysis_service
 from ai_service.analysis.service import run_analysis_job
 from ai_service.analysis.xgboost_adapter import build_xgboost_input_batch
 
@@ -18,6 +19,46 @@ def make_payload():
             "quality_status": "valid",
         },
     }
+
+
+def fake_yolo_result(image_path):
+    return {
+        "obstruction_ratio": 0.057,
+        "confidence_score": 0.9404,
+        "yolo_status": "good",
+    }
+
+
+def fake_xgboost_result(input_dict_batch):
+    return [
+        {
+            "index": 0,
+            "risk_score": 0.65,
+            "risk_level": "caution",
+            "final_decision": "caution",
+            "feature_snapshot": {
+                "obstruction_ratio": input_dict_batch["obstruction_ratio"][0],
+                "confidence_score": input_dict_batch["confidence_score"][0],
+                "water_level": input_dict_batch["water_level"][0],
+                "flow_velocity": input_dict_batch["flow_velocity"][0],
+            },
+            "model_version": "test_xgb",
+        }
+    ]
+
+
+@pytest.fixture(autouse=True)
+def stub_model_predictors(monkeypatch):
+    monkeypatch.setattr(
+        analysis_service,
+        "resolve_image_source_by_drain_id",
+        lambda drain_id: FakeImageSource(
+            source_url=f"mock://storage/drain-{drain_id}-latest.jpg",
+            local_path=f"ai_service/samples/drain_{drain_id}.jpg",
+        ),
+    )
+    monkeypatch.setattr(analysis_service, "predict_yolo_by_image_path", fake_yolo_result)
+    monkeypatch.setattr(analysis_service, "predict_flood_risk_batch", fake_xgboost_result)
 
 
 def test_run_analysis_job_returns_accepted_response():
@@ -70,6 +111,30 @@ def test_xgboost_callback_payload_matches_contract():
     assert xgboost_result["evaluated_at"].endswith("+09:00")
 
 
+def test_run_analysis_job_resolves_image_source_from_drain_id(monkeypatch):
+    seen_drain_ids = []
+    seen_image_paths = []
+
+    def spy_image_source(drain_id):
+        seen_drain_ids.append(drain_id)
+        return FakeImageSource(
+            source_url=f"mock://storage/drain-{drain_id}-latest.jpg",
+            local_path=f"ai_service/samples/drain_{drain_id}.jpg",
+        )
+
+    def spy_yolo_result(image_path):
+        seen_image_paths.append(image_path)
+        return fake_yolo_result(image_path)
+
+    monkeypatch.setattr(analysis_service, "resolve_image_source_by_drain_id", spy_image_source)
+    monkeypatch.setattr(analysis_service, "predict_yolo_by_image_path", spy_yolo_result)
+
+    run_analysis_job(make_payload())
+
+    assert seen_drain_ids == [2]
+    assert seen_image_paths == ["ai_service/samples/drain_2.jpg"]
+
+
 @pytest.mark.parametrize(
     ("risk_level", "expected_decision"),
     [
@@ -120,3 +185,9 @@ def test_xgboost_adapter_normalizes_sensor_units():
         "water_level": [0.9813],
         "flow_velocity": [0.4512],
     }
+
+
+class FakeImageSource:
+    def __init__(self, source_url, local_path):
+        self.source_url = source_url
+        self.local_path = local_path

@@ -2,8 +2,8 @@ import builtins
 
 import pytest
 
-from ai_service._yolo.constants import YOLO_STATUSES
-from ai_service._yolo.fake_yolo_predictor import FakeYoloPredictor
+from ai_service.yolo_legacy_example.constants import YOLO_STATUSES
+from ai_service.yolo_legacy_example.fake_yolo_predictor import FakeYoloPredictor
 
 
 EXPECTED_RESULTS = {
