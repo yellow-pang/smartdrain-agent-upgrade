@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import {
     AlertTriangle,
@@ -53,11 +53,16 @@ export default function DrainDetailPage({
     const [detailData, setDetailData] = useState<DrainDetailData | null>();
     const { data: drains } = useDrainsQuery();
     const sharedDrain = drains?.find((drain) => drain.id === id);
+    const statusEvent = useDrainStore((state) => state.statusEventsByDrainId[id]);
     const yoloEvent = useDrainStore((state) => state.yoloEventsByDrainId[id]);
     const xgboostEvent = useDrainStore((state) => state.xgboostEventsByDrainId[id]);
+    const socketStatus = useDrainStore((state) => state.socketStatus);
+    const hasConnectedRef = useRef(false);
+    const detailRequestIdRef = useRef(0);
 
     const applyRealtimeEvent = useCallback(
         (event: DrainStatusUpdatedEventDto) => {
+            detailRequestIdRef.current += 1;
             setDetailData((current) => {
                 if (
                     !current ||
@@ -67,12 +72,42 @@ export default function DrainDetailPage({
                     return current;
                 }
 
+                const xgboostResult = statusEventToXgboostDto(event);
+                const sensorHistory = upsertSensorPoint(
+                    current.sensorHistory,
+                    sensorEventToPoint(event),
+                );
+                const riskHistory = upsertRiskHistoryItem(
+                    current.riskHistory,
+                    {
+                        time: event.payload.updatedAt,
+                        status: event.payload.riskLevel,
+                        score: riskScoreToPoint(event.payload.riskScore),
+                    },
+                );
+
                 return {
                     ...current,
                     drain: mergeDrainStatusEventIntoFacility(
                         current.drain,
                         event,
                     ),
+                    sensorHistory,
+                    riskHistory,
+                    analysis: {
+                        ...current.analysis,
+                        xgboostResult,
+                        updatedAt: event.payload.updatedAt,
+                    },
+                    analysisHistory: {
+                        drainId: event.payload.drainId,
+                        yoloResults:
+                            current.analysisHistory?.yoloResults ?? [],
+                        xgboostResults: upsertXgboostResult(
+                            current.analysisHistory?.xgboostResults ?? [],
+                            xgboostResult,
+                        ),
+                    },
                 };
             });
         },
@@ -80,6 +115,7 @@ export default function DrainDetailPage({
     );
 
     const applyYoloEvent = useCallback((event: YoloResultUpdatedEventDto) => {
+        detailRequestIdRef.current += 1;
         setDetailData((current) => {
             if (
                 !current ||
@@ -122,6 +158,7 @@ export default function DrainDetailPage({
 
     const applyXgboostEvent = useCallback(
         (event: XgboostResultUpdatedEventDto) => {
+            detailRequestIdRef.current += 1;
             setDetailData((current) => {
                 if (
                     !current ||
@@ -173,9 +210,10 @@ export default function DrainDetailPage({
 
     useEffect(() => {
         let mounted = true;
+        const requestId = ++detailRequestIdRef.current;
 
         loadDrainDetailData(id).then((data) => {
-            if (!mounted) return;
+            if (!mounted || requestId !== detailRequestIdRef.current) return;
             setDetailData(data);
         });
 
@@ -183,6 +221,15 @@ export default function DrainDetailPage({
             mounted = false;
         };
     }, [id]);
+
+    useEffect(() => {
+        if (!statusEvent) return;
+        const timer = window.setTimeout(
+            () => applyRealtimeEvent(statusEvent),
+            0,
+        );
+        return () => window.clearTimeout(timer);
+    }, [applyRealtimeEvent, statusEvent]);
 
     useEffect(() => {
         if (!yoloEvent) return;
@@ -198,6 +245,27 @@ export default function DrainDetailPage({
         );
         return () => window.clearTimeout(timer);
     }, [applyXgboostEvent, xgboostEvent]);
+
+    useEffect(() => {
+        if (socketStatus !== "connected") return;
+        if (!hasConnectedRef.current) {
+            hasConnectedRef.current = true;
+            return;
+        }
+
+        let mounted = true;
+        const requestId = ++detailRequestIdRef.current;
+        void loadDrainDetailData(id)
+            .then((data) => {
+                if (!mounted || requestId !== detailRequestIdRef.current) return;
+                if (data) setDetailData(data);
+            })
+            .catch(() => undefined);
+
+        return () => {
+            mounted = false;
+        };
+    }, [id, socketStatus]);
 
     const drain = sharedDrain ?? detailData?.drain;
     const meta = drain ? STATUS_META[drain.status] : undefined;
@@ -1177,6 +1245,48 @@ function xgboostEventToDto(
     };
 }
 
+function statusEventToXgboostDto(
+    event: DrainStatusUpdatedEventDto,
+): XgboostResultDto {
+    return {
+        id: event.payload.xgboostResultId ?? undefined,
+        drainId: event.payload.drainId,
+        sensorDataId: event.payload.sensorDataId,
+        yoloResultId: event.payload.yoloResultId,
+        riskLevel: event.payload.riskLevel,
+        riskScore: event.payload.riskScore,
+        finalDecision: event.payload.finalDecision ?? null,
+        evaluatedAt: event.payload.updatedAt,
+        createdAt: event.payload.updatedAt,
+    };
+}
+
+function sensorEventToPoint(event: DrainStatusUpdatedEventDto) {
+    const { waterLevelCm, flowVelocityMps, updatedAt } = event.payload;
+    if (waterLevelCm == null || flowVelocityMps == null) return null;
+
+    return {
+        time: formatSensorChartTime(updatedAt),
+        level: +(waterLevelCm / 100).toFixed(2),
+        flow: flowVelocityMps,
+    };
+}
+
+function upsertSensorPoint(
+    points: DrainDetailData["sensorHistory"],
+    point: DrainDetailData["sensorHistory"][number] | null,
+) {
+    if (!point) return points;
+    return [...points.filter((current) => current.time !== point.time), point].slice(-48);
+}
+
+function upsertRiskHistoryItem(
+    items: DrainDetailData["riskHistory"],
+    item: DrainDetailData["riskHistory"][number],
+) {
+    return [item, ...items.filter((current) => current.time !== item.time)].slice(0, 10);
+}
+
 function upsertYoloResult(items: YoloResultDto[], item: YoloResultDto) {
     return [
         item,
@@ -1192,6 +1302,16 @@ function upsertXgboostResult(
         item,
         ...items.filter((current) => current.id !== item.id),
     ].slice(0, 10);
+}
+
+function formatSensorChartTime(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+    return `${month}-${day} ${hour}:${minute}`;
 }
 
 function ratioToPercent(value: number) {
