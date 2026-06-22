@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { FallbackImage } from "@/components/fallback-image";
+import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 import type { YoloStatus } from "@/lib/api/types";
 
 type Snapshot = {
@@ -24,6 +25,7 @@ export function CctvSnapshotCard({
     locationName: string;
 }) {
     const [active, setActive] = useState(0);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const safeSnapshots =
         snapshots.length > 0
             ? snapshots
@@ -57,8 +59,10 @@ export function CctvSnapshotCard({
                     className="size-full object-cover grayscale"
                 />
                 <button
+                    type="button"
                     className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-md bg-black/45 text-white hover:bg-black/60"
                     aria-label="확대"
+                    onClick={() => setIsPreviewOpen(true)}
                 >
                     <Maximize2 className="size-4" />
                 </button>
@@ -72,6 +76,14 @@ export function CctvSnapshotCard({
                     </span>
                 </div>
             </div>
+
+            <ImagePreviewDialog
+                open={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                src={current.imageUrl}
+                fallbackSrc={PLACEHOLDER_IMAGES.cctv}
+                alt={`${locationName} 빗물받이 상단뷰 CCTV 스냅샷 확대 이미지`}
+            />
 
             {/* thumbnails */}
             <div className="mt-3 flex items-center gap-2">

@@ -20,7 +20,7 @@
 `http` 계층이 하지 않는 일:
 
 - 실제 YOLO 추론
-- CCTV API 호출
+- CCTV API 호출 또는 스토리지 GET 직접 구현
 - 이미지 처리
 - 실제 XGBoost 모델 추론 구현
 - XGBoost feature 생성
@@ -28,6 +28,8 @@
 - YOLO/XGBoost 입출력 계약 변경
 
 YOLO와 XGBoost를 연결하는 분석 흐름은 `ai_service/analysis`가 담당한다.
+
+현재 이미지 소스 선택은 `ai_service/image_source`가 담당한다. 추후 실제 CCTV/스토리지 GET 연동이 들어오더라도 HTTP endpoint contract와 callback payload shape는 유지한다.
 
 ## Endpoint
 
@@ -102,6 +104,8 @@ python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
 python -m pip install -r ai_service/requirements.txt
 ```
 
+venv가 깨져 있거나 Python 경로를 찾지 못하면 `ai_service/docs/runtime_setup.md`의 Python 3.12 venv 재생성 절차를 따른다.
+
 2. AI 서버 실행
 
 ```cmd
@@ -129,6 +133,10 @@ request body:
 }
 ```
 
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` mock provider에서 이미지 소스를 resolve한다. 현재 backend request에는 `image_path`를 포함하지 않는다.
+
+등록되지 않은 `drain_id`는 등록되지 않은 drain 또는 CCTV/스토리지 이미지 소스 설정 이상으로 보고 `ValueError`가 발생한다. 현재 HTTP 요청 단계의 잘못된 입력은 `400 Bad Request`로 매핑된다.
+
 기대 즉시 응답:
 
 ```json
@@ -153,8 +161,10 @@ callback 전송은 FastAPI background task에서 실행된다. 따라서 callbac
 
 실제 YOLO/XGBoost 모델을 적용하더라도 HTTP 계층의 책임은 유지해야 한다.
 
-- YOLO 모델 코드는 `_yolo`에서 결과 dict만 반환한다.
+- YOLO 모델 코드는 `yolo`에서 결과 dict만 반환한다.
 - XGBoost 모델 코드는 `xgboost`에서 위험도 결과만 반환한다.
 - 모델 계층에서 backend callback을 직접 보내면 안 된다.
 - 모델 계층에서 FastAPI endpoint를 직접 만들면 안 된다.
 - callback URL, timeout, retry 정책은 `http` 계층에서만 관리한다.
+
+실제 YOLO/XGBoost 모델 전환 이후에도 HTTP callback contract는 유지된다. `/ai/analysis/run`은 accepted response를 즉시 반환하고, background task가 YOLO callback과 XGBoost callback을 순서대로 전송한다.

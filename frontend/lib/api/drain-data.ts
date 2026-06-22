@@ -16,15 +16,6 @@ import {
     getDrains,
     getLatestAnalysis,
 } from "@/lib/api/drains";
-import {
-    createMockDashboardSummaryResponse,
-    createMockAnalysisHistoryResponse,
-    createMockDrainDetailResponse,
-    createMockDrainListResponse,
-    createMockLatestAnalysisResponse,
-    createMockRiskHistoryResponse,
-    createMockSensorHistoryResponse,
-} from "@/lib/api/mock-responses";
 import type {
     AnalysisResultDto,
     DashboardSummaryDto,
@@ -43,7 +34,7 @@ export type DashboardData = {
     drains: DrainFacility[];
     sortedDrains: DrainFacility[];
     summary: DashboardSummaryDto;
-    source: "api" | "mock";
+    source: "api";
 };
 
 export type DrainDetailData = {
@@ -53,56 +44,37 @@ export type DrainDetailData = {
     detail: DrainDetailDto;
     analysis?: AnalysisResultDto;
     analysisHistory?: DrainAnalysisHistoryResponse;
-    source: "api" | "mock";
+    source: "api";
 };
 
 export async function loadDashboardData(): Promise<DashboardData> {
-    const apiData = await tryLoadDashboardFromApi();
-    if (apiData) return apiData;
-    return loadDashboardFromMock();
+    return tryLoadDashboardFromApi();
 }
 
 export async function loadDrainDetailData(
     id: string,
 ): Promise<DrainDetailData | null> {
-    const apiData = await tryLoadDrainDetailFromApi(id);
-    if (apiData) return apiData;
-    return loadDrainDetailFromMock(id);
+    return tryLoadDrainDetailFromApi(id);
 }
 
-async function tryLoadDashboardFromApi(): Promise<DashboardData | null> {
-    if (!hasApiBaseUrl()) return null;
-
-    try {
-        const [drainsResponse, summaryResponse] = await Promise.all([
+async function tryLoadDashboardFromApi(): Promise<DashboardData> {
+    ensureApiBaseUrl();
+    const [drainsResponse, summaryResponse] = await Promise.all([
             getDrains(),
             getDashboardSummary(),
-        ]);
+    ]);
 
-        const items = drainsResponse.data?.items;
-        if (!drainsResponse.success || !items) return null;
+    const items = drainsResponse.data?.items;
+    if (!drainsResponse.success || !items) throw new Error("Drain list request failed");
 
-        const drains = drainListDtoToFacilities(items);
-        return {
-            drains,
-            sortedDrains: sortFacilitiesByRisk(drains),
-            summary:
-                summaryResponse.success && summaryResponse.data
-                    ? summaryResponse.data
-                    : dashboardSummaryFromDrains(drains),
-            source: "api",
-        };
-    } catch {
-        return null;
-    }
+    const drains = drainListDtoToFacilities(items);
+    return { drains, sortedDrains: sortFacilitiesByRisk(drains), summary: summaryResponse.success && summaryResponse.data ? summaryResponse.data : dashboardSummaryFromDrains(drains), source: "api" };
 }
 
 async function tryLoadDrainDetailFromApi(
     id: string,
 ): Promise<DrainDetailData | null> {
-    if (!hasApiBaseUrl()) return null;
-
-    try {
+    ensureApiBaseUrl();
         const [
             detailResponse,
             sensorResponse,
@@ -133,43 +105,6 @@ async function tryLoadDrainDetailFromApi(
                     : undefined,
             source: "api",
         });
-    } catch {
-        return null;
-    }
-}
-
-function loadDashboardFromMock(): DashboardData {
-    const response = createMockDrainListResponse();
-    const drains = drainListDtoToFacilities(response.data?.items ?? []);
-    const summaryResponse = createMockDashboardSummaryResponse();
-    return {
-        drains,
-        sortedDrains: sortFacilitiesByRisk(drains),
-        summary: summaryResponse.data ?? dashboardSummaryFromDrains(drains),
-        source: "mock",
-    };
-}
-
-function loadDrainDetailFromMock(id: string): DrainDetailData | null {
-    const detailResponse = createMockDrainDetailResponse(id);
-    if (!detailResponse.success || !detailResponse.data) return null;
-
-    const sensorResponse = createMockSensorHistoryResponse(id);
-    const riskResponse = createMockRiskHistoryResponse(id);
-    const analysisResponse = createMockLatestAnalysisResponse(id);
-    const historyResponse = createMockAnalysisHistoryResponse(id);
-
-    return mapDetailResponses({
-        detail: mergeAnalysisIntoDetail(
-            detailResponse.data,
-            analysisResponse.data,
-        ),
-        sensorHistory: sensorResponse.data?.items,
-        riskHistory: riskResponse.data?.items,
-        analysis: analysisResponse.data ?? undefined,
-        analysisHistory: historyResponse.data ?? undefined,
-        source: "mock",
-    });
 }
 
 function mapDetailResponses({
@@ -185,7 +120,7 @@ function mapDetailResponses({
     riskHistory?: RiskHistoryDto[];
     analysis?: AnalysisResultDto;
     analysisHistory?: DrainAnalysisHistoryResponse;
-    source: "api" | "mock";
+    source: "api";
 }): DrainDetailData {
     return {
         drain: drainDetailDtoToFacility(detail),
@@ -202,6 +137,8 @@ function mapDetailResponses({
     };
 }
 
-function hasApiBaseUrl() {
-    return Boolean(process.env.NEXT_PUBLIC_API_BASE_URL);
+function ensureApiBaseUrl() {
+    if (process.env.NEXT_PUBLIC_API_BASE_URL === undefined) {
+        throw new Error("NEXT_PUBLIC_API_BASE_URL is required");
+    }
 }

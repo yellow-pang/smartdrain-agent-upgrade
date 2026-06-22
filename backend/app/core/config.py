@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     AI_SERVER_ENABLED: bool = True
 
     model_config = SettingsConfigDict(
-        env_file=(ROOT_DIR / ".env", BACKEND_DIR / ".env"),
+        env_file=BACKEND_DIR / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )

@@ -45,15 +45,15 @@ export function SensorTrendChart({
     }, [points, range]);
 
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                    <h2 className="text-base font-bold text-slate-900">
+                    <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                         센서 데이터 추세
                     </h2>
-                    <Info className="size-3.5 text-slate-400" />
+                    <Info className="size-3.5 text-slate-400 dark:text-slate-500" />
                 </div>
-                <div className="flex rounded-lg border border-slate-200 p-0.5">
+                <div className="flex rounded-lg border border-slate-200 p-0.5 dark:border-slate-700 dark:bg-slate-800/70">
                     {(["24h", "7d"] as RangeKey[]).map((key) => (
                         <button
                             key={key}
@@ -62,7 +62,7 @@ export function SensorTrendChart({
                                 "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
                                 range === key
                                     ? "bg-cyan-700 text-white"
-                                    : "text-slate-500 hover:text-slate-700",
+                                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
                             )}
                         >
                             {key === "24h" ? "24시간" : "7일"}
@@ -72,7 +72,7 @@ export function SensorTrendChart({
             </div>
 
             {/* legend */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                 <LegendItem color="#0e7490" label="수위 (m)" />
                 <LegendItem color="#059669" label="유량 (m³/min)" />
                 <LegendItem
@@ -104,18 +104,18 @@ export function SensorTrendChart({
                         >
                             <CartesianGrid
                                 strokeDasharray="3 3"
-                                stroke="#f1f5f9"
+                                stroke="var(--chart-grid)"
                                 vertical={false}
                             />
                             <XAxis
                                 dataKey="time"
-                                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
                                 tickLine={false}
-                                axisLine={{ stroke: "#e2e8f0" }}
+                                axisLine={{ stroke: "var(--chart-grid)" }}
                                 interval={range === "24h" ? 2 : 0}
                             />
                             <YAxis
-                                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                                tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
                                 tickLine={false}
                                 axisLine={false}
                                 domain={[0, 2.5]}
@@ -164,7 +164,7 @@ export function SensorTrendChart({
             )}
 
             {!isFallback && (
-                <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="mt-4 grid grid-cols-2 gap-3 2xl:grid-cols-4">
                     <SummaryCard
                         label="현재 수위"
                         value={`${summary.currentLevel} m`}
@@ -225,15 +225,15 @@ function SummaryCard({
     sub?: string;
 }) {
     return (
-        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5">
-            <p className="text-xs text-slate-500">{label}</p>
-            <div className="mt-1 flex items-center gap-2">
-                <span className="text-lg font-bold text-slate-900">
+        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-800/70">
+            <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="whitespace-nowrap text-lg font-bold text-slate-900 dark:text-slate-100">
                     {value}
                 </span>
-                {badge && <StatusBadge status={badge} />}
+                {badge && <StatusBadge status={badge} className="shrink-0 whitespace-nowrap" />}
             </div>
-            {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+            {sub && <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
         </div>
     );
 }
@@ -254,12 +254,12 @@ function ChartTooltip({
 }) {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md">
-            <p className="mb-1 text-xs font-semibold text-slate-700">{label}</p>
+        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-1 text-xs font-semibold text-slate-700 dark:text-slate-100">{label}</p>
             {payload.map((entry) => (
                 <p
                     key={entry.dataKey}
-                    className="flex items-center gap-1.5 text-xs text-slate-600"
+                className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300"
                 >
                     <span
                         className="size-2 rounded-full"

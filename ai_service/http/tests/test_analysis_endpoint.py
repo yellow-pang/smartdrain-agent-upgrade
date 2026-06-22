@@ -61,3 +61,15 @@ def test_analysis_endpoint_returns_400_for_invalid_payload():
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail["error"]["code"] == "INVALID_INPUT"
+
+
+def test_analysis_endpoint_returns_400_for_unconfigured_drain_id():
+    payload = make_payload()
+    payload["drain_id"] = 999
+
+    with pytest.raises(HTTPException) as exc_info:
+        routes.run_analysis(payload, FakeBackgroundTasks())
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail["error"]["code"] == "INVALID_INPUT"
+    assert "drain_id" in exc_info.value.detail["error"]["message"]

@@ -1,0 +1,149 @@
+{
+    "description": "SmartDrain WebSocket 이후 프론트-백엔드 통합 테스트용 Swagger 추가 입력 예시입니다. 기본 DB 데이터는 backend/app/seeds/seed_mock_data.py를 먼저 사용하고, 이 파일은 추가 케이스가 필요할 때만 사용합니다. drainId, sensorDataId, yoloResultId는 Swagger 응답의 실제 값으로 교체해서 사용합니다.",
+    "defaultSeedFile": "backend/app/seeds/seed_mock_data.py",
+    "defaultSeedDrainForManualTest": "DR-004",
+    "drainCodeForPageUrl": "DR-INT-WS-001",
+    "createDrain": {
+        "drainCode": "DR-INT-WS-001",
+        "name": "통합 테스트 빗물받이 WS",
+        "address": "서울시 광진구 통합테스트로 19",
+        "latitude": 37.5472,
+        "longitude": 127.0743,
+        "status": "good"
+    },
+    "sensorData": {
+        "caution": {
+            "drainId": 1,
+            "waterLevelCm": 72,
+            "flowVelocityMps": 0.18,
+            "measuredAt": "2026-06-19T10:10:00+09:00"
+        },
+        "danger": {
+            "drainId": 1,
+            "waterLevelCm": 128,
+            "flowVelocityMps": 0.03,
+            "measuredAt": "2026-06-19T10:15:00+09:00"
+        }
+    },
+    "yoloResults": {
+        "partiallyBlocked": {
+            "drainId": 1,
+            "imageUrl": "/test-snapshots/drain-001-a.jpg",
+            "obstructionRatio": 0.42,
+            "confidenceScore": 0.83,
+            "yoloStatus": "partially_blocked",
+            "capturedAt": "2026-06-19T10:11:00+09:00"
+        },
+        "blocked": {
+            "drainId": 1,
+            "imageUrl": "/test-snapshots/drain-001-b.jpg",
+            "obstructionRatio": 0.81,
+            "confidenceScore": 0.91,
+            "yoloStatus": "blocked",
+            "capturedAt": "2026-06-19T10:16:00+09:00"
+        },
+        "brokenImageFallback": {
+            "drainId": 1,
+            "imageUrl": "/test-snapshots/not-found-image.jpg",
+            "obstructionRatio": 0.64,
+            "confidenceScore": 0.72,
+            "yoloStatus": "partially_blocked",
+            "capturedAt": "2026-06-19T10:20:00+09:00"
+        }
+    },
+    "xgboostRequests": {
+        "caution": {
+            "drainId": 1,
+            "sensorDataId": 1,
+            "yoloResultId": 1
+        },
+        "danger": {
+            "drainId": 1,
+            "sensorDataId": 2,
+            "yoloResultId": 2
+        }
+    },
+    "expectedWebSocketMessages": {
+        "drainStatusUpdated": {
+            "type": "DRAIN_STATUS_UPDATED",
+            "payload": {
+                "drainId": "DR-INT-WS-001",
+                "riskLevel": "danger",
+                "riskScore": 0.87,
+                "waterLevelCm": 128,
+                "flowVelocityMps": 0.03,
+                "obstructionRatio": 0.81,
+                "finalDecision": "막힘률과 수위가 높아 침수 위험이 큽니다.",
+                "updatedAt": "2026-06-19T10:17:00+09:00",
+                "sensorDataId": 2,
+                "yoloResultId": 2,
+                "xgboostResultId": 1
+            }
+        },
+        "yoloResultUpdated": {
+            "type": "YOLO_RESULT_UPDATED",
+            "payload": {
+                "drainId": "DR-INT-WS-001",
+                "yoloResultId": 2,
+                "imageUrl": "/test-snapshots/drain-001-b.jpg",
+                "obstructionRatio": 0.81,
+                "confidenceScore": 0.91,
+                "yoloStatus": "blocked",
+                "capturedAt": "2026-06-19T10:16:00+09:00",
+                "analyzedAt": "2026-06-19T10:16:01+09:00",
+                "updatedAt": "2026-06-19T10:16:01+09:00"
+            }
+        },
+        "xgboostResultUpdated": {
+            "type": "XGBOOST_RESULT_UPDATED",
+            "payload": {
+                "drainId": "DR-INT-WS-001",
+                "xgboostResultId": 1,
+                "sensorDataId": 2,
+                "yoloResultId": 2,
+                "riskLevel": "danger",
+                "riskScore": 0.87,
+                "finalDecision": "막힘률과 수위가 높아 침수 위험이 큽니다.",
+                "evaluatedAt": "2026-06-19T10:17:00+09:00",
+                "updatedAt": "2026-06-19T10:17:00+09:00"
+            }
+        }
+    },
+    "expectedAnalysisHistoryResponseShape": {
+        "success": true,
+        "data": {
+            "drainId": "DR-INT-WS-001",
+            "yoloResults": [
+                {
+                    "id": 2,
+                    "drainId": "DR-INT-WS-001",
+                    "imageUrl": "/test-snapshots/drain-001-b.jpg",
+                    "obstructionRatio": 0.81,
+                    "confidenceScore": 0.91,
+                    "yoloStatus": "blocked",
+                    "capturedAt": "2026-06-19T10:16:00+09:00",
+                    "analyzedAt": "2026-06-19T10:16:01+09:00",
+                    "createdAt": "2026-06-19T10:16:01+09:00"
+                }
+            ],
+            "xgboostResults": [
+                {
+                    "id": 1,
+                    "drainId": "DR-INT-WS-001",
+                    "sensorDataId": 2,
+                    "yoloResultId": 2,
+                    "riskLevel": "danger",
+                    "riskScore": 0.87,
+                    "finalDecision": "막힘률과 수위가 높아 침수 위험이 큽니다.",
+                    "evaluatedAt": "2026-06-19T10:17:00+09:00",
+                    "createdAt": "2026-06-19T10:17:00+09:00"
+                }
+            ]
+        },
+        "timestamp": "2026-06-19T10:17:01+09:00"
+    },
+    "notFoundCase": {
+        "drainIdForPath": "DR-NOT-FOUND",
+        "expectedErrorCode": "DRAIN_NOT_FOUND"
+    }
+}

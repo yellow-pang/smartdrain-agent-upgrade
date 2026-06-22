@@ -22,11 +22,13 @@ export function useDrainStatusSocket({
     onStatusUpdated,
     onYoloUpdated,
     onXgboostUpdated,
+    onConnected,
 }: {
     enabled: boolean;
     onStatusUpdated: (event: DrainStatusUpdatedEventDto) => void;
     onYoloUpdated?: (event: YoloResultUpdatedEventDto) => void;
     onXgboostUpdated?: (event: XgboostResultUpdatedEventDto) => void;
+    onConnected?: (reconnected: boolean) => void;
 }) {
     const [status, setStatus] = useState<DrainSocketStatus>("waiting");
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -54,8 +56,10 @@ export function useDrainStatusSocket({
             setStatus(reconnectingRef.current ? "reconnecting" : "waiting");
 
             socket.onopen = () => {
+                const reconnected = reconnectingRef.current;
                 reconnectingRef.current = false;
                 setStatus("connected");
+                onConnected?.(reconnected);
             };
 
             socket.onmessage = (message) => {
@@ -98,7 +102,7 @@ export function useDrainStatusSocket({
             clearReconnectTimer();
             socket?.close();
         };
-    }, [socketUrl, onStatusUpdated, onYoloUpdated, onXgboostUpdated]);
+    }, [socketUrl, onStatusUpdated, onYoloUpdated, onXgboostUpdated, onConnected]);
 
     if (!enabled) return "waiting";
     if (!socketUrl) return "error";
@@ -142,7 +146,17 @@ function getDrainStatusSocketUrl() {
     if (explicitUrl) return withDrainStatusPath(explicitUrl);
 
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!apiBaseUrl) return null;
+    if (apiBaseUrl === undefined) return null;
+
+    if (apiBaseUrl === "") {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        return `${protocol}//${window.location.host}${DRAIN_STATUS_SOCKET_PATH}`;
+    }
+
+    if (apiBaseUrl.startsWith("/")) {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        return `${protocol}//${window.location.host}${DRAIN_STATUS_SOCKET_PATH}`;
+    }
 
     return withDrainStatusPath(
         apiBaseUrl

@@ -2,7 +2,7 @@
 
 이 문서는 SmartDrain 백엔드와 AI 서버 사이의 HTTP 연동 계약을 설명한다.
 
-현재 AI 서버는 실제 YOLO/XGBoost 모델 완성본이 아니라, 백엔드와 AI 서버 사이의 비동기 분석 흐름을 검증하기 위한 FastAPI adapter와 callback sender를 제공한다.
+현재 AI 서버는 `ai_service/model`의 학습된 YOLO/XGBoost artifact를 사용하는 production flow 골격과, 백엔드 비동기 callback 연동 구조를 제공한다.
 
 ## 책임 경계
 
@@ -12,10 +12,11 @@ HTTP 통신은 `ai_service/http` 계층만 담당한다.
 | --- | --- |
 | `http` | HTTP 요청 수신, background task 등록, callback 전송, timeout, retry, HTTP 오류 매핑 |
 | `analysis` | 요청 검증, YOLO/XGBoost 호출, callback-ready payload 생성 |
-| `_yolo` | YOLO 결과 dict 반환 |
+| `image_source` | `drain_id` 기준 image source resolve |
+| `yolo` | YOLO 결과 dict 반환 |
 | `xgboost` | 위험도 결과 dict 반환 |
 
-`_yolo`, `xgboost`, `analysis` 계층은 backend URL을 알거나 callback을 직접 보내면 안 된다.
+`image_source`, `yolo`, `xgboost`, `analysis` 계층은 backend URL을 알거나 callback을 직접 보내면 안 된다.
 
 ## Endpoint 흐름
 
@@ -66,6 +67,8 @@ python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
 }
 ```
 
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` mock provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다.
+
 현재 AI 서버는 이 요청을 받은 뒤 즉시 accepted response를 반환하고, 실제 분석 및 callback 전송은 background task 흐름으로 처리한다.
 
 accepted response 예시:
@@ -95,12 +98,13 @@ accepted response 예시:
 
 1. 요청 payload를 검증한다.
 2. accepted response를 만든다.
-3. `drain_id` 기준으로 YOLO 단계를 호출한다.
-4. YOLO 결과와 센서값을 XGBoost feature로 변환한다.
-5. XGBoost 단계를 호출한다.
-6. YOLO callback payload를 만든다.
-7. XGBoost callback payload를 만든다.
-8. HTTP 계층이 callback endpoint로 payload를 전송한다.
+3. `drain_id` 기준으로 `image_source`에서 mock source를 resolve한다.
+4. resolve된 `local_path`로 YOLO 단계를 호출한다.
+5. YOLO 결과와 센서값을 XGBoost feature로 변환한다.
+6. XGBoost 단계를 호출한다.
+7. YOLO callback payload를 만든다.
+8. XGBoost callback payload를 만든다.
+9. HTTP 계층이 callback endpoint로 payload를 전송한다.
 
 ## YOLO callback 계약
 
@@ -137,7 +141,7 @@ YOLO 결과 필드:
 - `blocked`
 - `unknown`
 
-현재 fake YOLO는 실제 이미지 분석을 하지 않는다. 실제 YOLO 모델 담당자는 위 출력 계약을 유지하면서 `_yolo` 내부 predictor를 교체해야 한다.
+현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다. `ai_service/yolo_legacy_example`는 legacy/reference 용도로만 남아 있다.
 
 ## XGBoost callback 계약
 
@@ -183,7 +187,7 @@ XGBoost 결과 필드:
 - `field_check`
 - `dispatch_required`
 
-현재 XGBoost는 실제 학습 모델이 아니라 rule-based baseline이다. 실제 XGBoost 담당자는 입력/출력 계약을 유지하면서 predictor 내부를 교체해야 한다.
+현재 production flow는 `ai_service/xgboost/model_predictor.py`와 `ai_service/model/sewer_xgboost_model.json`을 사용한다. `rule_baseline_predictor.py`는 legacy/reference 용도로만 남아 있다.
 
 ## Callback 전송 정책
 
@@ -206,5 +210,7 @@ callback 전송 구현 위치:
 `analysis` 계층은 잘못된 payload에 대해 `ValueError`를 발생시킨다.
 
 HTTP 계층은 이 오류를 `400 Bad Request` 형태로 변환한다.
+
+현재 `image_source`에 등록되지 않은 `drain_id`가 들어오면 `ValueError`가 발생한다. 이 상태는 등록되지 않은 drain ID 또는 CCTV/스토리지 이미지 소스 설정 이상으로 본다. HTTP 요청 처리 단계에서 source availability를 확인하고 현재는 `400 Bad Request`로 거절한다. 별도 실패 callback payload는 만들지 않으며, 추후 backend contract가 필요로 하면 HTTP `422` 또는 실패 callback을 별도 설계한다.
 
 실제 모델 교체 작업 중에도 YOLO/XGBoost 내부에서 HTTP 오류 응답을 직접 만들지 않아야 한다. HTTP 오류 매핑은 `ai_service/http` 계층의 책임이다.
