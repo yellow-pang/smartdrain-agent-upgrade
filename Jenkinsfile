@@ -1,6 +1,7 @@
 pipeline {
     agent {
         node {
+            label 'built-in'
             customWorkspace '/deploy/smart-drain'
         }
     }
@@ -21,7 +22,7 @@ pipeline {
 
     environment {
         DEPLOY_DIR = '/deploy/smart-drain'
-        DEPLOY_BRANCH = 'develop'
+        DEPLOY_BRANCH = 'dev'
         COMPOSE_PROJECT_NAME = 'smartdrain-dev'
     }
 
