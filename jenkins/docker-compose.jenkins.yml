@@ -12,7 +12,9 @@ services:
     volumes:
       - smartdrain-jenkins-home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - /apps/smart-drain:/deploy/smart-drain
+      # Docker socket을 통해 실행되는 Compose의 상대 bind mount가 VM host에서도
+      # 같은 경로를 가리키도록 source와 target을 동일한 절대 경로로 유지한다.
+      - /home/yp/apps/apps/smart-drain:/home/yp/apps/apps/smart-drain
     restart: unless-stopped
 
 volumes:
