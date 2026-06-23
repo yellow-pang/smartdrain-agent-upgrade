@@ -11,10 +11,9 @@ export interface DrainFacility {
     road: string;
     fullAddress: string;
     status: RiskStatus;
-    blockage: number; // 막힘 정도 (%)
-    waterLevelPct: number; // 수위 (%)
-    waterLevelM: number; // 수위 (m)
-    flow: number; // 유량 (m³/min)
+    blockage: number | null; // 막힘 정도 (%)
+    waterLevelCm: number | null; // 수위 (cm)
+    flowVelocityMps: number | null; // 유속 (m/s)
     updatedAt: string;
     judgement: string; // 판정 결과
     latitude: number;
@@ -32,8 +31,8 @@ export interface RiskHistoryItem {
 
 export interface SensorPoint {
     time: string; // "HH:MM"
-    level: number; // 수위 (m)
-    flow: number; // 유량 (m³/min)
+    level: number | null; // 수위 (cm)
+    flow: number | null; // 유속 (m/s)
 }
 
 export const DRAINS: DrainFacility[] = [
@@ -43,9 +42,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 테헤란로 123 (역삼동 123-45)",
         status: "danger",
         blockage: 85,
-        waterLevelPct: 85,
-        waterLevelM: 1.32,
-        flow: 1.35,
+        waterLevelCm: 132,
+        flowVelocityMps: 1.35,
         updatedAt: "2024-05-23 14:30",
         judgement: "침수 가능성 높음",
         latitude: 37.4991,
@@ -59,9 +57,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 역삼로 88",
         status: "caution",
         blockage: 52,
-        waterLevelPct: 48,
-        waterLevelM: 0.78,
-        flow: 0.92,
+        waterLevelCm: 78,
+        flowVelocityMps: 0.92,
         updatedAt: "2024-05-23 14:25",
         judgement: "지속 관찰 필요",
         latitude: 37.4969,
@@ -75,9 +72,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 삼성로 45",
         status: "caution",
         blockage: 41,
-        waterLevelPct: 36,
-        waterLevelM: 0.62,
-        flow: 0.71,
+        waterLevelCm: 62,
+        flowVelocityMps: 0.71,
         updatedAt: "2024-05-23 14:20",
         judgement: "지속 관찰 필요",
         latitude: 37.5001,
@@ -91,9 +87,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 선릉로 52",
         status: "good",
         blockage: 18,
-        waterLevelPct: 22,
-        waterLevelM: 0.38,
-        flow: 0.42,
+        waterLevelCm: 38,
+        flowVelocityMps: 0.42,
         updatedAt: "2024-05-23 14:18",
         judgement: "정상 범위",
         latitude: 37.4993,
@@ -107,9 +102,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 삼성로 101",
         status: "good",
         blockage: 12,
-        waterLevelPct: 15,
-        waterLevelM: 0.26,
-        flow: 0.31,
+        waterLevelCm: 26,
+        flowVelocityMps: 0.31,
         updatedAt: "2024-05-23 14:15",
         judgement: "정상 범위",
         latitude: 37.5011,
@@ -123,9 +117,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 학동로 77",
         status: "good",
         blockage: 9,
-        waterLevelPct: 10,
-        waterLevelM: 0.18,
-        flow: 0.22,
+        waterLevelCm: 18,
+        flowVelocityMps: 0.22,
         updatedAt: "2024-05-23 14:12",
         judgement: "정상 범위",
         latitude: 37.5017,
@@ -139,9 +132,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 도곡로 12",
         status: "good",
         blockage: 14,
-        waterLevelPct: 17,
-        waterLevelM: 0.29,
-        flow: 0.34,
+        waterLevelCm: 29,
+        flowVelocityMps: 0.34,
         updatedAt: "2024-05-23 14:10",
         judgement: "정상 범위",
         latitude: 37.5009,
@@ -155,9 +147,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 언주로 200",
         status: "caution",
         blockage: 38,
-        waterLevelPct: 33,
-        waterLevelM: 0.57,
-        flow: 0.66,
+        waterLevelCm: 57,
+        flowVelocityMps: 0.66,
         updatedAt: "2024-05-23 14:08",
         judgement: "지속 관찰 필요",
         latitude: 37.4961,
@@ -171,9 +162,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 봉은사로 50",
         status: "good",
         blockage: 11,
-        waterLevelPct: 13,
-        waterLevelM: 0.22,
-        flow: 0.27,
+        waterLevelCm: 22,
+        flowVelocityMps: 0.27,
         updatedAt: "2024-05-23 14:05",
         judgement: "정상 범위",
         latitude: 37.4997,
@@ -187,9 +177,8 @@ export const DRAINS: DrainFacility[] = [
         fullAddress: "서울특별시 강남구 테헤란로 411",
         status: "good",
         blockage: 16,
-        waterLevelPct: 19,
-        waterLevelM: 0.33,
-        flow: 0.39,
+        waterLevelCm: 33,
+        flowVelocityMps: 0.39,
         updatedAt: "2024-05-23 14:02",
         judgement: "정상 범위",
         latitude: 37.4983,
@@ -207,7 +196,7 @@ export function sortByRisk(drains: DrainFacility[]): DrainFacility[] {
     return [...drains].sort((a, b) => {
         const r = RISK_RANK[b.status] - RISK_RANK[a.status];
         if (r !== 0) return r;
-        return b.blockage - a.blockage;
+        return (b.blockage ?? 0) - (a.blockage ?? 0);
     });
 }
 
@@ -243,7 +232,7 @@ export const SENSOR_SUMMARY = {
 };
 
 // Generates a smooth 24h sensor series (00:00 -> 24:00 in 30-min steps)
-// peaking around mid-afternoon, with a danger crossing near 14:30.
+// This fixture is only used for isolated mock-response development.
 export function generate24hSeries(seed = 0): SensorPoint[] {
     const points: SensorPoint[] = [];
     for (let i = 0; i <= 48; i++) {
