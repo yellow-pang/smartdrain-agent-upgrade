@@ -24,13 +24,16 @@ router = APIRouter(prefix="/api/ai-callback", tags=["ai-callback"])
 @router.post("/yolo-result")
 async def save_yolo_result(payload: AiYoloCallbackRequest, db: Session = Depends(get_db)):
     _, event = analysis_async_service.save_yolo_callback(db, payload)
-    await manager.broadcast(json.dumps(event))
+    if event is not None:
+        await manager.broadcast(json.dumps(event))
     return api_response(data=None, message="YOLO result saved")
 
 
 @router.post("/xgboost-result")
 async def save_xgboost_result(payload: AiXgboostCallbackRequest, db: Session = Depends(get_db)):
     _, xgboost_event, drain_status_event = analysis_async_service.save_xgboost_callback(db, payload)
-    await manager.broadcast(json.dumps(xgboost_event))
-    await manager.broadcast(json.dumps(drain_status_event))
+    if xgboost_event is not None:
+        await manager.broadcast(json.dumps(xgboost_event))
+    if drain_status_event is not None:
+        await manager.broadcast(json.dumps(drain_status_event))
     return api_response(data=None, message="XGBoost result saved")

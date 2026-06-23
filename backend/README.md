@@ -130,7 +130,43 @@ AI_SERVER_BASE_URL=http://localhost:9000
 AI_SERVER_TIMEOUT_SECONDS=10
 AI_CALLBACK_BASE_URL=http://localhost:8000
 AI_SERVER_ENABLED=true
+ANALYSIS_SCHEDULER_ENABLED=false
+ANALYSIS_SCHEDULER_INTERVAL_SECONDS=300
+ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS=60
+ANALYSIS_SENSOR_MAX_AGE_SECONDS=300
+ANALYSIS_JOB_TIMEOUT_SECONDS=600
 ```
+
+### AnalysisJob 저장 정책
+
+- `/api/analysis/async-run`은 AI 서버 호출 전에 `analysis_jobs` row를 먼저 생성합니다.
+- `request_id`는 백엔드가 생성합니다.
+- `job_id`는 `AI_JOB_{request_id}` 형식으로 백엔드가 먼저 생성하고, AI 서버 요청에도 같은 값을 전달합니다.
+- 수동 분석은 `trigger_type=manual`, scheduler 분석은 `trigger_type=scheduled`로 저장합니다.
+- AI 서버 호출 실패, timeout, 4xx/5xx 응답이 발생하면 이미 생성된 job을 `status=failed`로 변경하고 `error_message`에 실패 원인을 저장합니다.
+
+### Callback 멱등성
+
+- YOLO callback은 같은 `request_id`/`job_id`에 이미 `yolo_result_id`가 있으면 새 `YoloResult`를 만들지 않고 200 OK로 응답합니다.
+- XGBoost callback은 같은 `request_id`/`job_id`가 이미 `completed`이고 연결된 결과가 있으면 새 `XgboostResult`를 만들지 않고 200 OK로 응답합니다.
+- 중복 callback에서는 WebSocket 이벤트를 재발행하지 않습니다.
+
+### Scheduler
+
+- 기본값은 `ANALYSIS_SCHEDULER_ENABLED=false`이며, 이 상태에서는 서버 시작 시 자동 분석 요청이 나가지 않습니다.
+- `true`로 설정하면 startup 후 `ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS`만큼 기다린 뒤 주기적으로 실행됩니다.
+- scheduler는 모든 drain을 순회하며 최신 센서 데이터가 없거나, 센서 데이터가 `ANALYSIS_SENSOR_MAX_AGE_SECONDS`보다 오래됐거나, 같은 drain에 `processing`/`yolo_completed` job이 있거나, 마지막 job 생성 시각이 `ANALYSIS_SCHEDULER_INTERVAL_SECONDS` 이내이면 skip합니다.
+- 조건을 통과한 drain만 `trigger_type=scheduled` job으로 생성하고 AI 서버에 분석을 요청합니다.
+- scheduler 실행 시 `processing`/`yolo_completed` 상태가 `ANALYSIS_JOB_TIMEOUT_SECONDS`를 초과한 job은 `failed`로 변경합니다.
+
+### Smoke Test
+
+1. `ANALYSIS_SCHEDULER_ENABLED=false` 상태로 백엔드를 실행해 자동 분석 요청이 발생하지 않는지 확인합니다.
+2. AI 서버를 끄고 `POST /api/analysis/async-run`을 호출해 `analysis_jobs.status=failed`와 `error_message`가 남는지 확인합니다.
+3. mock AI 서버를 켜고 `POST /api/analysis/async-run`을 호출해 정상 accepted 응답과 callback 저장을 확인합니다.
+4. 같은 YOLO callback을 2번 호출해 `yolo_results`가 중복 생성되지 않는지 확인합니다.
+5. 같은 XGBoost callback을 2번 호출해 `xgboost_results`가 중복 생성되지 않는지 확인합니다.
+6. `ANALYSIS_SCHEDULER_ENABLED=true`로 켠 뒤 initial delay 이후 조건을 만족하는 drain에만 scheduled job이 생성되는지 확인합니다.
 
 분석 시작 요청 예시:
 
