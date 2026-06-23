@@ -502,7 +502,7 @@ function AnalysisSummaryCard({
                 </div>
                 <StatusBadge status={drain.status} />
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3">
                 <SummaryMetricTile
                     icon={Globe}
                     label="막힘 정도"
@@ -531,15 +531,20 @@ function AnalysisSummaryCard({
                     }
                     metaText={meta.text}
                 />
-                <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 sm:col-span-2 xl:col-span-3 dark:border-slate-800 dark:bg-slate-800/70">
+                <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/70">
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <AlertTriangle className="size-4 text-slate-400 dark:text-slate-500" />
                         최종 판단
                     </div>
-                    <p className={cn("mt-2 text-sm font-bold", meta.text)}>
+                    <p
+                        className={cn(
+                            "mt-2 break-keep text-sm font-bold leading-5",
+                            meta.text,
+                        )}
+                    >
                         {xgboostResult?.finalDecision ?? drain.judgement}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                    <p className="mt-1 break-words text-xs text-slate-400 dark:text-slate-500">
                         {formatDateTimeForDisplay(
                             xgboostResult?.evaluatedAt ??
                                 xgboostResult?.predictedAt ??
