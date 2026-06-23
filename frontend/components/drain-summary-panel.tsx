@@ -23,6 +23,7 @@ import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { FallbackImage } from "@/components/fallback-image";
 import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
+import { getDrainDetailHref } from "@/lib/drain-route";
 
 export function DrainSummaryPanel({
   drain,
@@ -201,7 +202,7 @@ export function DrainSummaryPanel({
           nativeButton={false}
           className="w-full bg-cyan-700 text-white hover:bg-cyan-800"
           render={
-            <Link href={`/drains/${drain.id}`}>
+              <Link href={getDrainDetailHref(drain.id)}>
               상세 정보 페이지로 이동
               <ChevronRight className="size-4" />
             </Link>
