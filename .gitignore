@@ -184,3 +184,4 @@ ai_service/model/*.pt
 # =========================
 backend/static/uploads/
 backend/uploads/
+frontend/next-env.d.ts

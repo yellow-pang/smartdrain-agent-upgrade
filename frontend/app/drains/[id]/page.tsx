@@ -7,7 +7,6 @@ import {
     AlertTriangle,
     ArrowLeft,
     Brain,
-    Clipboard,
     Clock,
     Eye,
     Gauge,
@@ -15,7 +14,6 @@ import {
     Images,
     MapPin,
     ShieldCheck,
-    TrendingUp,
     Waves,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
@@ -26,6 +24,10 @@ import {
     DrainDetailPageHeader,
 } from "@/components/drain-detail/drain-detail-page-frame";
 import { AnalysisSummaryCard } from "@/components/drain-detail/analysis-summary-card";
+import {
+    FacilityInfoCard,
+    RiskHistoryCard,
+} from "@/components/drain-detail/facility-overview-panels";
 import { CctvSnapshotCard } from "@/components/cctv-snapshot-card";
 import { SensorTrendChart } from "@/components/sensor-trend-chart";
 import { StatusBadge } from "@/components/status-badge";
@@ -338,7 +340,7 @@ export default function DrainDetailPage({
 
                     {/* Right column */}
                     <div className="flex flex-col gap-4 xl:col-span-3">
-                        <FacilityInfoCard drain={drain} meta={meta} />
+                        <FacilityInfoCard drain={drain} />
                         <RiskHistoryCard riskHistory={detailData.riskHistory} />
                     </div>
             </div>
@@ -780,130 +782,6 @@ function RiskTile({
                 <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
                 <div className="mt-0.5">{children}</div>
             </div>
-        </div>
-    );
-}
-
-function FacilityInfoCard({
-    drain,
-    meta,
-}: {
-    drain: DrainDetailData["drain"];
-    meta: (typeof STATUS_META)[RiskStatus];
-}) {
-    const rows: {
-        icon: React.ElementType;
-        label: string;
-        node: React.ReactNode;
-    }[] = [
-        {
-            icon: Clipboard,
-            label: "시설 ID",
-            node: (
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{drain.id}</span>
-            ),
-        },
-        {
-            icon: MapPin,
-            label: "주소",
-            node: <span className="break-words text-slate-700 dark:text-slate-200">{drain.fullAddress}</span>,
-        },
-        {
-            icon: ShieldCheck,
-            label: "상태",
-            node: <StatusBadge status={drain.status} />,
-        },
-        {
-            icon: Globe,
-            label: "막힘 정도",
-            node: (
-                <span className={cn("font-semibold", meta.text)}>
-                    {drain.blockage == null ? "-" : `${drain.blockage}% (${meta.label})`}
-                </span>
-            ),
-        },
-        {
-            icon: TrendingUp,
-            label: "수위",
-            node: (
-                <span className={cn("font-semibold", meta.text)}>
-                    {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
-                </span>
-            ),
-        },
-        {
-            icon: Gauge,
-            label: "유속",
-            node: (
-                <span className={cn("font-semibold", meta.text)}>
-                    {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
-                </span>
-            ),
-        },
-        {
-            icon: Clock,
-            label: "최근 업데이트",
-            node: <span className="text-slate-700 dark:text-slate-200">{formatDateTimeForDisplay(drain.updatedAt)}</span>,
-        },
-    ];
-    return (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
-                시설 정보 및 현재 상태
-            </h2>
-            <dl className="divide-y divide-slate-100 dark:divide-slate-800">
-                {rows.map((r) => (
-                    <div
-                        key={r.label}
-                        className="flex items-center justify-between gap-3 py-2.5"
-                    >
-                        <dt className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                            <r.icon className="size-4 text-slate-400 dark:text-slate-500" />
-                            {r.label}
-                        </dt>
-                        <dd className="max-w-[62%] text-right text-sm">{r.node}</dd>
-                    </div>
-                ))}
-            </dl>
-        </div>
-    );
-}
-
-function RiskHistoryCard({
-    riskHistory,
-}: {
-    riskHistory: DrainDetailData["riskHistory"];
-}) {
-    return (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
-                과거 위험 이력{" "}
-            </h2>
-            <ul className="space-y-1">
-                {riskHistory.map((item) => {
-                    const meta = STATUS_META[item.status];
-                    return (
-                        <li
-                            key={item.time}
-                            className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
-                        >
-                            <span
-                                className={cn(
-                                    "size-2.5 shrink-0 rounded-full",
-                                    meta.dot,
-                                )}
-                            />
-                            <span className="min-w-0 text-sm text-slate-600 dark:text-slate-300">
-                                {formatDateTimeForDisplay(item.time)}
-                            </span>
-                            <StatusBadge
-                                status={item.status}
-                                className="ml-auto"
-                            />
-                        </li>
-                    );
-                })}
-            </ul>
         </div>
     );
 }
