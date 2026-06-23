@@ -11,6 +11,7 @@
 | 앱 내부 절대 경로(`/...`) | 허용 | `frontend/public/`로 제공되는 정적 자산 |
 | 상대 경로 | 허용 | 현재 페이지 기준으로 제공되는 개발 자산 |
 | `http:` / `https:` | 허용 | 개발 서버, CDN, S3 공개 또는 presigned URL |
+| protocol-relative URL(`//...`) | 차단 | 실행 환경의 HTTP/HTTPS 설정에 따라 동작이 달라지는 것을 방지 |
 | `blob:` | 허용 | 브라우저에서 생성한 미리보기 이미지 |
 | PNG/JPEG/WebP/GIF/AVIF base64 `data:` URL | 허용 | 제한된 로컬/임시 이미지 데이터 |
 | `javascript:`, SVG를 포함한 그 외 `data:` 등 | 차단 | placeholder 이미지로 대체 |
@@ -30,4 +31,4 @@
 
 ## 고도화 시 확인 사항
 
-실제 CCTV 또는 S3 연동 시 공개 URL 또는 만료 시간이 있는 presigned `https` URL 정책, 접근 권한, 이미지 보존 기간, CDN 설정을 백엔드/인프라와 함께 확정한다.
+실제 CCTV 또는 S3 연동 시 공개 URL 또는 만료 시간이 있는 presigned **`https` URL**을 표준으로 하고, 접근 권한, 이미지 보존 기간, CDN 설정을 백엔드/인프라와 함께 확정한다.

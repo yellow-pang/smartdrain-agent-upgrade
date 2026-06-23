@@ -39,7 +39,8 @@ export function FallbackImage({
 
 function getSafeImageSource(src?: string) {
     if (!src) return undefined;
-    if (src.startsWith("/") && !src.startsWith("//")) return src;
+    if (src.startsWith("//")) return undefined;
+    if (src.startsWith("/")) return src;
     if (!hasUrlScheme(src)) return src;
 
     try {

@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | API 시설 ID 경로 | 모든 상세·센서·위험 이력·분석 API 경로에서 `encodeURIComponent(id)` 사용 | 공백, 슬래시, 예약 문자가 URL path 의미를 바꾸지 않게 한다. |
 | 상세 페이지 링크 | `getDrainDetailHref()` 공통 helper로 시설 ID를 인코딩 | 알림·대시보드 요약·상세 패널의 링크가 같은 안전한 경로 생성 규칙을 사용한다. |
-| 외부 이미지 URL | `FallbackImage`가 앱 내부·상대 경로, `http:`, `https:`, `blob:`, 안전한 이미지 `data:` URL을 허용 | 실행 스킴과 SVG를 포함한 허용하지 않은 data URL은 placeholder로 대체한다. |
+| 외부 이미지 URL | `FallbackImage`가 앱 내부·상대 경로, 명시적인 `http:`/`https:`, `blob:`, 안전한 이미지 `data:` URL을 허용 | protocol-relative URL(`//...`), 실행 스킴, SVG를 포함한 허용하지 않은 data URL은 placeholder로 대체한다. |
 
 ## 적용 파일
 

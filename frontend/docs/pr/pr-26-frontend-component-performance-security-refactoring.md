@@ -49,7 +49,7 @@ DrainDetailPage
 - 상세 화면에서 최신 YOLO/XGBoost 결과 선택과 실시간 이벤트 병합 규칙이 기존과 같은지 확인합니다.
 - 1024px 이상에서 상세 분석 요약 카드가 4열 한 줄로 표시되고, 작은 화면에서 2열/1열로 전환되는지 확인합니다.
 - 시설 ID에 공백·예약 문자가 있을 때 상세 링크와 API 요청이 인코딩된 경로로 생성되는지 확인합니다.
-- 외부 CCTV 연동은 고도화 범위로 두고, 현재는 앱 내부·상대 경로, `http/https`, `blob:`, 안전한 raster 이미지 data URL이 fallback 이미지 정책과 함께 렌더링되는지 확인합니다.
+- 외부 CCTV 연동은 고도화 범위로 두고, 현재는 앱 내부·상대 경로, 명시적인 `http/https`, `blob:`, 안전한 raster 이미지 data URL이 fallback 이미지 정책과 함께 렌더링되고 protocol-relative URL은 차단되는지 확인합니다.
 
 ## 비고
 
