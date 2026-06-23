@@ -22,30 +22,22 @@ function ratioToPercent(value: number) {
     return clampPercent(value <= 1 ? value * 100 : value);
 }
 
-function cmToMeter(value: number) {
-    return +(value / 100).toFixed(2);
-}
-
-function waterLevelToPercent(value: number) {
-    return clampPercent(value);
-}
-
 export function drainListItemDtoToFacility(
     dto: DrainListItemDto,
     mapPosition: { x: number; y: number } = { x: 50, y: 50 },
 ): DrainFacility {
-    const obstructionPercent = ratioToPercent(dto.obstructionRatio);
+    const obstructionPercent =
+        dto.obstructionRatio == null ? null : ratioToPercent(dto.obstructionRatio);
     return {
         id: dto.id,
         road: dto.roadAddress,
         fullAddress: dto.fullAddress ?? dto.roadAddress,
-        status: dto.riskLevel,
+        status: dto.riskLevel ?? "unknown",
         blockage: obstructionPercent,
-        waterLevelPct: waterLevelToPercent(dto.waterLevelCm),
-        waterLevelM: cmToMeter(dto.waterLevelCm),
-        flow: dto.flowVelocityMps,
-        updatedAt: dto.updatedAt,
-        judgement: dto.finalDecision,
+        waterLevelCm: dto.waterLevelCm,
+        flowVelocityMps: dto.flowVelocityMps,
+        updatedAt: dto.updatedAt ?? "",
+        judgement: dto.finalDecision ?? "-",
         latitude: dto.latitude,
         longitude: dto.longitude,
         x: mapPosition.x,
@@ -69,9 +61,9 @@ export function riskHistoryDtoToItem(
     item: RiskHistoryDto,
 ): RiskHistoryItem {
     return {
-        time: item.changedAt,
-        status: item.riskLevel,
-        score: riskScoreToPoint(item.riskScore),
+        time: item.changedAt ?? "",
+        status: item.riskLevel ?? "unknown",
+        score: 0,
     };
 }
 
@@ -84,7 +76,7 @@ export function riskHistoryDtoToItems(
 export function sensorHistoryDtoToPoint(item: SensorHistoryDto): SensorPoint {
     return {
         time: formatChartTime(item.measuredAt),
-        level: cmToMeter(item.waterLevelCm),
+        level: item.waterLevelCm,
         flow: item.flowVelocityMps,
     };
 }
@@ -92,7 +84,12 @@ export function sensorHistoryDtoToPoint(item: SensorHistoryDto): SensorPoint {
 export function sensorHistoryDtoToPoints(
     items: SensorHistoryDto[] = [],
 ): SensorPoint[] {
-    return items.map(sensorHistoryDtoToPoint);
+    return [...items]
+        .sort(
+            (a, b) =>
+                toTimestamp(a.measuredAt) - toTimestamp(b.measuredAt),
+        )
+        .map(sensorHistoryDtoToPoint);
 }
 
 export function dashboardSummaryFromDrains(
@@ -131,7 +128,7 @@ export function sortFacilitiesByRisk(drains: DrainFacility[]): DrainFacility[] {
     return [...drains].sort((a, b) => {
         const riskDiff = RISK_RANK[b.status] - RISK_RANK[a.status];
         if (riskDiff !== 0) return riskDiff;
-        return b.blockage - a.blockage;
+        return (b.blockage ?? 0) - (a.blockage ?? 0);
     });
 }
 
@@ -157,23 +154,15 @@ export function mergeDrainStatusEventIntoFacility(
             obstructionRatio == null
                 ? drain.blockage
                 : ratioToPercent(obstructionRatio),
-        waterLevelPct:
-            waterLevelCm == null
-                ? drain.waterLevelPct
-                : waterLevelToPercent(waterLevelCm),
-        waterLevelM:
-            waterLevelCm == null ? drain.waterLevelM : cmToMeter(waterLevelCm),
-        flow: flowVelocityMps ?? drain.flow,
+        waterLevelCm: waterLevelCm ?? drain.waterLevelCm,
+        flowVelocityMps: flowVelocityMps ?? drain.flowVelocityMps,
         judgement: finalDecision ?? drain.judgement,
         updatedAt,
     };
 }
 
-function riskScoreToPoint(value: number) {
-    return Math.round(value <= 1 ? value * 100 : value);
-}
-
-function formatChartTime(value: string) {
+function formatChartTime(value: string | null) {
+    if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -181,6 +170,12 @@ function formatChartTime(value: string) {
     const hour = String(date.getHours()).padStart(2, "0");
     const minute = String(date.getMinutes()).padStart(2, "0");
     return `${month}-${day} ${hour}:${minute}`;
+}
+
+function toTimestamp(value: string | null) {
+    if (!value) return Number.NEGATIVE_INFINITY;
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
 }
 
 function getMockMapPosition(index: number) {

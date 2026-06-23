@@ -96,11 +96,11 @@ export function DrainSummaryPanel({
               막힘 정도
             </span>
             <span className={cn("font-semibold", meta.text)}>
-              {drain.blockage}%
+              {drain.blockage == null ? "-" : `${drain.blockage}%`}
             </span>
           </div>
           <MetricProgress
-            value={drain.blockage}
+            value={drain.blockage ?? 0}
             barClass={meta.bar}
             className="mt-2"
             trackClass="bg-white"
@@ -108,13 +108,13 @@ export function DrainSummaryPanel({
           <div className="mt-2 flex items-center justify-between text-xs">
             <span className="text-slate-500 dark:text-slate-400">수위</span>
             <span className={cn("font-semibold", meta.text)}>
-              {drain.waterLevelPct}%
+              {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
             </span>
           </div>
           <div className="mt-1 flex items-center justify-between text-xs">
-            <span className="text-slate-500 dark:text-slate-400">유량</span>
+            <span className="text-slate-500 dark:text-slate-400">유속</span>
             <span className={cn("font-semibold", meta.text)}>
-              {drain.flow} m³/min
+              {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
             </span>
           </div>
         </div>
@@ -171,17 +171,17 @@ export function DrainSummaryPanel({
             </InfoRow>
             <InfoRow icon={Waves} label="막힘 정도">
               <span className={cn("font-semibold", meta.text)}>
-                {drain.blockage}%
+                {drain.blockage == null ? "-" : `${drain.blockage}%`}
               </span>
             </InfoRow>
             <InfoRow icon={TrendingUp} label="수위">
               <span className={cn("font-semibold", meta.text)}>
-                {drain.waterLevelPct}%
+                {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
               </span>
             </InfoRow>
-            <InfoRow icon={Gauge} label="유량">
+            <InfoRow icon={Gauge} label="유속">
               <span className={cn("font-semibold", meta.text)}>
-                {drain.flow} m³/min
+                {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
               </span>
             </InfoRow>
           </dl>

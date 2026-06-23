@@ -48,8 +48,24 @@ Copy-Item .env.example .env
 
 개발 Compose는 Hot Reload와 FastAPI 문서를 포함하며 Nginx의 `8080` 포트로 접속합니다.
 
+최초 실행 또는 의존성·Dockerfile 변경 시:
+
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+이미 이미지가 생성된 이후 일반적으로 다시 실행할 때는 --build를 제외합니다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+소스 코드 수정은 Hot Reload로 반영되므로 이미지 재빌드가 필요하지 않습니다.
+
+AI Service의 의존성이나 Dockerfile이 변경된 경우에만 다음과 같이 해당 서비스만 다시 빌드합니다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --no-deps ai-service
 ```
 
 | 대상         | 주소                                   |
@@ -83,10 +99,11 @@ docker compose logs -f nginx backend ai-service
 
 ## 개발과 운영 실행 방식
 
-| 구분           | 명령                                                                        | 공개 포트 | 특징                                              |
-| -------------- | --------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
-| 개발           | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build` | `8080`    | 소스 bind mount, Hot Reload, `/docs` 허용         |
-| 운영 기준 검증 | `docker compose up --build -d`                                              | `80`      | production image, Nginx만 외부 공개, `/docs` 차단 |
+| 구분                       | 명령                                                                        | 공개 포트 | 특징                                              |
+| -------------------------- | --------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
+| 개발 최초 실행·의존성 변경 | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build` | `8080`    | 이미지 빌드, bind mount, Hot Reload               |
+| 개발 일반 실행             | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`         | `8080`    | 기존 이미지 재사용, 코드 수정 자동 반영           |
+| 운영 기준 검증             | `docker compose up --build -d`                                              | `80`      | production image, Nginx만 외부 공개, `/docs` 차단 |
 
 ```text
 Browser → Nginx:80 → frontend:3000

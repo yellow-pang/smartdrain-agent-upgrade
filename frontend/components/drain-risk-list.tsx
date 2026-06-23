@@ -172,12 +172,12 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
               막힘 정도
             </span>
             <MetricProgress
-              value={drain.blockage}
+              value={drain.blockage ?? 0}
               barClass={meta.bar}
               className="flex-1"
             />
             <span className="w-9 shrink-0 text-right text-[11px] font-semibold text-slate-700 dark:text-slate-200 md:text-xs">
-              {drain.blockage}%
+              {drain.blockage == null ? "-" : `${drain.blockage}%`}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
@@ -185,7 +185,7 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
               수위
             </span>
             <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 md:text-xs">
-              {drain.waterLevelPct}%
+              {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
             </span>
           </div>
         </div>

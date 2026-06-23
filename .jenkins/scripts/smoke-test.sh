@@ -3,12 +3,17 @@ set -eu
 
 cd "${DEPLOY_DIR:?DEPLOY_DIR is required}"
 
+nginx_container="$(docker compose -p "$COMPOSE_PROJECT_NAME" ps --quiet nginx)"
+test -n "$nginx_container"
+
 for attempt in $(seq 1 12); do
-    if docker compose -p "$COMPOSE_PROJECT_NAME" ps --format json | grep -q '"healthy"'; then
+    nginx_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$nginx_container")"
+    if [ "$nginx_status" = 'healthy' ]; then
         break
     fi
     sleep 5
 done
 
-curl --fail --silent --show-error http://127.0.0.1:8099/ >/dev/null
-curl --fail --silent --show-error http://127.0.0.1:8099/api/dashboard/summary >/dev/null
+test "$nginx_status" = 'healthy'
+docker compose -p "$COMPOSE_PROJECT_NAME" exec -T nginx wget -q -O /dev/null http://127.0.0.1/
+docker compose -p "$COMPOSE_PROJECT_NAME" exec -T nginx wget -q -O /dev/null http://127.0.0.1/api/dashboard/summary
