@@ -8,6 +8,7 @@ import {
     Waves,
     type LucideIcon,
 } from "lucide-react";
+import { memo } from "react";
 import { MetricProgress } from "@/components/metric-progress";
 import { PlaceholderState } from "@/components/placeholder-state";
 import { RiskMap } from "@/components/risk-map";
@@ -18,13 +19,15 @@ import { STATUS_META, type DrainFacility } from "@/lib/mock-data";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
 import { cn } from "@/lib/utils";
 
-export function LocationMapCard({
-    drain,
-    source,
-}: {
+type LocationMapCardProps = {
     drain: DrainFacility;
     source: DrainDetailData["source"];
-}) {
+};
+
+export const LocationMapCard = memo(function LocationMapCard({
+    drain,
+    source,
+}: LocationMapCardProps) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
             <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
@@ -57,7 +60,7 @@ export function LocationMapCard({
             </p>
         </div>
     );
-}
+}, areLocationMapCardPropsEqual);
 
 export function CurrentRiskCard({
     drain,
@@ -143,5 +146,20 @@ function RiskTile({
                 <div className="mt-0.5">{children}</div>
             </div>
         </div>
+    );
+}
+
+function areLocationMapCardPropsEqual(
+    previous: LocationMapCardProps,
+    next: LocationMapCardProps,
+) {
+    return (
+        previous.source === next.source &&
+        previous.drain.id === next.drain.id &&
+        previous.drain.road === next.drain.road &&
+        previous.drain.fullAddress === next.drain.fullAddress &&
+        previous.drain.status === next.drain.status &&
+        previous.drain.latitude === next.drain.latitude &&
+        previous.drain.longitude === next.drain.longitude
     );
 }
