@@ -91,7 +91,7 @@ backend → db:5432
 
 | 확인 항목 | 권장안 | 선택에 따른 영향 |
 | --- | --- | --- |
-| AI 모델 없는 기본 개발 | **AI service는 기동하되, `best.pt`가 없으면 분석 요청만 명확하게 실패하도록 사전 진단한다.** | 대시보드·API·WebSocket 개발은 계속 가능하고, 모델 보유자는 경로만 설정해 실제 분석까지 검증할 수 있다. |
+| AI 모델 없는 기본 개발 | **`best.pt`가 없거나 비어 있으면 AI service가 오류 로그를 남기고 기동하지 않는다.** | 모델 없이 분석 결과가 생성되는 상태를 막는다. 분석이 필요 없는 개발은 backend의 `COMPOSE_AI_SERVER_ENABLED=false`를 사용한다. |
 | 모델 파일 위치 | **각 개발자가 Git 외부의 절대 경로를 `.env`의 `SMARTDRAIN_YOLO_MODEL_PATH`에 지정한다.** | 대용량 모델을 저장소·Docker image에 넣지 않는다. Windows 팀 공용 경로를 정하면 예시도 함께 맞춘다. |
 | 샘플 이미지 정책 | **개발 Compose에서만 `mock_data/ai_image_samples`를 read-only로 명시 mount한다.** | 개발 분석 입력을 명확히 하되, production image에는 mock 이미지를 넣지 않는다. production 분석 asset은 별도 과제로 남는다. |
 | DB seed | **기본 기동에서는 자동 seed하지 않고 profile 명령을 유지한다.** | 기존 DB를 보호하며, 데모/통합 테스트 때만 의도적으로 데이터를 추가한다. |
@@ -109,4 +109,4 @@ backend → db:5432
 
 ## 9. 승인 후 첫 작업
 
-사용자가 7절의 AI asset·seed·포트 정책을 승인하면, 우선 모델 파일 사전 진단 방식과 개발용 mock image read-only mount를 확정한다. 이후 Compose 변경을 작은 단위로 적용하고 실제 Docker 기동 결과를 확인한 뒤 `frontend/docs/steps/step-22-...md`에 결과·남은 리스크를 기록한다.
+승인된 정책에 따라 Compose가 scheduler 설정 5개를 backend에 전달하고, AI container entrypoint가 YOLO 모델 파일을 사전 검사하도록 구현한다. 실제 Docker 기동 결과는 `frontend/docs/steps/step-22-...md`에 기록한다.

@@ -46,6 +46,32 @@ docs/           프로젝트 정의와 아키텍처 문서
 Copy-Item .env.example .env
 ```
 
+### YOLO 모델 파일 준비
+
+AI 분석까지 실행하려면 Git에 포함하지 않는 `best.pt` 파일이 필요합니다. root `.env`의 `SMARTDRAIN_YOLO_MODEL_PATH`를 **존재하는 파일의 절대 경로**로 바꿉니다. Windows에서는 경로 구분자로 `/`를 사용하면 Compose에서 안전하게 처리됩니다.
+
+```dotenv
+SMARTDRAIN_YOLO_MODEL_PATH=C:/smartdrain-data/models/best.pt
+```
+
+모델은 읽기 전용으로 AI 컨테이너의 `/app/ai_service/model/best.pt`에 연결됩니다. 파일이 없거나 비어 있으면 `ai-service`는 다음 오류를 로그로 남기고 시작하지 않습니다. 모델 없이 분석 결과가 생성되는 상태를 허용하지 않기 위한 정책입니다.
+
+```text
+ERROR: YOLO model file is missing or empty: /app/ai_service/model/best.pt
+Set SMARTDRAIN_YOLO_MODEL_PATH in the root .env to an existing best.pt file.
+```
+
+확인 명령:
+
+```powershell
+$modelPath = (Get-Content .env | Where-Object { $_ -like 'SMARTDRAIN_YOLO_MODEL_PATH=*' } | Select-Object -First 1) -replace '^SMARTDRAIN_YOLO_MODEL_PATH='
+Test-Path -LiteralPath $modelPath -PathType Leaf
+```
+
+`True`가 나온 뒤에 Compose를 실행합니다. 모델이 아직 없다면 `COMPOSE_AI_SERVER_ENABLED=false`로 backend의 분석 요청을 명시적으로 비활성화할 수 있습니다. 이 경우에도 `ai-service`는 모델 누락 오류를 남기고 종료하지만, frontend·backend·DB의 개발 확인은 계속할 수 있습니다.
+
+개발 Compose는 `mock_data/ai_image_samples`를 AI 컨테이너에 읽기 전용으로 연결합니다. 샘플 이미지를 새로 만들거나 바꾸려면 호스트의 해당 폴더에서 관리하며, 컨테이너 내부에서 수정하지 않습니다.
+
 개발 Compose는 Hot Reload와 FastAPI 문서를 포함하며 Nginx의 `8080` 포트로 접속합니다.
 
 최초 실행 또는 의존성·Dockerfile 변경 시:
@@ -80,6 +106,26 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --n
 ```powershell
 docker compose --profile seed run --rm seed
 ```
+
+### 스케줄러 설정
+
+backend에는 센서 데이터를 기준으로 AI 분석 요청을 만드는 scheduler가 포함돼 있습니다. 로컬 개발 기본값은 예기치 않은 분석 요청을 막기 위해 비활성화(`false`)입니다. 필요한 경우 root `.env`에서 아래 값을 조정한 뒤 backend를 다시 만들거나 재시작합니다.
+
+```dotenv
+COMPOSE_ANALYSIS_SCHEDULER_ENABLED=true
+COMPOSE_ANALYSIS_SCHEDULER_INTERVAL_SECONDS=300
+COMPOSE_ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS=60
+COMPOSE_ANALYSIS_SENSOR_MAX_AGE_SECONDS=300
+COMPOSE_ANALYSIS_JOB_TIMEOUT_SECONDS=600
+```
+
+| 변수 | 역할 |
+| --- | --- |
+| `COMPOSE_ANALYSIS_SCHEDULER_ENABLED` | backend 시작 시 scheduler 실행 여부 |
+| `COMPOSE_ANALYSIS_SCHEDULER_INTERVAL_SECONDS` | 분석 대상 탐색 주기 |
+| `COMPOSE_ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS` | backend 시작 뒤 첫 탐색 전 대기 시간 |
+| `COMPOSE_ANALYSIS_SENSOR_MAX_AGE_SECONDS` | 분석 대상으로 인정할 센서 데이터의 최대 경과 시간 |
+| `COMPOSE_ANALYSIS_JOB_TIMEOUT_SECONDS` | 처리 중인 분석 job을 실패로 전환하는 timeout |
 
 운영 기준 Compose는 Nginx만 PC의 `80` 포트를 사용합니다. backend·AI·PostgreSQL 포트는 외부에 열지 않으며 `/docs`도 차단합니다.
 

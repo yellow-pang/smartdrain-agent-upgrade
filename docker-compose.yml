@@ -40,6 +40,11 @@ services:
       AI_CALLBACK_BASE_URL: http://backend:8000
       AI_SERVER_TIMEOUT_SECONDS: ${COMPOSE_AI_SERVER_TIMEOUT_SECONDS:-10}
       AI_SERVER_ENABLED: ${COMPOSE_AI_SERVER_ENABLED:-true}
+      ANALYSIS_SCHEDULER_ENABLED: ${COMPOSE_ANALYSIS_SCHEDULER_ENABLED:-false}
+      ANALYSIS_SCHEDULER_INTERVAL_SECONDS: ${COMPOSE_ANALYSIS_SCHEDULER_INTERVAL_SECONDS:-300}
+      ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS: ${COMPOSE_ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS:-60}
+      ANALYSIS_SENSOR_MAX_AGE_SECONDS: ${COMPOSE_ANALYSIS_SENSOR_MAX_AGE_SECONDS:-300}
+      ANALYSIS_JOB_TIMEOUT_SECONDS: ${COMPOSE_ANALYSIS_JOB_TIMEOUT_SECONDS:-600}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -61,6 +66,17 @@ services:
       BACKEND_CALLBACK_RETRY_COUNT: ${COMPOSE_BACKEND_CALLBACK_RETRY_COUNT:-1}
     volumes:
       - ${SMARTDRAIN_YOLO_MODEL_PATH:-./ai_service/model/best.pt}:/app/ai_service/model/best.pt:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        if [ ! -s /app/ai_service/model/best.pt ]; then
+          echo "ERROR: YOLO model file is missing or empty: /app/ai_service/model/best.pt" >&2
+          echo "Set SMARTDRAIN_YOLO_MODEL_PATH in the root .env to an existing best.pt file." >&2
+          exit 1
+        fi
+        exec "$@"
+      - --
     depends_on:
       backend:
         condition: service_healthy
