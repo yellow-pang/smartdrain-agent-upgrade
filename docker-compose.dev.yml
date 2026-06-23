@@ -7,6 +7,7 @@ services:
   ai-service:
     volumes:
       - ./:/app
+      - ./mock_data/ai_image_samples:/app/mock_data/ai_image_samples:ro
     command: ["uvicorn", "ai_service.http.app:app", "--host", "0.0.0.0", "--port", "9000", "--reload", "--reload-dir", "/app/ai_service"]
 
   frontend:
