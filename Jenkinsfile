@@ -2,7 +2,7 @@ pipeline {
     agent {
         node {
             label 'built-in'
-            customWorkspace '/home/yp/apps/apps/smart-drain'
+            customWorkspace '/home/yp/apps/smart-drain'
         }
     }
 
@@ -21,7 +21,7 @@ pipeline {
     }
 
     environment {
-        DEPLOY_DIR = '/home/yp/apps/apps/smart-drain'
+        DEPLOY_DIR = '/home/yp/apps/smart-drain'
         DEPLOY_BRANCH = 'dev'
         COMPOSE_PROJECT_NAME = 'smartdrain-dev'
     }

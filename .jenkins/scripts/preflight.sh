@@ -4,6 +4,11 @@ set -eu
 : "${DEPLOY_DIR:?DEPLOY_DIR is required}"
 : "${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}"
 
+cd "$DEPLOY_DIR"
+printf 'WORKSPACE=%s\n' "${WORKSPACE:-}"
+printf 'DEPLOY_DIR=%s\n' "$DEPLOY_DIR"
+printf 'CURRENT_DIRECTORY=%s\n' "$PWD"
+
 command -v docker >/dev/null
 command -v git >/dev/null
 docker compose version >/dev/null
