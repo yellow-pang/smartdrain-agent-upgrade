@@ -50,9 +50,9 @@ export type SensorSummaryDto = {
 };
 
 export type SensorHistoryDto = {
-    measuredAt: string;
-    waterLevelCm: number;
-    flowVelocityMps: number;
+    measuredAt: string | null;
+    waterLevelCm: number | null;
+    flowVelocityMps: number | null;
 };
 
 export type YoloResultDto = {

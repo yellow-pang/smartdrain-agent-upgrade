@@ -96,7 +96,7 @@ export function DrainSummaryPanel({
               막힘 정도
             </span>
             <span className={cn("font-semibold", meta.text)}>
-              {drain.blockage}%
+              {drain.blockage == null ? "-" : `${drain.blockage}%`}
             </span>
           </div>
           <MetricProgress
@@ -171,7 +171,7 @@ export function DrainSummaryPanel({
             </InfoRow>
             <InfoRow icon={Waves} label="막힘 정도">
               <span className={cn("font-semibold", meta.text)}>
-                {drain.blockage}%
+                {drain.blockage == null ? "-" : `${drain.blockage}%`}
               </span>
             </InfoRow>
             <InfoRow icon={TrendingUp} label="수위">

@@ -177,7 +177,7 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
               className="flex-1"
             />
             <span className="w-9 shrink-0 text-right text-[11px] font-semibold text-slate-700 dark:text-slate-200 md:text-xs">
-              {drain.blockage}%
+              {drain.blockage == null ? "-" : `${drain.blockage}%`}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">

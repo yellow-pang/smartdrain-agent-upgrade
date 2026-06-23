@@ -87,8 +87,7 @@ export function sensorHistoryDtoToPoints(
     return [...items]
         .sort(
             (a, b) =>
-                new Date(a.measuredAt).getTime() -
-                new Date(b.measuredAt).getTime(),
+                toTimestamp(a.measuredAt) - toTimestamp(b.measuredAt),
         )
         .map(sensorHistoryDtoToPoint);
 }
@@ -171,6 +170,12 @@ function formatChartTime(value: string | null) {
     const hour = String(date.getHours()).padStart(2, "0");
     const minute = String(date.getMinutes()).padStart(2, "0");
     return `${month}-${day} ${hour}:${minute}`;
+}
+
+function toTimestamp(value: string | null) {
+    if (!value) return Number.NEGATIVE_INFINITY;
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
 }
 
 function getMockMapPosition(index: number) {

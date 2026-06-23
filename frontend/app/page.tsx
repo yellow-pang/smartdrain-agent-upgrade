@@ -206,7 +206,7 @@ const MobileDrainInlineSummary = memo(function MobileDrainInlineSummary({
           <div className="rounded-md bg-slate-50 px-2.5 py-2 dark:bg-slate-800/80">
             <p className="text-slate-500 dark:text-slate-400">막힘</p>
             <p className="mt-0.5 font-semibold text-slate-800 dark:text-slate-100">
-              {drain.blockage}%
+              {drain.blockage == null ? "-" : `${drain.blockage}%`}
             </p>
           </div>
           <div className="rounded-md bg-slate-50 px-2.5 py-2 dark:bg-slate-800/80">
