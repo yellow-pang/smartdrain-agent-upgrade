@@ -25,6 +25,7 @@ import {
     DrainDetailPageFrame,
     DrainDetailPageHeader,
 } from "@/components/drain-detail/drain-detail-page-frame";
+import { AnalysisSummaryCard } from "@/components/drain-detail/analysis-summary-card";
 import { CctvSnapshotCard } from "@/components/cctv-snapshot-card";
 import { SensorTrendChart } from "@/components/sensor-trend-chart";
 import { StatusBadge } from "@/components/status-badge";
@@ -301,7 +302,15 @@ export default function DrainDetailPage({
         <DrainDetailPageFrame>
             <DrainDetailPageHeader drain={drain} />
 
-            <AnalysisSummaryCard detailData={detailData} meta={meta} />
+                <AnalysisSummaryCard
+                    drain={detailData.drain}
+                    obstructionPercent={getObstructionPercent(detailData)}
+                    finalDecision={getLatestXgboostResult(detailData)?.finalDecision}
+                    evaluatedAt={
+                        getLatestXgboostResult(detailData)?.evaluatedAt ??
+                        getLatestXgboostResult(detailData)?.predictedAt
+                    }
+                />
 
             <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-12">
                     {/* Left column */}
@@ -447,133 +456,6 @@ function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
                     </div>
                 </div>
             </main>
-        </div>
-    );
-}
-
-function AnalysisSummaryCard({
-    detailData,
-    meta,
-}: {
-    detailData: DrainDetailData;
-    meta: (typeof STATUS_META)[RiskStatus];
-}) {
-    const drain = detailData.drain;
-    const yoloResult = getLatestYoloResult(detailData);
-    const xgboostResult = getLatestXgboostResult(detailData);
-    const obstructionPercent =
-        yoloResult?.obstructionRatio == null
-            ? drain.blockage
-            : ratioToPercent(yoloResult.obstructionRatio);
-
-    return (
-        <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                        Detail dashboard
-                    </p>
-                    <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-                        현재 분석 요약
-                    </h2>
-                </div>
-                <StatusBadge status={drain.status} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-                <SummaryMetricTile
-                    icon={Globe}
-                    label="막힘 정도"
-                    value={`${obstructionPercent}%`}
-                    metaText={meta.text}
-                    progress={obstructionPercent ?? undefined}
-                    barClass={meta.bar}
-                />
-                <SummaryMetricTile
-                    icon={Waves}
-                    label="수위"
-                    value={
-                        drain.waterLevelCm == null
-                            ? "-"
-                            : `${drain.waterLevelCm} cm`
-                    }
-                    metaText={meta.text}
-                />
-                <SummaryMetricTile
-                    icon={Gauge}
-                    label="유속"
-                    value={
-                        drain.flowVelocityMps == null
-                            ? "-"
-                            : `${drain.flowVelocityMps} m/s`
-                    }
-                    metaText={meta.text}
-                />
-                <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/70">
-                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <AlertTriangle className="size-4 text-slate-400 dark:text-slate-500" />
-                        최종 판단
-                    </div>
-                    <p
-                        className={cn(
-                            "mt-2 break-keep text-sm font-bold leading-5",
-                            meta.text,
-                        )}
-                    >
-                        {xgboostResult?.finalDecision ?? drain.judgement}
-                    </p>
-                    <p className="mt-1 break-words text-xs text-slate-400 dark:text-slate-500">
-                        {formatDateTimeForDisplay(
-                            xgboostResult?.evaluatedAt ??
-                                xgboostResult?.predictedAt ??
-                                drain.updatedAt,
-                        )}
-                    </p>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function SummaryMetricTile({
-    icon: Icon,
-    label,
-    value,
-    subValue,
-    metaText,
-    progress,
-    barClass,
-}: {
-    icon: React.ElementType;
-    label: string;
-    value: string;
-    subValue?: string;
-    metaText: string;
-    progress?: number;
-    barClass?: string;
-}) {
-    return (
-        <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/70">
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <Icon className="size-4 text-slate-400 dark:text-slate-500" />
-                {label}
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-                <span className={cn("text-xl font-bold", metaText)}>
-                    {value}
-                </span>
-                {subValue ? (
-                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-                        {subValue}
-                    </span>
-                ) : null}
-            </div>
-            {progress != null && barClass ? (
-                <MetricProgress
-                    value={progress}
-                    barClass={barClass}
-                    className="mt-3"
-                />
-            ) : null}
         </div>
     );
 }
@@ -1156,6 +1038,13 @@ function getLatestXgboostResult(
         detailData.analysis?.xgboostResult ??
         detailData.detail.xgboostResult
     );
+}
+
+function getObstructionPercent(detailData: DrainDetailData) {
+    const yoloResult = getLatestYoloResult(detailData);
+    return yoloResult?.obstructionRatio == null
+        ? detailData.drain.blockage
+        : ratioToPercent(yoloResult.obstructionRatio);
 }
 
 function yoloEventToDto(event: YoloResultUpdatedEventDto): YoloResultDto {
