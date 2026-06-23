@@ -7,6 +7,7 @@ import type {
     XgboostResultUpdatedEventDto,
     YoloResultUpdatedEventDto,
 } from "@/lib/api/types";
+import type { RiskLevel } from "@/lib/risk";
 
 export type DrainSocketStatus =
     | "waiting"
@@ -111,27 +112,44 @@ export function useDrainStatusSocket({
 
 function parseDrainRealtimeEvent(data: string): DrainRealtimeEventDto | null {
     try {
-        const parsed = JSON.parse(data) as Partial<DrainRealtimeEventDto>;
-        if (!parsed.payload?.drainId) return null;
+        const parsed: unknown = JSON.parse(data);
+        if (!isRecord(parsed) || !isRecord(parsed.payload)) return null;
+
+        const { payload } = parsed;
+        if (!isNonEmptyString(payload.drainId)) return null;
 
         if (parsed.type === "DRAIN_STATUS_UPDATED") {
-            if (!parsed.payload.updatedAt) return null;
+            if (
+                !isNonEmptyString(payload.updatedAt) ||
+                !isRiskLevel(payload.riskLevel)
+            ) {
+                return null;
+            }
+
             return parsed as DrainStatusUpdatedEventDto;
         }
 
         if (parsed.type === "YOLO_RESULT_UPDATED") {
-            const payload = parsed.payload as Partial<
-                YoloResultUpdatedEventDto["payload"]
-            >;
-            if (!payload.updatedAt || !payload.analyzedAt) return null;
+            if (
+                !isNonEmptyString(payload.updatedAt) ||
+                !isNonEmptyString(payload.analyzedAt) ||
+                !isYoloStatus(payload.yoloStatus)
+            ) {
+                return null;
+            }
+
             return parsed as YoloResultUpdatedEventDto;
         }
 
         if (parsed.type === "XGBOOST_RESULT_UPDATED") {
-            const payload = parsed.payload as Partial<
-                XgboostResultUpdatedEventDto["payload"]
-            >;
-            if (!payload.updatedAt || !payload.evaluatedAt) return null;
+            if (
+                !isNonEmptyString(payload.updatedAt) ||
+                !isNonEmptyString(payload.evaluatedAt) ||
+                !isRiskLevel(payload.riskLevel)
+            ) {
+                return null;
+            }
+
             return parsed as XgboostResultUpdatedEventDto;
         }
 
@@ -139,6 +157,32 @@ function parseDrainRealtimeEvent(data: string): DrainRealtimeEventDto | null {
     } catch {
         return null;
     }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === "string" && value.trim().length > 0;
+}
+
+function isRiskLevel(value: unknown): value is RiskLevel {
+    return (
+        value === "good" ||
+        value === "caution" ||
+        value === "danger" ||
+        value === "unknown"
+    );
+}
+
+function isYoloStatus(value: unknown) {
+    return (
+        value === "clear" ||
+        value === "partially_blocked" ||
+        value === "blocked" ||
+        value === "unknown"
+    );
 }
 
 function getDrainStatusSocketUrl() {

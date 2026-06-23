@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
@@ -8,7 +8,7 @@ import { FallbackImage } from "@/components/fallback-image";
 import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 import type { YoloStatus } from "@/lib/api/types";
 
-type Snapshot = {
+export type CctvSnapshot = {
     id?: number;
     imageUrl: string;
     capturedAt: string;
@@ -17,13 +17,15 @@ type Snapshot = {
     yoloStatus?: YoloStatus;
 };
 
-export function CctvSnapshotCard({
+type CctvSnapshotCardProps = {
+    snapshots: CctvSnapshot[];
+    locationName: string;
+};
+
+export const CctvSnapshotCard = memo(function CctvSnapshotCard({
     snapshots,
     locationName,
-}: {
-    snapshots: Snapshot[];
-    locationName: string;
-}) {
+}: CctvSnapshotCardProps) {
     const [active, setActive] = useState(0);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const safeSnapshots =
@@ -135,7 +137,7 @@ export function CctvSnapshotCard({
             </div>
         </div>
     );
-}
+}, areCctvSnapshotCardPropsEqual);
 
 function formatRatioPercent(value?: number | null) {
     if (value == null) return "-";
@@ -152,4 +154,28 @@ function getYoloStatusLabel(status?: YoloStatus) {
         unknown: "판단 불가",
     };
     return labels[status];
+}
+
+function areCctvSnapshotCardPropsEqual(
+    previous: CctvSnapshotCardProps,
+    next: CctvSnapshotCardProps,
+) {
+    if (
+        previous.locationName !== next.locationName ||
+        previous.snapshots.length !== next.snapshots.length
+    ) {
+        return false;
+    }
+
+    return previous.snapshots.every((snapshot, index) => {
+        const nextSnapshot = next.snapshots[index];
+        return (
+            snapshot.id === nextSnapshot.id &&
+            snapshot.imageUrl === nextSnapshot.imageUrl &&
+            snapshot.capturedAt === nextSnapshot.capturedAt &&
+            snapshot.obstructionRatio === nextSnapshot.obstructionRatio &&
+            snapshot.confidenceScore === nextSnapshot.confidenceScore &&
+            snapshot.yoloStatus === nextSnapshot.yoloStatus
+        );
+    });
 }
