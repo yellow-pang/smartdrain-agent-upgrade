@@ -40,13 +40,28 @@ export function FallbackImage({
 function getSafeImageSource(src?: string) {
     if (!src) return undefined;
     if (src.startsWith("/") && !src.startsWith("//")) return src;
+    if (!hasUrlScheme(src)) return src;
 
     try {
         const url = new URL(src);
-        return url.protocol === "https:" || url.protocol === "http:"
-            ? url.href
-            : undefined;
+        if (
+            url.protocol === "https:" ||
+            url.protocol === "http:" ||
+            url.protocol === "blob:"
+        ) {
+            return url.href;
+        }
+
+        return isSafeImageDataUrl(src) ? src : undefined;
     } catch {
         return undefined;
     }
+}
+
+function hasUrlScheme(value: string) {
+    return /^[a-z][a-z\d+.-]*:/i.test(value);
+}
+
+function isSafeImageDataUrl(value: string) {
+    return /^data:image\/(?:avif|gif|jpe?g|png|webp);base64,/i.test(value);
 }
