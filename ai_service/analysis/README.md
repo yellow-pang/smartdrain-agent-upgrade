@@ -42,14 +42,14 @@ The backend sends `drain_id`, not `image_path`. The AI service resolves the imag
 
 Required fields:
 
-- `request_id`
-- `drain_id`
-- `sensor_data.measured_at`
-- `sensor_data.water_level_cm`
-- `sensor_data.flow_velocity_mps`
-- `sensor_data.quality_status`
+- `request_id`: non-empty string
+- `drain_id`: integer ID or `DR-###` drain code
+- `sensor_data.measured_at`: ISO datetime string with date and time, for example `2026-06-18T08:36:13+09:00`
+- `sensor_data.water_level_cm`: finite numeric value
+- `sensor_data.flow_velocity_mps`: finite numeric value
+- `sensor_data.quality_status`: currently only `valid`
 
-`quality_status` currently accepts only `valid`.
+Invalid request payloads are rejected before the background task is registered.
 
 ## Image Source Resolution
 
@@ -59,7 +59,7 @@ Required fields:
 resolve_image_source_by_drain_id(drain_id)
 ```
 
-The current mock provider supports drain IDs `1` through `5`. Each source has:
+The current mock provider supports drain IDs `1` through `5`. Direct AI calls may pass either numeric IDs such as `2` or drain codes such as `DR-002`; the mock provider normalizes both to the same internal drain ID. Each source has:
 
 - `source_url`: future CCTV/storage URL placeholder
 - `local_path`: local mock image path passed to YOLO
@@ -137,8 +137,12 @@ Callback delivery remains the responsibility of `ai_service/http`.
 
 - payload is not a dict
 - missing `request_id`, `drain_id`, or `sensor_data`
+- `request_id` is not a non-empty string
+- `drain_id` is not an integer ID or `DR-###` drain code
 - `sensor_data` is not a dict
 - missing required sensor keys
+- `sensor_data.measured_at` is not an ISO datetime string with date and time
+- `sensor_data.water_level_cm` or `sensor_data.flow_velocity_mps` is not a finite number
 - `quality_status` is not `valid`
 - no mock image source is configured for the supplied `drain_id`
 

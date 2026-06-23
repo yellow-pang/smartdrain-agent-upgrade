@@ -35,6 +35,12 @@ Required fields:
 - `confidence_score`: YOLO confidence score normalized to `0.0` through `1.0`; use `-1.0` when image analysis cannot produce a valid YOLO result
 - `yolo_status`: one of `good`, `dirty`, `blocked`, `unknown`
 
+Validation rules:
+
+- For `good`, `dirty`, or `blocked`, `obstruction_ratio` and `confidence_score` must be numeric values from `0.0` through `1.0`.
+- For `unknown`, `obstruction_ratio` and `confidence_score` must both be `-1.0`.
+- `None`, `NaN`, strings, dicts, and other non-numeric values are rejected.
+
 When the image is missing, unreadable, or YOLO cannot detect a drain, the unknown result contract is:
 
 ```json

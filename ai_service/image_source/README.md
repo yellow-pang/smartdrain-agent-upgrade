@@ -6,10 +6,11 @@ The backend does not need to send `image_path`. The AI service receives `drain_i
 
 ## Current Local Mock Flow
 
-Real CCTV/storage integration is not connected yet. For now, `mock_provider.py` maps five drain IDs to mock source metadata:
+Real CCTV/storage integration is not connected yet. For now, `mock_provider.py` maps five drain IDs to mock source metadata. The backend integration normally sends the database integer ID, but direct AI calls may also pass `DR-001` style drain codes.
 
 ```text
 drain_id: 1..5
+equivalent codes: DR-001..DR-005
 ```
 
 Each mock entry has:

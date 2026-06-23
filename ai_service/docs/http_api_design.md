@@ -67,7 +67,7 @@ python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
 }
 ```
 
-AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다.
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다. 백엔드 연동 흐름에서는 보통 DB PK 정수 id가 전달되지만, AI 서버 직접 호출과 테스트를 위해 `DR-002` 같은 drain 코드도 허용한다.
 
 현재 로컬 목업 이미지는 `ai_service/` 밖의 `mock_data/ai_image_samples` 폴더에 둔다. 기본 경로는 `mock_data/ai_image_samples`이며, 필요하면 `IMAGE_SOURCE_BASE_DIR` 환경변수로 바꿀 수 있다.
 
@@ -222,6 +222,15 @@ callback 전송 구현 위치:
 `analysis` 계층은 잘못된 payload에 대해 `ValueError`를 발생시킨다.
 
 HTTP 계층은 이 오류를 `400 Bad Request` 형태로 변환한다.
+
+요청 단계에서 검증하는 항목:
+
+- `request_id`는 비어 있지 않은 문자열이어야 한다.
+- `drain_id`는 정수 id 또는 `DR-###` 형식 drain 코드여야 한다.
+- `sensor_data.measured_at`은 날짜와 시간이 포함된 ISO datetime 문자열이어야 한다.
+- `sensor_data.water_level_cm`은 유한한 숫자여야 한다.
+- `sensor_data.flow_velocity_mps`는 유한한 숫자여야 한다.
+- `sensor_data.quality_status`는 `valid`여야 한다.
 
 현재 `image_source`에 등록되지 않은 `drain_id`가 들어오면 `ValueError`가 발생한다. 이 상태는 등록되지 않은 drain ID 또는 CCTV/스토리지 이미지 소스 설정 이상으로 본다. HTTP 요청 처리 단계에서 source availability를 확인하고 현재는 `400 Bad Request`로 거절한다. 별도 실패 callback payload는 만들지 않으며, 추후 backend contract가 필요로 하면 HTTP `422` 또는 실패 callback을 별도 설계한다.
 

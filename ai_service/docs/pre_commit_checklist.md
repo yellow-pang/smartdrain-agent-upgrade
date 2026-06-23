@@ -10,21 +10,27 @@ Do not commit from this checklist step unless explicitly requested.
   - `request_id`
   - `drain_id`
   - `sensor_data`
+- [ ] `request_id` is a non-empty string.
+- [ ] `drain_id` is either an integer ID or a `DR-###` drain code.
 - [ ] Backend request body does not use `image_path`.
 - [ ] `sensor_data` contains:
   - `measured_at`
   - `water_level_cm`
   - `flow_velocity_mps`
   - `quality_status`
+- [ ] `measured_at` is an ISO datetime string with both date and time.
+- [ ] `water_level_cm` and `flow_velocity_mps` are finite numeric values.
 - [ ] `quality_status` is currently `valid`.
 - [ ] HTTP callback payload shape is unchanged:
   - YOLO callback: `request_id`, `job_id`, `yolo_result`
   - XGBoost callback: `request_id`, `job_id`, `xgboost_result`
+- [ ] YOLO `unknown` result uses `obstruction_ratio=-1.0` and `confidence_score=-1.0`.
+- [ ] YOLO non-`unknown` result numeric fields stay within `0.0` through `1.0`.
 
 ## Image Source Check
 
 - [ ] `ai_service/image_source` resolves images by `drain_id`.
-- [ ] Mock provider supports `drain_id` values `1` through `5`.
+- [ ] Mock provider supports `drain_id` values `1` through `5`, including equivalent codes like `DR-001`.
 - [ ] Unknown `drain_id` is treated as an unregistered drain or CCTV/storage image source configuration problem.
 - [ ] Unknown `drain_id` is rejected before background callback processing.
 - [ ] `source_url` remains a future CCTV/storage placeholder.

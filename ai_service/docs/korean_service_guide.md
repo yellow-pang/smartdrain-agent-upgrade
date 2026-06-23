@@ -12,7 +12,7 @@
 - `drain_id`
 - `sensor_data`
 
-AI 서버는 `drain_id`를 기준으로 `ai_service/image_source`의 mock provider에서 이미지 소스를 찾는다. 찾은 이미지 소스의 `local_path`를 YOLO에 넘기고, YOLO 결과와 센서값을 조합해 XGBoost 최종 위험도 판단을 수행한다.
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source`의 mock provider에서 이미지 소스를 찾는다. 백엔드 연동 흐름에서는 보통 DB PK 정수 id가 전달되지만, AI 서버 직접 호출과 테스트를 위해 `DR-002` 같은 drain 코드도 허용한다. 찾은 이미지 소스의 `local_path`를 YOLO에 넘기고, YOLO 결과와 센서값을 조합해 XGBoost 최종 위험도 판단을 수행한다.
 
 처리가 끝나면 AI 서버는 백엔드 callback endpoint로 결과를 보낸다.
 
@@ -58,6 +58,17 @@ callback payload shape는 현재 유지한다.
 ```
 
 `image_path`는 보내지 않는다.
+
+요청 단계에서 검증하는 값:
+
+- `request_id`는 비어 있지 않은 문자열이어야 한다.
+- `drain_id`는 정수 id 또는 `DR-###` 형식 drain 코드여야 한다.
+- `sensor_data.measured_at`은 날짜와 시간이 포함된 ISO datetime 문자열이어야 한다.
+- `sensor_data.water_level_cm`은 유한한 숫자여야 한다.
+- `sensor_data.flow_velocity_mps`는 유한한 숫자여야 한다.
+- `sensor_data.quality_status`는 `valid`여야 한다.
+
+이 조건을 만족하지 않는 요청은 background task로 넘기지 않고 `400 Bad Request`로 거절한다.
 
 ## 내부 처리 순서
 
@@ -142,6 +153,10 @@ YOLO는 이미지를 분석해 아래 dict를 반환한다.
 ```
 
 정상 분석의 `obstruction_ratio`는 `0.0`부터 `1.0` 사이 값이어야 한다.
+
+`yolo_status`가 `good`, `dirty`, `blocked`이면 `obstruction_ratio`와 `confidence_score`는 모두 `0.0` 이상 `1.0` 이하의 숫자여야 한다.
+
+`yolo_status`가 `unknown`이면 `obstruction_ratio`와 `confidence_score`는 모두 `-1.0`이어야 한다. 문자열, `NaN`, `None`, dict 같은 값은 YOLO contract에서 거절한다.
 
 이미지가 없거나 읽을 수 없거나 YOLO가 drain을 탐지하지 못하면 YOLO unknown 결과를 반환한다.
 

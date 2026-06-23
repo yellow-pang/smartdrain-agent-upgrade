@@ -133,7 +133,7 @@ request body:
 }
 ```
 
-AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` mock provider에서 이미지 소스를 resolve한다. 현재 backend request에는 `image_path`를 포함하지 않는다.
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` mock provider에서 이미지 소스를 resolve한다. 현재 backend request에는 `image_path`를 포함하지 않는다. 백엔드 연동 흐름에서는 보통 DB PK 정수 id가 전달되지만, AI 서버 직접 호출과 테스트에서는 `DR-002` 같은 drain 코드도 허용한다.
 
 등록되지 않은 `drain_id`는 등록되지 않은 drain 또는 CCTV/스토리지 이미지 소스 설정 이상으로 보고 `ValueError`가 발생한다. 현재 HTTP 요청 단계의 잘못된 입력은 `400 Bad Request`로 매핑된다.
 

@@ -21,9 +21,27 @@ def test_mock_source_contains_future_url_and_local_path(drain_id):
     assert source.local_path.endswith(f"drain_{drain_id}.jpg")
 
 
-def test_unregistered_or_broken_cctv_source_drain_id_raises_value_error():
+@pytest.mark.parametrize(
+    ("drain_id", "expected_id"),
+    [
+        (1, 1),
+        ("1", 1),
+        ("DR-001", 1),
+        ("dr-005", 5),
+    ],
+)
+def test_mock_source_accepts_numeric_id_or_drain_code(drain_id, expected_id):
+    source = get_mock_image_source_by_drain_id(drain_id)
+
+    assert source.drain_id == expected_id
+    assert source.source_url == f"mock://storage/drain-{expected_id}-latest.jpg"
+    assert source.local_path.endswith(f"drain_{expected_id}.jpg")
+
+
+@pytest.mark.parametrize("drain_id", [999, "DR-999", "DR-", "DR-ABC", 2.5, True])
+def test_unregistered_or_broken_cctv_source_drain_id_raises_value_error(drain_id):
     with pytest.raises(ValueError):
-        get_mock_image_source_by_drain_id(999)
+        get_mock_image_source_by_drain_id(drain_id)
 
 
 def test_service_returns_image_source_and_path():
