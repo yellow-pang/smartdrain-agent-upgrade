@@ -70,8 +70,8 @@ services:
       - /bin/sh
       - -c
       - |
-        if [ ! -s /app/ai_service/model/best.pt ]; then
-          echo "ERROR: YOLO model file is missing or empty: /app/ai_service/model/best.pt" >&2
+        if [ ! -f /app/ai_service/model/best.pt ] || [ ! -s /app/ai_service/model/best.pt ]; then
+          echo "ERROR: YOLO model file is missing, not a regular file, or empty: /app/ai_service/model/best.pt" >&2
           echo "Set SMARTDRAIN_YOLO_MODEL_PATH in the root .env to an existing best.pt file." >&2
           exit 1
         fi

@@ -12,6 +12,8 @@
 
 > 이 문서는 구현 전 조사 결과와 승인 항목을 정리한다. 루트 Compose 및 backend·AI service 파일 변경은 `frontend/AGENTS.md`의 승인 대상이므로, 아래 확인 항목을 승인받은 뒤에만 수정한다.
 
+> 범위 조정: 2026-06-23 이후 후속 정비는 frontend·Docker/Nginx·root 실행 문서로 한정한다. backend·AI service 애플리케이션 코드와 각 서비스의 단독 실행 README 정비는 별도 작업으로 분리한다.
+
 ## 2. 현재 확인 결과
 
 ### 2.1 이미 갖춰진 통합 구조
