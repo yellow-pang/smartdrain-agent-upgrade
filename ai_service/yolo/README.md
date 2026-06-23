@@ -31,9 +31,21 @@ Real YOLO predictors must return:
 
 Required fields:
 
-- `obstruction_ratio`: blockage ratio normalized to `0.0` through `1.0`
-- `confidence_score`: YOLO confidence score normalized to `0.0` through `1.0`
+- `obstruction_ratio`: blockage ratio normalized to `0.0` through `1.0`; use `-1.0` when image analysis cannot produce a valid YOLO result
+- `confidence_score`: YOLO confidence score normalized to `0.0` through `1.0`; use `-1.0` when image analysis cannot produce a valid YOLO result
 - `yolo_status`: one of `good`, `dirty`, `blocked`, `unknown`
+
+When the image is missing, unreadable, or YOLO cannot detect a drain, the unknown result contract is:
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+The analysis layer passes these `-1.0` sentinel values to XGBoost unchanged.
 
 ## Stage 3 Note
 

@@ -32,8 +32,8 @@ def test_yolo_result_fields_are_fixed_contract_values():
 def test_unknown_yolo_result_matches_contract():
     validate_yolo_result_contract(UNKNOWN_YOLO_RESULT)
     assert UNKNOWN_YOLO_RESULT == {
-        "obstruction_ratio": 0.0,
-        "confidence_score": 0.0,
+        "obstruction_ratio": -1.0,
+        "confidence_score": -1.0,
         "yolo_status": "unknown",
     }
 

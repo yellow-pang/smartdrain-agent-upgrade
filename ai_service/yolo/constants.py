@@ -17,7 +17,7 @@ YOLO_RESULT_FIELDS = (
 )
 
 UNKNOWN_YOLO_RESULT = {
-    "obstruction_ratio": 0.0,
-    "confidence_score": 0.0,
+    "obstruction_ratio": -1.0,
+    "confidence_score": -1.0,
     "yolo_status": YOLO_STATUS_UNKNOWN,
 }

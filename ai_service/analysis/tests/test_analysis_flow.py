@@ -187,6 +187,26 @@ def test_xgboost_adapter_normalizes_sensor_units():
     }
 
 
+def test_xgboost_adapter_preserves_yolo_unknown_sentinel_values():
+    sensor_data = {
+        "water_level_cm": 98.13,
+        "flow_velocity_mps": 0.4512,
+    }
+    yolo_result = {
+        "obstruction_ratio": -1.0,
+        "confidence_score": -1.0,
+    }
+
+    result = build_xgboost_input_batch(sensor_data, yolo_result)
+
+    assert result == {
+        "obstruction_ratio": [-1.0],
+        "confidence_score": [-1.0],
+        "water_level": [0.9813],
+        "flow_velocity": [0.4512],
+    }
+
+
 class FakeImageSource:
     def __init__(self, source_url, local_path):
         self.source_url = source_url

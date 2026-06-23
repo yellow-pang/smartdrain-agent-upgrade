@@ -141,6 +141,18 @@ YOLO 결과 필드:
 - `blocked`
 - `unknown`
 
+이미지가 없거나 읽을 수 없거나 YOLO가 drain을 탐지하지 못하면 아래 unknown 결과를 보낸다.
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+이 `-1.0` 값은 XGBoost 입력 feature로 그대로 전달한다.
+
 현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다.
 
 ## XGBoost callback 계약

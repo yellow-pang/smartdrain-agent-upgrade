@@ -55,6 +55,12 @@ FEATURE_COLUMNS = [
 ]
 ```
 
+YOLO abnormal-value scenario:
+
+- If YOLO cannot produce a valid image analysis result, `obstruction_ratio` is `-1.0`.
+- In the same case, `confidence_score` is `-1.0`.
+- XGBoost receives these sentinel values unchanged.
+
 ## Output Contract
 
 `predict_flood_risk_batch(input_dict_batch)` returns `list[dict]`.

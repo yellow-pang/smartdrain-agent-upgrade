@@ -75,6 +75,22 @@ def test_predict_batch_preserves_feature_order_for_model_input():
     ]
 
 
+def test_predict_batch_passes_yolo_unknown_sentinel_to_model():
+    model = FakeXGBoostModel()
+    predictor = TrainedXGBoostPredictor(model=model)
+
+    predictor.predict_batch(
+        {
+            "obstruction_ratio": [-1.0],
+            "confidence_score": [-1.0],
+            "water_level": [0.82],
+            "flow_velocity": [0.13],
+        }
+    )
+
+    assert model.seen_feature_matrices == [[[-1.0, -1.0, 0.82, 0.13]]]
+
+
 def test_predict_batch_maps_label_and_probability_to_result():
     predictor = TrainedXGBoostPredictor(
         model=FakeXGBoostModel(

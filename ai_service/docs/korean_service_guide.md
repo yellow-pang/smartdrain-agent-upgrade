@@ -141,7 +141,19 @@ YOLO는 이미지를 분석해 아래 dict를 반환한다.
 }
 ```
 
-`obstruction_ratio`는 `0.0`부터 `1.0` 사이 값이어야 한다.
+정상 분석의 `obstruction_ratio`는 `0.0`부터 `1.0` 사이 값이어야 한다.
+
+이미지가 없거나 읽을 수 없거나 YOLO가 drain을 탐지하지 못하면 YOLO unknown 결과를 반환한다.
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+이 `-1.0` 값은 XGBoost가 YOLO 이상값 시나리오로 받아들이도록 `analysis` 계층에서 그대로 XGBoost feature에 전달한다.
 
 ## XGBoost 역할
 

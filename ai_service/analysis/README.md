@@ -86,6 +86,18 @@ The YOLO result contract is:
 
 `obstruction_ratio` is a unit ratio from `0.0` to `1.0`.
 
+If YOLO cannot produce a valid result because the image is missing, unreadable, or drain detection fails, YOLO returns sentinel values:
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+The analysis layer passes `obstruction_ratio=-1.0` and `confidence_score=-1.0` to XGBoost unchanged so the model can handle the YOLO abnormal-value scenario.
+
 ## XGBoost Feature Batch
 
 Analysis builds this XGBoost input shape:
