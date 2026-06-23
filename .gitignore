@@ -183,4 +183,10 @@ backend/alembic/versions/__pycache__/
 # =========================
 backend/static/uploads/
 backend/uploads/
-ai-vision/
+test_images/
+test_images_norain2/
+test_images_rain/
+*.png
+*.jpg
+*.csv
+ai-decting/
