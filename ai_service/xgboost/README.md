@@ -14,8 +14,6 @@ Default model artifact:
 ai_service/model/sewer_xgboost_model.json
 ```
 
-`ai_service/xgboost/rule_baseline_predictor.py` is retained only as a legacy/reference baseline. Production orchestration must not call it directly.
-
 ## Responsibility
 
 This package should:

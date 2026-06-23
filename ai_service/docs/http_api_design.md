@@ -141,7 +141,7 @@ YOLO 결과 필드:
 - `blocked`
 - `unknown`
 
-현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다. `ai_service/yolo_legacy_example`은 legacy/reference 용도로만 남아 있다.
+현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다.
 
 ## XGBoost callback 계약
 
@@ -187,7 +187,7 @@ XGBoost 결과 필드:
 - `field_check`
 - `dispatch_required`
 
-현재 production flow는 `ai_service/xgboost/model_predictor.py`와 `ai_service/model/sewer_xgboost_model.json`을 사용한다. `rule_baseline_predictor.py`는 legacy/reference 용도로만 남아 있다.
+현재 production flow는 `ai_service/xgboost/model_predictor.py`와 `ai_service/model/sewer_xgboost_model.json`을 사용한다.
 
 ## Callback 전송 정책
 

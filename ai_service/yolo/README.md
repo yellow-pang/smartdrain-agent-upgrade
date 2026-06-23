@@ -1,8 +1,6 @@
 # YOLO Predictor
 
-`ai_service/yolo` is the target package for the real YOLO/OpenCV image analysis integration.
-
-This package is intentionally separate from `ai_service/yolo_legacy_example`, which contains the legacy temporary fake predictor. Production analysis uses `ai_service/yolo/analyzer.py`.
+`ai_service/yolo` is the target package for the real YOLO/OpenCV image analysis integration. Production analysis uses `ai_service/yolo/analyzer.py`.
 
 ## Scope
 
@@ -66,7 +64,3 @@ yolo_result = predict_yolo_by_image_path(local_path)
 ```
 
 The production `analysis.service` flow receives `drain_id`, resolves it through `ai_service/image_source`, and then calls `predict_yolo_by_image_path(local_path)`.
-
-## Legacy Package
-
-`ai_service/yolo_legacy_example` is kept for historical tests and previous fake-flow reference only. Do not use it from production orchestration.

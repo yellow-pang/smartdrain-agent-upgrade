@@ -31,7 +31,6 @@ callback payload shape는 현재 유지한다.
 | `ai_service/yolo` | 실제 YOLO/OpenCV 이미지 분석기 |
 | `ai_service/xgboost` | 실제 XGBoost 모델 기반 위험도 predictor |
 | `ai_service/model` | 학습된 모델 artifact 보관 |
-| `ai_service/yolo_legacy_example` | 예전 fake YOLO predictor 참고/테스트용 |
 | `ai_service/docs` | 운영/설계/실행 문서 |
 
 ## 모델 파일
@@ -160,12 +159,6 @@ ai_service/xgboost/model_predictor.py
 4. `flow_velocity`
 
 XGBoost 결과는 `analysis`에서 backend callback contract에 맞게 정리된다.
-
-## Legacy 코드
-
-`ai_service/yolo_legacy_example`는 예전 fake YOLO predictor 참고용이다. production flow에서 사용하지 않는다.
-
-`ai_service/xgboost/rule_baseline_predictor.py`도 이전 rule-based baseline 참고용이다. production flow는 `model_predictor.py`를 사용한다.
 
 ## 로컬 실행 명령어
 

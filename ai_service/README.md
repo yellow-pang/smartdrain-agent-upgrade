@@ -48,7 +48,7 @@
 - AI 서버 자체 DB 저장
 - WebSocket 처리
 
-현재 production flow는 `ai_service/yolo/analyzer.py`와 `ai_service/xgboost/model_predictor.py`를 사용한다. `ai_service/yolo_legacy_example`와 `ai_service/xgboost/rule_baseline_predictor.py`는 legacy/reference 코드로 남겨둔다.
+현재 production flow는 `ai_service/yolo/analyzer.py`와 `ai_service/xgboost/model_predictor.py`를 사용한다.
 
 ## 디렉터리 책임
 
@@ -61,7 +61,6 @@
 | `ai_service/image_source` | `drain_id` 기준 mock image source resolve. 현재 `source_url`과 `local_path`를 관리 |
 | `ai_service/yolo` | YOLO predictor 역할만 수행. 입력을 받아 YOLO 결과 dict 반환 |
 | `ai_service/xgboost` | XGBoost predictor 역할만 수행. feature batch를 받아 위험도 결과 dict 반환 |
-| `ai_service/yolo_legacy_example` | 예전 fake YOLO predictor 참고/테스트용. production에서 사용하지 않음 |
 
 중요한 규칙:
 

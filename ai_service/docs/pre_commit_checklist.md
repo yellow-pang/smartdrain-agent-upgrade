@@ -73,18 +73,6 @@ ai_service/yolo/analyzer.py
 ai_service/xgboost/model_predictor.py
 ```
 
-- [ ] Legacy fake YOLO is reference/test-only:
-
-```text
-ai_service/yolo_legacy_example
-```
-
-- [ ] Rule baseline XGBoost is reference-only:
-
-```text
-ai_service/xgboost/rule_baseline_predictor.py
-```
-
 ## Environment Check
 
 - [ ] Python 3.12 venv is active.
@@ -134,7 +122,8 @@ python -m ai_service.scripts.smoke_analysis --drain-id 2
 
 - `compileall` should pass.
 - `pytest` should pass only after `pytest` and runtime dependencies are installed.
-- `check_samples` returns non-zero if sample images are missing. That is acceptable before sample images are placed.
+- `check_samples` returns `0` when `drain_1.jpg` through `drain_4.jpg` exist and only `drain_5.jpg` is missing as expected.
+- `check_samples` returns non-zero if required sample images other than `drain_5.jpg` are missing.
 - `smoke_analysis` returns:
   - `0` when local image exists and analysis completes
   - `1` when `drain_id` cannot resolve
