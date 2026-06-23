@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ComingSoonPopover } from "@/components/coming-soon-popover";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
+import { getDrainDetailHref } from "@/lib/drain-route";
 import { useDrainStore } from "@/store/drain-store";
 
 export function AppHeader() {
@@ -108,7 +109,7 @@ export function AppHeader() {
                   {urgentAlerts.map((alert) => (
                     <li key={alert.drainId}>
                       <Link
-                        href={`/drains/${alert.drainId}`}
+                        href={getDrainDetailHref(alert.drainId)}
                         className="block rounded-lg px-3 py-3 hover:bg-red-50 dark:hover:bg-red-950/30"
                         onClick={() => {
                           markUrgentAlertRead(alert.drainId);

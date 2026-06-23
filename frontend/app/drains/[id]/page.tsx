@@ -7,11 +7,6 @@ import {
     AlertTriangle,
     ArrowLeft,
     Clock,
-    Gauge,
-    Globe,
-    MapPin,
-    ShieldCheck,
-    Waves,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import {
@@ -23,14 +18,15 @@ import {
 import { AnalysisSummaryCard } from "@/components/drain-detail/analysis-summary-card";
 import { AiAnalysisTabs } from "@/components/drain-detail/ai-analysis-tabs";
 import {
+    CurrentRiskCard,
+    LocationMapCard,
+} from "@/components/drain-detail/drain-detail-status-panels";
+import {
     FacilityInfoCard,
     RiskHistoryCard,
 } from "@/components/drain-detail/facility-overview-panels";
 import { CctvSnapshotCard } from "@/components/cctv-snapshot-card";
 import { SensorTrendChart } from "@/components/sensor-trend-chart";
-import { StatusBadge } from "@/components/status-badge";
-import { MetricProgress } from "@/components/metric-progress";
-import { RiskMap } from "@/components/risk-map";
 import { PlaceholderState } from "@/components/placeholder-state";
 import { STATUS_META, type RiskStatus } from "@/lib/mock-data";
 import {
@@ -40,7 +36,6 @@ import {
 import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGES } from "@/lib/placeholders";
-import { formatDateTimeForDisplay } from "@/lib/date-format";
 import { useDrainStore } from "@/store/drain-store";
 import { useDrainsQuery } from "@/lib/query/drain-queries";
 import type {
@@ -321,8 +316,6 @@ export default function DrainDetailPage({
                         />
                         <LocationMapCard
                             drain={drain}
-                            fullAddress={drain.fullAddress}
-                            road={drain.road}
                             source={detailData.source}
                         />
                     </div>
@@ -334,7 +327,7 @@ export default function DrainDetailPage({
                             summary={sensorSummary}
                         />
                         <AiAnalysisTabs
-                            summary={<CurrentRiskCard drain={detailData.drain} meta={meta} compact />}
+                            summary={<CurrentRiskCard drain={detailData.drain} compact />}
                             yoloResult={getLatestYoloResult(detailData)}
                             xgboostResult={getLatestXgboostResult(detailData)}
                             yoloResults={detailData.analysisHistory?.yoloResults ?? []}
@@ -349,51 +342,6 @@ export default function DrainDetailPage({
                     </div>
             </div>
         </DrainDetailPageFrame>
-    );
-}
-
-function LocationMapCard({
-    drain,
-    fullAddress,
-    road,
-    source,
-}: {
-    drain: DrainDetailData["drain"];
-    fullAddress: string;
-    road: string;
-    source: DrainDetailData["source"];
-}) {
-    return (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
-                위치 지도{" "}
-                <span className="text-sm font-normal text-slate-400 dark:text-slate-500">
-                    (고정)
-                </span>
-            </h2>
-            <div className="h-[220px] sm:h-[260px]">
-                {source === "api" ? (
-                    <RiskMap
-                        drains={[{ ...drain, x: 50, y: 48 }]}
-                        selectedId={drain.id}
-                        labelLocation={road}
-                        variant="detail"
-                    />
-                ) : (
-                    <PlaceholderState
-                        image={PLACEHOLDER_IMAGES.map}
-                        title="위치 지도 연결 대기"
-                        description="실제 위치 데이터가 도착하면 지도 영역이 표시됩니다."
-                        statusLabel="mock fallback"
-                        className="h-full min-h-0"
-                    />
-                )}
-            </div>
-            <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <MapPin className="mt-0.5 size-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-                <span className="break-words">{fullAddress}</span>
-            </p>
-        </div>
     );
 }
 
@@ -462,102 +410,6 @@ function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
                     </div>
                 </div>
             </main>
-        </div>
-    );
-}
-
-function CurrentRiskCard({
-    drain,
-    meta,
-    compact = false,
-}: {
-    drain: DrainDetailData["drain"];
-    meta: (typeof STATUS_META)[RiskStatus];
-    compact?: boolean;
-}) {
-    return (
-        <div
-            className={cn(
-                !compact &&
-                    "rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900",
-            )}
-        >
-            {!compact ? (
-                <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
-                    현재 위험 상태
-                </h2>
-            ) : null}
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <RiskTile icon={ShieldCheck} label="상태">
-                    <StatusBadge status={drain.status} />
-                </RiskTile>
-                <RiskTile icon={Globe} label="막힘 정도">
-                    <div className="w-full">
-                        <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                {drain.blockage == null ? "-" : `${drain.blockage}%`}
-                            </span>
-                            <span
-                                className={cn(
-                                    "text-xs font-semibold",
-                                    meta.text,
-                                )}
-                            >
-                                {meta.label}
-                            </span>
-                        </div>
-                        <MetricProgress
-                            value={drain.blockage ?? 0}
-                            barClass={meta.bar}
-                            className="mt-1.5"
-                        />
-                    </div>
-                </RiskTile>
-                <RiskTile icon={Waves} label="수위">
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                        {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
-                    </span>
-                </RiskTile>
-                <RiskTile icon={Gauge} label="유속">
-                    <div className="flex items-baseline">
-                        <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                            {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
-                        </span>
-                    </div>
-                </RiskTile>
-                <RiskTile icon={Clock} label="최근 업데이트">
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                        {formatDateTimeForDisplay(drain.updatedAt)}
-                    </span>
-                </RiskTile>
-                <RiskTile icon={AlertTriangle} label="판정 결과">
-                    <span className={cn("text-base font-bold", meta.text)}>
-                        {drain.judgement}
-                    </span>
-                </RiskTile>
-            </div>
-        </div>
-    );
-}
-
-function RiskTile({
-    icon: Icon,
-    label,
-    children,
-}: {
-    icon: React.ElementType;
-    label: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-3 dark:border-slate-800 dark:bg-slate-800/70">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-white text-slate-400 shadow-sm dark:bg-slate-700 dark:text-slate-500">
-                <Icon className="size-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-                <div className="mt-0.5">{children}</div>
-            </div>
         </div>
     );
 }

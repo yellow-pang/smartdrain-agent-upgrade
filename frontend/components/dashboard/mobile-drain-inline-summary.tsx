@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
+import { getDrainDetailHref } from "@/lib/drain-route";
 import type { DrainFacility } from "@/lib/mock-data";
 
 export function MobileDrainInlineSummary({ drain }: { drain: DrainFacility }) {
@@ -39,7 +40,7 @@ export function MobileDrainInlineSummary({ drain }: { drain: DrainFacility }) {
                     nativeButton={false}
                     className="mt-2 h-9 w-full bg-cyan-700 text-white hover:bg-cyan-800"
                     render={
-                        <Link href={`/drains/${drain.id}`}>
+                        <Link href={getDrainDetailHref(drain.id)}>
                             상세 정보 페이지로 이동
                             <ChevronRight className="size-4" />
                         </Link>

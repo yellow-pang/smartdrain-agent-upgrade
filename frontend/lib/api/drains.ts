@@ -19,7 +19,7 @@ export async function getDrains() {
 
 export async function getDrainDetail(id: string) {
     const response = await apiClient.get<ApiResponse<DrainDetailDto>>(
-        `/api/drains/${id}`,
+        `/api/drains/${encodeURIComponent(id)}`,
     );
     return response.data;
 }
@@ -29,7 +29,7 @@ export async function getDrainSensorHistory(
     params?: { range?: string; limit?: number },
 ) {
     const response = await apiClient.get<ApiListResponse<SensorHistoryDto>>(
-        `/api/drains/${id}/sensors`,
+        `/api/drains/${encodeURIComponent(id)}/sensors`,
         { params },
     );
     return response.data;
@@ -40,7 +40,7 @@ export async function getDrainRiskHistory(
     params?: { days?: number; limit?: number },
 ) {
     const response = await apiClient.get<ApiListResponse<RiskHistoryDto>>(
-        `/api/drains/${id}/risk-history`,
+        `/api/drains/${encodeURIComponent(id)}/risk-history`,
         { params },
     );
     return response.data;
@@ -55,7 +55,7 @@ export async function getDashboardSummary() {
 
 export async function getLatestAnalysis(id: string) {
     const response = await apiClient.get<ApiResponse<AnalysisResultDto>>(
-        `/api/drains/${id}/analysis/latest`,
+        `/api/drains/${encodeURIComponent(id)}/analysis/latest`,
     );
     return response.data;
 }
@@ -66,6 +66,6 @@ export async function getDrainAnalysisHistory(
 ) {
     const response = await apiClient.get<
         ApiResponse<DrainAnalysisHistoryResponse>
-    >(`/api/drains/${id}/analysis/history`, { params });
+    >(`/api/drains/${encodeURIComponent(id)}/analysis/history`, { params });
     return response.data;
 }
