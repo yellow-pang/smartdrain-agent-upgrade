@@ -1,3 +1,5 @@
+import logging
+
 from ai_service.http import routes
 from ai_service.http.config import get_http_settings
 
@@ -56,8 +58,8 @@ def test_process_analysis_callbacks_sends_yolo_and_xgboost_payloads(monkeypatch)
         lambda payload: analysis_result,
     )
 
-    def fake_send_json_callback(url, payload, timeout_seconds, retry_count):
-        sent_callbacks.append((url, payload, timeout_seconds, retry_count))
+    def fake_send_json_callback(url, payload, timeout_seconds, retry_count, **kwargs):
+        sent_callbacks.append((url, payload, timeout_seconds, retry_count, kwargs))
         return True
 
     monkeypatch.setattr(routes, "send_json_callback", fake_send_json_callback)
@@ -70,12 +72,22 @@ def test_process_analysis_callbacks_sends_yolo_and_xgboost_payloads(monkeypatch)
             analysis_result["yolo_callback_payload"],
             10.0,
             1,
+            {
+                "callback_name": "yolo",
+                "request_id": "REQ_20260618_001",
+                "job_id": "AI_JOB_REQ_20260618_001",
+            },
         ),
         (
             "http://backend.example:8000/api/ai-callback/xgboost-result",
             analysis_result["xgboost_callback_payload"],
             10.0,
             1,
+            {
+                "callback_name": "xgboost",
+                "request_id": "REQ_20260618_001",
+                "job_id": "AI_JOB_REQ_20260618_001",
+            },
         ),
     ]
 
@@ -91,7 +103,7 @@ def test_process_analysis_callbacks_continues_after_yolo_callback_failure(
         lambda payload: make_analysis_result(),
     )
 
-    def fake_send_json_callback(url, payload, timeout_seconds, retry_count):
+    def fake_send_json_callback(url, payload, timeout_seconds, retry_count, **kwargs):
         sent_urls.append(url)
         return "xgboost-result" in url
 
@@ -105,8 +117,31 @@ def test_process_analysis_callbacks_continues_after_yolo_callback_failure(
     ]
 
 
+def test_process_analysis_callbacks_logs_callback_failure(monkeypatch, caplog):
+    monkeypatch.setattr(
+        routes,
+        "run_analysis_job",
+        lambda payload: make_analysis_result(),
+    )
+
+    def fake_send_json_callback(url, payload, timeout_seconds, retry_count, **kwargs):
+        return "xgboost-result" in url
+
+    monkeypatch.setattr(routes, "send_json_callback", fake_send_json_callback)
+    caplog.set_level(logging.ERROR, logger=routes.LOGGER.name)
+
+    routes.process_analysis_callbacks(make_payload())
+
+    assert "AI callback delivery exhausted" in caplog.text
+    assert "callback=yolo" in caplog.text
+    assert "request_id=REQ_20260618_001" in caplog.text
+    assert "job_id=AI_JOB_REQ_20260618_001" in caplog.text
+    assert "drain_id=2" in caplog.text
+
+
 def test_process_analysis_callbacks_does_not_send_callbacks_when_analysis_fails(
     monkeypatch,
+    caplog,
 ):
     sent_callbacks = []
 
@@ -119,10 +154,15 @@ def test_process_analysis_callbacks_does_not_send_callbacks_when_analysis_fails(
         "send_json_callback",
         lambda *args: sent_callbacks.append(args),
     )
+    caplog.set_level(logging.ERROR, logger=routes.LOGGER.name)
 
     routes.process_analysis_callbacks(make_payload())
 
     assert sent_callbacks == []
+    assert "AI analysis background task failed" in caplog.text
+    assert "request_id=REQ_20260618_001" in caplog.text
+    assert "job_id=AI_JOB_REQ_20260618_001" in caplog.text
+    assert "drain_id=2" in caplog.text
 
 
 def test_backend_base_url_environment_variable_changes_callback_urls(monkeypatch):

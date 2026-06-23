@@ -22,8 +22,6 @@ router = APIRouter()
 def run_analysis(payload: dict, background_tasks: BackgroundTasks) -> dict:
     try:
         validate_analysis_request(payload)
-        # source가 없는 drain_id는 분석 job을 accepted 하기 전에 거절한다.
-        # 그래야 callback 없이 background task에서 조용히 실패하는 상황을 줄일 수 있다.
         validate_analysis_image_source(payload)
     except ValueError as exc:
         raise HTTPException(
@@ -45,24 +43,66 @@ def run_analysis(payload: dict, background_tasks: BackgroundTasks) -> dict:
 
 
 def process_analysis_callbacks(payload: dict) -> None:
+    request_id = payload.get("request_id")
+    job_id = build_job_id(request_id) if request_id else None
+    drain_id = payload.get("drain_id")
+
     try:
         result = run_analysis_job(payload)
     except Exception:
-        # callback payload 계약에는 실패 전용 shape가 아직 없다.
-        # 따라서 background 실패는 로그로 남기고 backend callback은 보내지 않는다.
-        LOGGER.exception("AI analysis background task failed.")
+        LOGGER.exception(
+            "AI analysis background task failed: request_id=%s job_id=%s drain_id=%s",
+            request_id,
+            job_id,
+            drain_id,
+        )
         return
 
     settings = get_http_settings()
-    send_json_callback(
+    yolo_sent = send_json_callback(
         settings.yolo_callback_url,
         result["yolo_callback_payload"],
         settings.callback_timeout_seconds,
         settings.callback_retry_count,
+        callback_name="yolo",
+        request_id=request_id,
+        job_id=job_id,
     )
-    send_json_callback(
+    _log_callback_result("yolo", yolo_sent, request_id, job_id, drain_id)
+
+    xgboost_sent = send_json_callback(
         settings.xgboost_callback_url,
         result["xgboost_callback_payload"],
         settings.callback_timeout_seconds,
         settings.callback_retry_count,
+        callback_name="xgboost",
+        request_id=request_id,
+        job_id=job_id,
+    )
+    _log_callback_result("xgboost", xgboost_sent, request_id, job_id, drain_id)
+
+
+def _log_callback_result(
+    callback_name: str,
+    sent: bool,
+    request_id: str | None,
+    job_id: str | None,
+    drain_id: object,
+) -> None:
+    if sent:
+        LOGGER.info(
+            "AI callback delivered: callback=%s request_id=%s job_id=%s drain_id=%s",
+            callback_name,
+            request_id,
+            job_id,
+            drain_id,
+        )
+        return
+
+    LOGGER.error(
+        "AI callback delivery exhausted: callback=%s request_id=%s job_id=%s drain_id=%s",
+        callback_name,
+        request_id,
+        job_id,
+        drain_id,
     )
