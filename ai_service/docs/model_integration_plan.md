@@ -31,7 +31,7 @@ The following service-local README files were reviewed before implementation pla
 - `ai_service/http/README.md`
 - `ai_service/yolo_legacy_example/README.md`
 - `ai_service/xgboost/README.md`
-- `ai_service/HTTP_API_DESIGN.md`
+- `ai_service/docs/http_api_design.md`
 
 Current state:
 
@@ -76,7 +76,7 @@ Documentation update strategy:
 - Stage 8: Complete. Backend request contract now uses `drain_id`; `image_source` resolves mock local image paths.
 - Stage 9: Complete. Legacy fake YOLO folder was renamed, README/docs were aligned, and Korean guide docs were added.
 - Stage 10: Complete. Korean code comments were added at key policy boundaries and local no-callback smoke script was added.
-- Stage 11: Complete. `ai_service/samples` structure and sample existence check script were added.
+- Stage 11: Complete. `mock_data/ai_image_samples` structure and sample existence check script were added.
 - Stage 12: Complete. Pre-commit checklist documentation was added for final review before committing.
 
 Legacy code retained intentionally:
@@ -298,7 +298,7 @@ Prepare local sample image structure for real YOLO smoke tests.
 
 Expected changes:
 
-- Add `ai_service/samples` without adding real CCTV images.
+- Add `mock_data/ai_image_samples` without adding real CCTV images.
 - Document required file names:
   - `drain_1.jpg`
   - `drain_2.jpg`

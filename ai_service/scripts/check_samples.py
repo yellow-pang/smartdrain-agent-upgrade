@@ -3,21 +3,36 @@ from pathlib import Path
 
 from ai_service.image_source.constants import MOCK_IMAGE_SOURCE_BY_DRAIN_ID
 
+EXPECTED_MISSING_SAMPLE_DRAIN_IDS = {5}
+
 
 def main() -> int:
     rows = _build_sample_status_rows()
-    missing_rows = [row for row in rows if not row["exists"]]
+    unexpected_missing_rows = [
+        row for row in rows if not row["exists"] and not row["expected_missing"]
+    ]
+    expected_missing_rows = [
+        row for row in rows if not row["exists"] and row["expected_missing"]
+    ]
 
     print("[SAMPLE_STATUS]")
     print(json.dumps(rows, ensure_ascii=False, indent=2))
 
-    if missing_rows:
+    if expected_missing_rows:
+        print("[EXPECTED_MISSING_SAMPLES]")
+        for row in expected_missing_rows:
+            print(
+                f"- drain_id={row['drain_id']} local_path={row['local_path']} "
+                f"reason={row['missing_reason']}"
+            )
+
+    if unexpected_missing_rows:
         print("[MISSING_SAMPLES]")
-        for row in missing_rows:
+        for row in unexpected_missing_rows:
             print(f"- drain_id={row['drain_id']} local_path={row['local_path']}")
         return 1
 
-    print("[OK] all mock sample images exist.")
+    print("[OK] required mock sample images exist.")
     return 0
 
 
@@ -34,6 +49,12 @@ def _build_sample_status_rows() -> list[dict]:
                 "source_url": source["source_url"],
                 "local_path": str(local_path),
                 "exists": local_path.exists(),
+                "expected_missing": drain_id in EXPECTED_MISSING_SAMPLE_DRAIN_IDS,
+                "missing_reason": (
+                    "intentional image acquisition failure case"
+                    if drain_id in EXPECTED_MISSING_SAMPLE_DRAIN_IDS
+                    else None
+                ),
             }
         )
     return rows

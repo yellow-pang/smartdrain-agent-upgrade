@@ -35,14 +35,15 @@ Do not commit from this checklist step unless explicitly requested.
 Required local files for real YOLO smoke tests:
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
 
-- [ ] Sample image files are present if running real YOLO smoke.
+- [ ] `drain_1.jpg` through `drain_4.jpg` are present if running real YOLO smoke.
+- [ ] `drain_5.jpg` remains intentionally missing for the image acquisition failure case.
 - [ ] Missing sample image files are acceptable when only checking code/docs.
 - [ ] No real CCTV images are committed unless sanitized fixtures are explicitly approved.
 

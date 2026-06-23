@@ -2,7 +2,7 @@
 
 이 문서는 SmartDrain 백엔드와 AI 서버 사이의 HTTP 연동 계약을 설명한다.
 
-현재 AI 서버는 `ai_service/model`의 학습된 YOLO/XGBoost artifact를 사용하는 production flow 골격과, 백엔드 비동기 callback 연동 구조를 제공한다.
+현재 AI 서버는 `ai_service/model`의 YOLO/XGBoost artifact를 사용하는 production flow 골격과 백엔드 비동기 callback 연동 구조를 제공한다.
 
 ## 책임 경계
 
@@ -67,7 +67,9 @@ python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
 }
 ```
 
-AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` mock provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다.
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다.
+
+현재 로컬 목업 이미지는 `ai_service/` 밖의 `mock_data/ai_image_samples` 폴더에 둔다. 기본 경로는 `mock_data/ai_image_samples`이며, 필요하면 `IMAGE_SOURCE_BASE_DIR` 환경변수로 바꿀 수 있다.
 
 현재 AI 서버는 이 요청을 받은 뒤 즉시 accepted response를 반환하고, 실제 분석 및 callback 전송은 background task 흐름으로 처리한다.
 
@@ -86,8 +88,6 @@ accepted response 예시:
 
 `job_id = AI_JOB_{request_id}`
 
-이 정책은 MVP용 결정이며, 이후 queue나 DB job table을 도입하면 변경될 수 있다.
-
 ## 내부 처리 흐름
 
 `POST /ai/analysis/run`은 HTTP 입력을 받은 뒤 내부적으로 아래 함수를 사용한다.
@@ -98,7 +98,7 @@ accepted response 예시:
 
 1. 요청 payload를 검증한다.
 2. accepted response를 만든다.
-3. `drain_id` 기준으로 `image_source`에서 mock source를 resolve한다.
+3. `drain_id` 기준으로 `image_source`에서 source를 resolve한다.
 4. resolve된 `local_path`로 YOLO 단계를 호출한다.
 5. YOLO 결과와 센서값을 XGBoost feature로 변환한다.
 6. XGBoost 단계를 호출한다.
@@ -141,7 +141,7 @@ YOLO 결과 필드:
 - `blocked`
 - `unknown`
 
-현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다. `ai_service/yolo_legacy_example`는 legacy/reference 용도로만 남아 있다.
+현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다. `ai_service/yolo_legacy_example`은 legacy/reference 용도로만 남아 있다.
 
 ## XGBoost callback 계약
 
@@ -170,7 +170,7 @@ XGBoost 결과 필드:
 
 - `risk_score`: 위험도 점수
 - `risk_level`: 위험 등급
-- `final_decision`: 백엔드/화면에서 사용할 최종 판단 코드
+- `final_decision`: 백엔드 화면에서 사용할 최종 판단 코드
 - `evaluated_at`: 평가 시각
 
 허용 `risk_level`:
@@ -198,7 +198,7 @@ XGBoost 결과 필드:
 - YOLO callback을 먼저 시도한다.
 - YOLO callback이 실패해도 XGBoost callback은 시도한다.
 - 각 callback에는 timeout을 적용한다.
-- 현재 retry는 제한적으로만 수행한다.
+- retry는 제한적으로만 수행한다.
 - persistent retry queue나 callback 상태 DB 저장은 구현되어 있지 않다.
 
 callback 전송 구현 위치:

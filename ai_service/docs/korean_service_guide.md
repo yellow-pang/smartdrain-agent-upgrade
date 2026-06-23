@@ -87,7 +87,7 @@ callback payload shape는 현재 유지한다.
 ```python
 {
     "source_url": "mock://storage/drain-1-latest.jpg",
-    "local_path": "ai_service/samples/drain_1.jpg",
+    "local_path": "mock_data/ai_image_samples/drain_1.jpg",
 }
 ```
 
@@ -99,11 +99,13 @@ callback payload shape는 현재 유지한다.
 
 | drain_id | source_url | local_path |
 | ---: | --- | --- |
-| 1 | `mock://storage/drain-1-latest.jpg` | `ai_service/samples/drain_1.jpg` |
-| 2 | `mock://storage/drain-2-latest.jpg` | `ai_service/samples/drain_2.jpg` |
-| 3 | `mock://storage/drain-3-latest.jpg` | `ai_service/samples/drain_3.jpg` |
-| 4 | `mock://storage/drain-4-latest.jpg` | `ai_service/samples/drain_4.jpg` |
-| 5 | `mock://storage/drain-5-latest.jpg` | `ai_service/samples/drain_5.jpg` |
+| 1 | `mock://storage/drain-1-latest.jpg` | `mock_data/ai_image_samples/drain_1.jpg` |
+| 2 | `mock://storage/drain-2-latest.jpg` | `mock_data/ai_image_samples/drain_2.jpg` |
+| 3 | `mock://storage/drain-3-latest.jpg` | `mock_data/ai_image_samples/drain_3.jpg` |
+| 4 | `mock://storage/drain-4-latest.jpg` | `mock_data/ai_image_samples/drain_4.jpg` |
+| 5 | `mock://storage/drain-5-latest.jpg` | `mock_data/ai_image_samples/drain_5.jpg` |
+
+`drain_5.jpg`는 현재 의도적으로 없는 파일이다. CCTV 또는 외부 이미지 확보 실패 상황을 확인하기 위한 케이스이며, `check_samples`에서는 예상된 누락으로 처리한다.
 
 ## 없는 drain_id 정책
 
@@ -207,7 +209,7 @@ python -m pip install -r .\ai_service\requirements.txt
 python -m ai_service.scripts.smoke_analysis --drain-id 2
 ```
 
-이 스크립트는 먼저 `drain_id`에 해당하는 `source_url`과 `local_path`를 출력한다. `local_path` 파일이 없으면 실제 YOLO 분석을 실행하지 않고 종료한다. 실제 분석까지 확인하려면 예를 들어 `ai_service/samples/drain_2.jpg` 위치에 mock CCTV 이미지가 있어야 한다.
+이 스크립트는 먼저 `drain_id`에 해당하는 `source_url`과 `local_path`를 출력한다. `local_path` 파일이 없으면 실제 YOLO 분석을 실행하지 않고 종료한다. 실제 분석까지 확인하려면 예를 들어 `mock_data/ai_image_samples/drain_2.jpg` 위치에 mock CCTV 이미지가 있어야 한다.
 
 이 smoke test는 백엔드 callback을 보내지 않는다. callback 전송 확인은 FastAPI 서버와 백엔드를 같이 띄운 상태에서 `/ai/analysis/run`으로 확인해야 한다.
 
@@ -216,11 +218,11 @@ python -m ai_service.scripts.smoke_analysis --drain-id 2
 실제 YOLO smoke test를 실행하려면 mock image source가 가리키는 샘플 이미지가 필요하다. 이미지는 직접 생성하지 않고 사용자가 아래 경로에 배치한다.
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
 
 배치 여부는 아래 명령으로 확인한다.
