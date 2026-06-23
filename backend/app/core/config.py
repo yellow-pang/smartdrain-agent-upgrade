@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     AI_SERVER_TIMEOUT_SECONDS: int = 10
     AI_CALLBACK_BASE_URL: str = "http://localhost:8000"
     AI_SERVER_ENABLED: bool = True
+    ANALYSIS_SCHEDULER_ENABLED: bool = False
+    ANALYSIS_SCHEDULER_INTERVAL_SECONDS: int = 300
+    ANALYSIS_SCHEDULER_INITIAL_DELAY_SECONDS: int = 60
+    ANALYSIS_SENSOR_MAX_AGE_SECONDS: int = 300
+    ANALYSIS_JOB_TIMEOUT_SECONDS: int = 600
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",

@@ -10,9 +10,9 @@ AI 서버 비동기 분석 요청과 callback 저장을 처리하는 서비스 �
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.analysis_job import AnalysisJob
 from app.models.drain import Drain
 from app.models.sensor_data import SensorData
@@ -31,14 +31,34 @@ FINAL_DECISIONS = {"normal", "monitoring", "field_check", "dispatch_required"}
 
 async def start_async_analysis(db: Session, payload: AnalysisAsyncRunRequest) -> dict[str, object]:
     drain = get_drain_by_identifier(db, payload.drain_id)
+    return await start_analysis_for_drain(db, drain, trigger_type="manual")
+
+
+async def start_analysis_for_drain(db: Session, drain: Drain, trigger_type: str = "manual") -> dict[str, object]:
     sensor_data = _get_latest_sensor_data(db, drain.id)
     if sensor_data is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor data not found")
 
     request_id = _create_request_id(drain.id)
+    job_id = _create_job_id(request_id)
+    job = AnalysisJob(
+        request_id=request_id,
+        job_id=job_id,
+        drain_id=drain.id,
+        sensor_data_id=sensor_data.id,
+        sensor_measured_at=sensor_data.measured_at,
+        status="processing",
+        trigger_type=trigger_type,
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
     ai_payload = {
         "request_id": request_id,
+        "job_id": job_id,
         "drain_id": drain.id,
+        "callback_url": settings.AI_CALLBACK_BASE_URL,
         "sensor_data": {
             "measured_at": format_datetime(sensor_data.measured_at),
             "water_level_cm": sensor_data.water_level_cm,
@@ -47,17 +67,23 @@ async def start_async_analysis(db: Session, payload: AnalysisAsyncRunRequest) ->
             "quality_status": "valid",
         },
     }
-    ai_response = await request_ai_analysis(ai_payload)
+    try:
+        ai_response = await request_ai_analysis(ai_payload)
+    except HTTPException as exc:
+        job.status = "failed"
+        job.error_message = str(exc.detail)
+        db.commit()
+        raise
+    except Exception as exc:
+        job.status = "failed"
+        job.error_message = f"Unexpected analysis start error: {exc}"
+        db.commit()
+        raise
 
-    job = AnalysisJob(
-        request_id=request_id,
-        job_id=ai_response.job_id,
-        drain_id=drain.id,
-        sensor_data_id=sensor_data.id,
-        sensor_measured_at=sensor_data.measured_at,
-        status=ai_response.status or "processing",
-    )
-    db.add(job)
+    if ai_response.job_id and ai_response.job_id != job_id:
+        job.error_message = f"AI server returned different job_id: {ai_response.job_id}"
+    if ai_response.status in {"processing", "yolo_completed", "completed", "failed"}:
+        job.status = ai_response.status
     db.commit()
     db.refresh(job)
 
@@ -70,8 +96,14 @@ async def start_async_analysis(db: Session, payload: AnalysisAsyncRunRequest) ->
     }
 
 
-def save_yolo_callback(db: Session, payload: AiYoloCallbackRequest) -> tuple[YoloResult, dict[str, object]]:
+def save_yolo_callback(db: Session, payload: AiYoloCallbackRequest) -> tuple[YoloResult, dict[str, object] | None]:
     job = _get_analysis_job(db, payload.request_id, payload.job_id)
+    if job.yolo_result_id is not None:
+        yolo_result = db.get(YoloResult, job.yolo_result_id)
+        if yolo_result is not None:
+            # Duplicate callbacks are idempotent. We intentionally do not rebroadcast WebSocket events.
+            return yolo_result, None
+
     yolo_payload = payload.yolo_result
     yolo_result = YoloResult(
         drain_id=job.drain_id,
@@ -93,8 +125,16 @@ def save_yolo_callback(db: Session, payload: AiYoloCallbackRequest) -> tuple[Yol
     return yolo_result, event
 
 
-def save_xgboost_callback(db: Session, payload: AiXgboostCallbackRequest) -> tuple[XgboostResult, dict[str, object], dict[str, object]]:
+def save_xgboost_callback(
+    db: Session,
+    payload: AiXgboostCallbackRequest,
+) -> tuple[XgboostResult, dict[str, object] | None, dict[str, object] | None]:
     job = _get_analysis_job(db, payload.request_id, payload.job_id)
+    existing_result = _get_existing_xgboost_result(db, job)
+    if job.status == "completed" and existing_result is not None:
+        # Duplicate callbacks are idempotent. We intentionally do not rebroadcast WebSocket events.
+        return existing_result, None, None
+
     if job.yolo_result_id is None:
         job.status = "xgboost_received_without_yolo"
         job.error_message = "XGBoost callback received before YOLO callback"
@@ -203,11 +243,26 @@ def _get_latest_sensor_data(db: Session, drain_id: int) -> SensorData | None:
     )
 
 
+def _get_existing_xgboost_result(db: Session, job: AnalysisJob) -> XgboostResult | None:
+    if job.yolo_result_id is None:
+        return None
+    return (
+        db.query(XgboostResult)
+        .filter(
+            XgboostResult.drain_id == job.drain_id,
+            XgboostResult.sensor_data_id == job.sensor_data_id,
+            XgboostResult.yolo_result_id == job.yolo_result_id,
+        )
+        .order_by(XgboostResult.created_at.desc())
+        .first()
+    )
+
+
 def _get_analysis_job(db: Session, request_id: str, job_id: str | None) -> AnalysisJob:
-    filters = [AnalysisJob.request_id == request_id]
+    query = db.query(AnalysisJob).filter(AnalysisJob.request_id == request_id)
     if job_id:
-        filters.append(AnalysisJob.job_id == job_id)
-    job = db.query(AnalysisJob).filter(or_(*filters)).order_by(AnalysisJob.created_at.desc()).first()
+        query = query.filter(AnalysisJob.job_id == job_id)
+    job = query.order_by(AnalysisJob.created_at.desc()).first()
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis request not found")
     return job
@@ -216,6 +271,10 @@ def _get_analysis_job(db: Session, request_id: str, job_id: str | None) -> Analy
 def _create_request_id(drain_id: int) -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     return f"REQ_{timestamp}_{drain_id}"
+
+
+def _create_job_id(request_id: str) -> str:
+    return f"AI_JOB_{request_id}"
 
 
 def _normalize_obstruction_ratio(value: float) -> float:

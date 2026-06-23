@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.routers import ai_callback, analysis, dashboard, drains, sensor_data, websocket
 from app.schemas.api_response import api_error_response, api_response
+from app.services.analysis_scheduler import start_analysis_scheduler, stop_analysis_scheduler
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -32,6 +33,16 @@ app.add_middleware(
 @app.get("/")
 def health_check() -> dict[str, object]:
     return api_response({"status": "ok", "service": settings.PROJECT_NAME})
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    start_analysis_scheduler(app)
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    await stop_analysis_scheduler(app)
 
 
 def _error_code(status_code: int, detail: object) -> str:
