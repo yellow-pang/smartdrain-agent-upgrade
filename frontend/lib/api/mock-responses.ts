@@ -54,14 +54,14 @@ export function createMockDrainDetailResponse(
             ...facilityToListItemDto(drain),
             imageUrl: CCTV_IMAGE_URL,
             sensorSummary: {
-                waterLevelCm: Math.round(drain.waterLevelM * 100),
-                flowVelocityMps: drain.flow,
+                waterLevelCm: (drain.waterLevelCm ?? 0),
+                flowVelocityMps: (drain.flowVelocityMps ?? 0),
                 measuredAt: toIsoTime(drain.updatedAt),
             },
             sensorHistory: createMockSensorHistoryItems(drain),
             yoloResult: createMockYoloResult(drain),
             xgboostResult: {
-                riskScore: drain.blockage / 100,
+                riskScore: (drain.blockage ?? 0) / 100,
                 riskLevel: drain.status,
                 finalDecision: drain.judgement,
                 predictedAt: toIsoTime(drain.updatedAt),
@@ -177,10 +177,10 @@ function facilityToListItemDto(drain: DrainFacility): DrainListItemDto {
         latitude: drain.latitude,
         longitude: drain.longitude,
         riskLevel: drain.status,
-        riskScore: drain.blockage / 100,
-        obstructionRatio: drain.blockage / 100,
-        waterLevelCm: Math.round(drain.waterLevelM * 100),
-        flowVelocityMps: drain.flow,
+        riskScore: (drain.blockage ?? 0) / 100,
+        obstructionRatio: (drain.blockage ?? 0) / 100,
+        waterLevelCm: (drain.waterLevelCm ?? 0),
+        flowVelocityMps: (drain.flowVelocityMps ?? 0),
         finalDecision: drain.judgement,
         updatedAt: toIsoTime(drain.updatedAt),
     };
@@ -192,8 +192,8 @@ function createMockSensorHistoryItems(drain: DrainFacility): SensorHistoryDto[] 
         const wave = Math.sin((index / 11) * Math.PI);
         return {
             measuredAt: `${BASE_DATE}T${String(hour).padStart(2, "0")}:00:00+09:00`,
-            waterLevelCm: Math.round(drain.waterLevelM * 100 * (0.55 + wave * 0.5)),
-            flowVelocityMps: +(drain.flow * (0.6 + wave * 0.5)).toFixed(2),
+            waterLevelCm: Math.round((drain.waterLevelCm ?? 0) * (0.55 + wave * 0.5)),
+            flowVelocityMps: +((drain.flowVelocityMps ?? 0) * (0.6 + wave * 0.5)).toFixed(2),
         };
     });
 }
@@ -210,21 +210,21 @@ function createMockRiskHistoryItems(drain: DrainFacility): RiskHistoryDto[] {
     return levels.map((riskLevel, index) => ({
         changedAt: `${BASE_DATE}T${String(9 + index * 2).padStart(2, "0")}:20:00+09:00`,
         riskLevel,
-        riskScore: Math.max(0.08, drain.blockage / 100 - index * 0.12),
+        riskScore: Math.max(0.08, (drain.blockage ?? 0) / 100 - index * 0.12),
     }));
 }
 
 function createMockYoloResult(drain: DrainFacility) {
     const yoloStatus: YoloStatus =
-        drain.blockage >= 80
+        (drain.blockage ?? 0) >= 80
             ? "blocked"
-            : drain.blockage >= 40
+            : (drain.blockage ?? 0) >= 40
               ? "partially_blocked"
               : "clear";
 
     return {
         imageUrl: CCTV_IMAGE_URL,
-        obstructionRatio: drain.blockage / 100,
+        obstructionRatio: (drain.blockage ?? 0) / 100,
         confidenceScore: drain.status === "unknown" ? 0.42 : 0.91,
         yoloStatus,
         capturedAt: toIsoTime(drain.updatedAt),
@@ -243,7 +243,7 @@ function createMockYoloHistoryItems(drain: DrainFacility): YoloResultDto[] {
     return images.map((imageUrl, index) => {
         const obstructionRatio = Math.max(
             0.05,
-            drain.blockage / 100 - index * 0.12,
+            (drain.blockage ?? 0) / 100 - index * 0.12,
         );
         return {
             id: index + 1,
@@ -264,7 +264,7 @@ function createMockXgboostHistoryItems(
     yoloResults: YoloResultDto[],
 ): XgboostResultDto[] {
     return yoloResults.slice(0, 3).map((yoloResult, index) => {
-        const riskScore = Math.max(0.06, drain.blockage / 100 - index * 0.15);
+        const riskScore = Math.max(0.06, (drain.blockage ?? 0) / 100 - index * 0.15);
         return {
             id: index + 1,
             drainId: drain.id,

@@ -51,6 +51,7 @@ export default function DrainDetailPage({
 }) {
     const { id } = use(params);
     const [detailData, setDetailData] = useState<DrainDetailData | null>();
+    const [loadError, setLoadError] = useState<string | null>(null);
     const { data: drains } = useDrainsQuery();
     const sharedDrain = drains?.find((drain) => drain.id === id);
     const statusEvent = useDrainStore((state) => state.statusEventsByDrainId[id]);
@@ -82,7 +83,7 @@ export default function DrainDetailPage({
                     {
                         time: event.payload.updatedAt,
                         status: event.payload.riskLevel,
-                        score: riskScoreToPoint(event.payload.riskScore),
+                        score: 0,
                     },
                 );
 
@@ -198,7 +199,7 @@ export default function DrainDetailPage({
                         {
                             time: event.payload.evaluatedAt,
                             status: event.payload.riskLevel,
-                            score: riskScoreToPoint(event.payload.riskScore),
+                            score: 0,
                         },
                         ...current.riskHistory,
                     ].slice(0, 10),
@@ -212,10 +213,16 @@ export default function DrainDetailPage({
         let mounted = true;
         const requestId = ++detailRequestIdRef.current;
 
-        loadDrainDetailData(id).then((data) => {
-            if (!mounted || requestId !== detailRequestIdRef.current) return;
-            setDetailData(data);
-        });
+        void loadDrainDetailData(id)
+            .then((data) => {
+                if (!mounted || requestId !== detailRequestIdRef.current) return;
+                setLoadError(null);
+                setDetailData(data);
+            })
+            .catch(() => {
+                if (!mounted || requestId !== detailRequestIdRef.current) return;
+                setLoadError("상세 데이터를 불러오지 못했습니다.");
+            });
 
         return () => {
             mounted = false;
@@ -271,10 +278,14 @@ export default function DrainDetailPage({
     const meta = drain ? STATUS_META[drain.status] : undefined;
     const sensorSummary = useMemo(() => {
         if (!detailData) return undefined;
-        return getSensorSummary(detailData.sensorHistory);
+        return getSensorSummary(detailData.sensorHistory, detailData.detail.sensorSummary);
     }, [detailData]);
 
     if (detailData === null) notFound();
+
+    if (loadError) {
+        return <DetailErrorState message={loadError} />;
+    }
 
     if (!detailData || !drain || !meta || !sensorSummary) {
         return (
@@ -443,7 +454,7 @@ function DrainDetailFallbackPage({ drainId }: { drainId: string }) {
                         />
                         <DetailUnavailableCard
                             title="현재 위험 상태 연결 대기"
-                            description="상세 API가 연결되면 상태, 막힘 정도, 수위, 유량이 표시됩니다."
+                            description="상세 API가 연결되면 상태, 막힘 정도, 수위, 유속이 표시됩니다."
                         />
                     </div>
 
@@ -473,7 +484,6 @@ function AnalysisSummaryCard({
     const drain = detailData.drain;
     const yoloResult = getLatestYoloResult(detailData);
     const xgboostResult = getLatestXgboostResult(detailData);
-    const riskScore = riskScoreToPoint(xgboostResult?.riskScore);
     const obstructionPercent =
         yoloResult?.obstructionRatio == null
             ? drain.blockage
@@ -492,39 +502,36 @@ function AnalysisSummaryCard({
                 </div>
                 <StatusBadge status={drain.status} />
             </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <SummaryMetricTile
                     icon={Globe}
                     label="막힘 정도"
                     value={`${obstructionPercent}%`}
                     metaText={meta.text}
-                    progress={obstructionPercent}
+                    progress={obstructionPercent ?? undefined}
                     barClass={meta.bar}
                 />
                 <SummaryMetricTile
                     icon={Waves}
                     label="수위"
-                    value={`${drain.waterLevelPct}%`}
-                    subValue={`${drain.waterLevelM} m`}
+                    value={
+                        drain.waterLevelCm == null
+                            ? "-"
+                            : `${drain.waterLevelCm} cm`
+                    }
                     metaText={meta.text}
-                    progress={drain.waterLevelPct}
-                    barClass={meta.bar}
                 />
                 <SummaryMetricTile
                     icon={Gauge}
                     label="유속"
-                    value={`${drain.flow} m³/min`}
+                    value={
+                        drain.flowVelocityMps == null
+                            ? "-"
+                            : `${drain.flowVelocityMps} m/s`
+                    }
                     metaText={meta.text}
                 />
-                <SummaryMetricTile
-                    icon={Brain}
-                    label="위험 점수"
-                    value={`${riskScore}점`}
-                    metaText={meta.text}
-                    progress={riskScore}
-                    barClass={meta.bar}
-                />
-                <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/70">
+                <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 sm:col-span-2 xl:col-span-3 dark:border-slate-800 dark:bg-slate-800/70">
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <AlertTriangle className="size-4 text-slate-400 dark:text-slate-500" />
                         최종 판단
@@ -704,10 +711,6 @@ function XgboostAnalysisPanel({
                 value={<StatusBadge status={xgboostResult.riskLevel} />}
             />
             <AnalysisInfoRow
-                label="위험 점수"
-                value={`${riskScoreToPoint(xgboostResult.riskScore)}점`}
-            />
-            <AnalysisInfoRow
                 label="참조 Sensor ID"
                 value={formatNullable(xgboostResult.sensorDataId)}
             />
@@ -759,7 +762,7 @@ function AnalysisHistoryPanel({
                 title="XGBoost 판단 이력"
                 items={xgboostResults.map((item) => ({
                     key: `xgboost-${item.id ?? item.evaluatedAt}`,
-                    title: `${riskScoreToPoint(item.riskScore)}점 / ${STATUS_META[item.riskLevel].label}`,
+                    title: `${STATUS_META[item.riskLevel].label} / ${item.finalDecision ?? "최종 판단 문구 없음"}`,
                     meta: formatDateTimeForDisplay(item.evaluatedAt ?? item.createdAt),
                 }))}
             />
@@ -850,7 +853,7 @@ function CurrentRiskCard({
                     <div className="w-full">
                         <div className="flex items-center justify-between">
                             <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                {drain.blockage}%
+                                {drain.blockage == null ? "-" : `${drain.blockage}%`}
                             </span>
                             <span
                                 className={cn(
@@ -862,43 +865,21 @@ function CurrentRiskCard({
                             </span>
                         </div>
                         <MetricProgress
-                            value={drain.blockage}
+                            value={drain.blockage ?? 0}
                             barClass={meta.bar}
                             className="mt-1.5"
                         />
                     </div>
                 </RiskTile>
                 <RiskTile icon={Waves} label="수위">
-                    <div className="w-full">
-                        <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                {drain.waterLevelPct}%
-                            </span>
-                            <span
-                                className={cn(
-                                    "text-xs font-semibold",
-                                    meta.text,
-                                )}
-                            >
-                                {meta.label}
-                            </span>
-                        </div>
-                        <MetricProgress
-                            value={drain.waterLevelPct}
-                            barClass={meta.bar}
-                            className="mt-1.5"
-                        />
-                    </div>
+                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
+                    </span>
                 </RiskTile>
-                <RiskTile icon={Gauge} label="유량">
-                    <div className="flex items-baseline gap-2">
+                <RiskTile icon={Gauge} label="유속">
+                    <div className="flex items-baseline">
                         <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                            {drain.flow} m³/min
-                        </span>
-                        <span
-                            className={cn("text-xs font-semibold", meta.text)}
-                        >
-                            {meta.label}
+                            {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
                         </span>
                     </div>
                 </RiskTile>
@@ -973,7 +954,7 @@ function FacilityInfoCard({
             label: "막힘 정도",
             node: (
                 <span className={cn("font-semibold", meta.text)}>
-                    {drain.blockage}% ({meta.label})
+                    {drain.blockage == null ? "-" : `${drain.blockage}% (${meta.label})`}
                 </span>
             ),
         },
@@ -982,16 +963,16 @@ function FacilityInfoCard({
             label: "수위",
             node: (
                 <span className={cn("font-semibold", meta.text)}>
-                    {drain.waterLevelM} m
+                    {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
                 </span>
             ),
         },
         {
             icon: Gauge,
-            label: "유량",
+            label: "유속",
             node: (
                 <span className={cn("font-semibold", meta.text)}>
-                    {drain.flow} m³/min
+                    {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
                 </span>
             ),
         },
@@ -1033,9 +1014,6 @@ function RiskHistoryCard({
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
             <h2 className="mb-3 text-base font-bold text-slate-900 dark:text-slate-100">
                 과거 위험 이력{" "}
-                <span className="text-sm font-normal text-slate-400 dark:text-slate-500">
-                    (최근 7일)
-                </span>
             </h2>
             <ul className="space-y-1">
                 {riskHistory.map((item) => {
@@ -1058,9 +1036,6 @@ function RiskHistoryCard({
                                 status={item.status}
                                 className="ml-auto"
                             />
-                            <span className="w-10 shrink-0 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                {item.score}점
-                            </span>
                         </li>
                     );
                 })}
@@ -1125,36 +1100,55 @@ function DetailLoadingState() {
     );
 }
 
+function DetailErrorState({ message }: { message: string }) {
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+            <AppHeader />
+            <main className="mx-auto max-w-[1600px] p-4 md:p-6">
+                <Link
+                    href="/"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                    <ArrowLeft className="size-4" />
+                    대시보드로 돌아가기
+                </Link>
+                <div className="mt-5 rounded-xl border border-red-100 bg-white p-5 shadow-sm dark:border-red-950/60 dark:bg-slate-900">
+                    <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        상세 정보를 표시할 수 없습니다.
+                    </h1>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        {message} 백엔드 서버 연결 상태를 확인한 뒤 다시 시도해주세요.
+                    </p>
+                </div>
+            </main>
+        </div>
+    );
+}
+
 function getFallbackSensorSummary() {
     return {
         currentLevel: 0,
         currentFlow: 0,
-        maxLevel: 0,
-        maxLevelTime: "-",
-        maxFlow: 0,
-        maxFlowTime: "-",
     };
 }
 
-function getSensorSummary(points: DrainDetailData["sensorHistory"]) {
+function getSensorSummary(
+    points: DrainDetailData["sensorHistory"],
+    sensorSummary?: DrainDetailData["detail"]["sensorSummary"],
+) {
     const fallback = getFallbackSensorSummary();
+    if (sensorSummary) {
+        return {
+            currentLevel: sensorSummary.waterLevelCm,
+            currentFlow: sensorSummary.flowVelocityMps,
+        };
+    }
     if (points.length === 0) return fallback;
 
     const latest = points[points.length - 1];
-    const maxLevel = points.reduce((max, point) =>
-        point.level > max.level ? point : max,
-    );
-    const maxFlow = points.reduce((max, point) =>
-        point.flow > max.flow ? point : max,
-    );
-
     return {
         currentLevel: latest.level,
         currentFlow: latest.flow,
-        maxLevel: maxLevel.level,
-        maxLevelTime: maxLevel.time,
-        maxFlow: maxFlow.flow,
-        maxFlowTime: maxFlow.time,
     };
 }
 
@@ -1267,7 +1261,7 @@ function sensorEventToPoint(event: DrainStatusUpdatedEventDto) {
 
     return {
         time: formatSensorChartTime(updatedAt),
-        level: +(waterLevelCm / 100).toFixed(2),
+        level: waterLevelCm,
         flow: flowVelocityMps,
     };
 }
@@ -1277,7 +1271,9 @@ function upsertSensorPoint(
     point: DrainDetailData["sensorHistory"][number] | null,
 ) {
     if (!point) return points;
-    return [...points.filter((current) => current.time !== point.time), point].slice(-48);
+    return [...points.filter((current) => current.time !== point.time), point]
+        .sort((a, b) => a.time.localeCompare(b.time))
+        .slice(-48);
 }
 
 function upsertRiskHistoryItem(
@@ -1316,11 +1312,6 @@ function formatSensorChartTime(value: string) {
 
 function ratioToPercent(value: number) {
     return Math.min(100, Math.max(0, Math.round(value <= 1 ? value * 100 : value)));
-}
-
-function riskScoreToPoint(value?: number | null) {
-    if (value == null) return 0;
-    return ratioToPercent(value);
 }
 
 function formatRatioPercent(value?: number | null) {

@@ -25,13 +25,13 @@ export type DrainListItemDto = {
     fullAddress?: string;
     latitude: number;
     longitude: number;
-    riskLevel: RiskLevel;
-    riskScore: number;
-    obstructionRatio: number;
-    waterLevelCm: number;
-    flowVelocityMps: number;
-    finalDecision: string;
-    updatedAt: string;
+    riskLevel: RiskLevel | null;
+    riskScore: number | null;
+    obstructionRatio: number | null;
+    waterLevelCm: number | null;
+    flowVelocityMps: number | null;
+    finalDecision: string | null;
+    updatedAt: string | null;
 };
 
 export type DrainDetailDto = DrainListItemDto & {
@@ -44,9 +44,9 @@ export type DrainDetailDto = DrainListItemDto & {
 };
 
 export type SensorSummaryDto = {
-    waterLevelCm: number;
-    flowVelocityMps: number;
-    measuredAt: string;
+    waterLevelCm: number | null;
+    flowVelocityMps: number | null;
+    measuredAt: string | null;
 };
 
 export type SensorHistoryDto = {
@@ -81,16 +81,16 @@ export type XgboostResultDto = {
 };
 
 export type RiskHistoryDto = {
-    changedAt: string;
-    riskLevel: RiskLevel;
-    riskScore: number;
+    changedAt: string | null;
+    riskLevel: RiskLevel | null;
+    riskScore: number | null;
 };
 
 export type AnalysisResultDto = {
     sensorSummary?: SensorSummaryDto;
     yoloResult?: YoloResultDto;
     xgboostResult?: XgboostResultDto;
-    updatedAt?: string;
+    updatedAt?: string | null;
 };
 
 export type DrainAnalysisHistoryResponse = {

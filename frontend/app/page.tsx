@@ -212,13 +212,13 @@ const MobileDrainInlineSummary = memo(function MobileDrainInlineSummary({
           <div className="rounded-md bg-slate-50 px-2.5 py-2 dark:bg-slate-800/80">
             <p className="text-slate-500 dark:text-slate-400">수위</p>
             <p className="mt-0.5 font-semibold text-slate-800 dark:text-slate-100">
-              {drain.waterLevelPct}%
+              {drain.waterLevelCm == null ? "-" : `${drain.waterLevelCm} cm`}
             </p>
           </div>
           <div className="rounded-md bg-slate-50 px-2.5 py-2 dark:bg-slate-800/80">
-            <p className="text-slate-500 dark:text-slate-400">유량</p>
+            <p className="text-slate-500 dark:text-slate-400">유속</p>
             <p className="mt-0.5 font-semibold text-slate-800 dark:text-slate-100">
-              {drain.flow} m³/min
+              {drain.flowVelocityMps == null ? "-" : `${drain.flowVelocityMps} m/s`}
             </p>
           </div>
         </div>
