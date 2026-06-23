@@ -32,8 +32,8 @@ def test_yolo_result_fields_are_fixed_contract_values():
 def test_unknown_yolo_result_matches_contract():
     validate_yolo_result_contract(UNKNOWN_YOLO_RESULT)
     assert UNKNOWN_YOLO_RESULT == {
-        "obstruction_ratio": 0.0,
-        "confidence_score": 0.0,
+        "obstruction_ratio": -1.0,
+        "confidence_score": -1.0,
         "yolo_status": "unknown",
     }
 
@@ -67,3 +67,89 @@ def test_unsupported_yolo_status_raises_value_error():
                 "yolo_status": "unsupported",
             }
         )
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        {
+            "obstruction_ratio": 0.0,
+            "confidence_score": -1.0,
+            "yolo_status": "unknown",
+        },
+        {
+            "obstruction_ratio": -1.0,
+            "confidence_score": 0.0,
+            "yolo_status": "unknown",
+        },
+    ],
+)
+def test_unknown_yolo_status_requires_sentinel_values(result):
+    with pytest.raises(ValueError):
+        validate_yolo_result_contract(result)
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        {
+            "obstruction_ratio": -1.0,
+            "confidence_score": 0.9404,
+            "yolo_status": "good",
+        },
+        {
+            "obstruction_ratio": 0.057,
+            "confidence_score": -1.0,
+            "yolo_status": "dirty",
+        },
+    ],
+)
+def test_non_unknown_yolo_status_rejects_sentinel_values(result):
+    with pytest.raises(ValueError):
+        validate_yolo_result_contract(result)
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "obstruction_ratio",
+        "confidence_score",
+    ],
+)
+@pytest.mark.parametrize(
+    "value",
+    ["bad", "0.5", None, {}, True, float("nan"), float("inf")],
+)
+def test_yolo_numeric_fields_must_be_finite_numbers(field_name, value):
+    result = {
+        "obstruction_ratio": 0.057,
+        "confidence_score": 0.9404,
+        "yolo_status": "good",
+    }
+    result[field_name] = value
+
+    with pytest.raises(ValueError):
+        validate_yolo_result_contract(result)
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "obstruction_ratio",
+        "confidence_score",
+    ],
+)
+@pytest.mark.parametrize("value", [-0.0001, 1.0001])
+def test_yolo_numeric_fields_must_be_unit_range_for_normal_status(
+    field_name,
+    value,
+):
+    result = {
+        "obstruction_ratio": 0.057,
+        "confidence_score": 0.9404,
+        "yolo_status": "good",
+    }
+    result[field_name] = value
+
+    with pytest.raises(ValueError):
+        validate_yolo_result_contract(result)

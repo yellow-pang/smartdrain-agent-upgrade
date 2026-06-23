@@ -14,8 +14,6 @@ Default model artifact:
 ai_service/model/sewer_xgboost_model.json
 ```
 
-`ai_service/xgboost/rule_baseline_predictor.py` is retained only as a legacy/reference baseline. Production orchestration must not call it directly.
-
 ## Responsibility
 
 This package should:
@@ -56,6 +54,12 @@ FEATURE_COLUMNS = [
     "flow_velocity",
 ]
 ```
+
+YOLO abnormal-value scenario:
+
+- If YOLO cannot produce a valid image analysis result, `obstruction_ratio` is `-1.0`.
+- In the same case, `confidence_score` is `-1.0`.
+- XGBoost receives these sentinel values unchanged.
 
 ## Output Contract
 

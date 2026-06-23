@@ -55,7 +55,7 @@ def stub_model_predictors(monkeypatch):
         "resolve_image_source_by_drain_id",
         lambda drain_id: FakeImageSource(
             source_url=f"mock://storage/drain-{drain_id}-latest.jpg",
-            local_path=f"ai_service/samples/drain_{drain_id}.jpg",
+            local_path=f"mock_data/ai_image_samples/drain_{drain_id}.jpg",
         ),
     )
     monkeypatch.setattr(analysis_service, "predict_yolo_by_image_path", fake_yolo_result)

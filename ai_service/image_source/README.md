@@ -4,12 +4,13 @@
 
 The backend does not need to send `image_path`. The AI service receives `drain_id`, resolves an image source internally, and passes the resulting local image path to `ai_service/yolo`.
 
-## Current Mock Flow
+## Current Local Mock Flow
 
-Real CCTV/storage integration is not connected yet. For now, `mock_provider.py` maps five drain IDs to mock source metadata:
+Real CCTV/storage integration is not connected yet. For now, `mock_provider.py` maps five drain IDs to mock source metadata. The backend integration normally sends the database integer ID, but direct AI calls may also pass `DR-001` style drain codes.
 
 ```text
 drain_id: 1..5
+equivalent codes: DR-001..DR-005
 ```
 
 Each mock entry has:
@@ -22,33 +23,51 @@ Example:
 ```python
 {
     "source_url": "mock://storage/drain-1-latest.jpg",
-    "local_path": "ai_service/samples/drain_1.jpg",
+    "local_path": "mock_data/ai_image_samples/drain_1.jpg",
 }
 ```
 
 `source_url` is intentionally kept even though it is not fetched yet. When CCTV/storage is ready, this value will become a real external URL or storage key.
 
-`local_path` is what `ai_service/yolo/analyzer.py` currently receives. The sample file must exist for real YOLO runtime analysis.
+`local_path` is what `ai_service/yolo/analyzer.py` currently receives. Mock image files live outside `ai_service` so the service directory stays focused on runtime code.
+
+Default mock image directory:
+
+```text
+mock_data/ai_image_samples
+```
+
+Override it with:
+
+```text
+IMAGE_SOURCE_BASE_DIR=mock_data/ai_image_samples
+```
+
+Relative paths are resolved from the repository root.
 
 ## Required Local Sample Files
 
-Real YOLO smoke tests need image files at the mock `local_path` locations. This repository prepares the directory but does not create image files.
+Real YOLO smoke tests need image files at the mock `local_path` locations.
 
 Required file names:
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
+
+`drain_5.jpg` is intentionally absent in the current mock data. It represents an image acquisition failure case for CCTV/storage integration testing.
 
 Check local file availability:
 
 ```powershell
 python -m ai_service.scripts.check_samples
 ```
+
+`check_samples` treats the missing `drain_5.jpg` as expected and fails only when other required sample images are missing.
 
 ## Later Real GET Flow
 

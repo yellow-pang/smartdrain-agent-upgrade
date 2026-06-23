@@ -12,7 +12,7 @@
 - `drain_id`
 - `sensor_data`
 
-AI 서버는 `drain_id`를 기준으로 `ai_service/image_source`의 mock provider에서 이미지 소스를 찾는다. 찾은 이미지 소스의 `local_path`를 YOLO에 넘기고, YOLO 결과와 센서값을 조합해 XGBoost 최종 위험도 판단을 수행한다.
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source`의 mock provider에서 이미지 소스를 찾는다. 백엔드 연동 흐름에서는 보통 DB PK 정수 id가 전달되지만, AI 서버 직접 호출과 테스트를 위해 `DR-002` 같은 drain 코드도 허용한다. 찾은 이미지 소스의 `local_path`를 YOLO에 넘기고, YOLO 결과와 센서값을 조합해 XGBoost 최종 위험도 판단을 수행한다.
 
 처리가 끝나면 AI 서버는 백엔드 callback endpoint로 결과를 보낸다.
 
@@ -31,7 +31,6 @@ callback payload shape는 현재 유지한다.
 | `ai_service/yolo` | 실제 YOLO/OpenCV 이미지 분석기 |
 | `ai_service/xgboost` | 실제 XGBoost 모델 기반 위험도 predictor |
 | `ai_service/model` | 학습된 모델 artifact 보관 |
-| `ai_service/yolo_legacy_example` | 예전 fake YOLO predictor 참고/테스트용 |
 | `ai_service/docs` | 운영/설계/실행 문서 |
 
 ## 모델 파일
@@ -60,6 +59,17 @@ callback payload shape는 현재 유지한다.
 
 `image_path`는 보내지 않는다.
 
+요청 단계에서 검증하는 값:
+
+- `request_id`는 비어 있지 않은 문자열이어야 한다.
+- `drain_id`는 정수 id 또는 `DR-###` 형식 drain 코드여야 한다.
+- `sensor_data.measured_at`은 날짜와 시간이 포함된 ISO datetime 문자열이어야 한다.
+- `sensor_data.water_level_cm`은 유한한 숫자여야 한다.
+- `sensor_data.flow_velocity_mps`는 유한한 숫자여야 한다.
+- `sensor_data.quality_status`는 `valid`여야 한다.
+
+이 조건을 만족하지 않는 요청은 background task로 넘기지 않고 `400 Bad Request`로 거절한다.
+
 ## 내부 처리 순서
 
 1. `ai_service/http`가 `POST /ai/analysis/run` 요청을 받는다.
@@ -87,7 +97,7 @@ callback payload shape는 현재 유지한다.
 ```python
 {
     "source_url": "mock://storage/drain-1-latest.jpg",
-    "local_path": "ai_service/samples/drain_1.jpg",
+    "local_path": "mock_data/ai_image_samples/drain_1.jpg",
 }
 ```
 
@@ -99,11 +109,13 @@ callback payload shape는 현재 유지한다.
 
 | drain_id | source_url | local_path |
 | ---: | --- | --- |
-| 1 | `mock://storage/drain-1-latest.jpg` | `ai_service/samples/drain_1.jpg` |
-| 2 | `mock://storage/drain-2-latest.jpg` | `ai_service/samples/drain_2.jpg` |
-| 3 | `mock://storage/drain-3-latest.jpg` | `ai_service/samples/drain_3.jpg` |
-| 4 | `mock://storage/drain-4-latest.jpg` | `ai_service/samples/drain_4.jpg` |
-| 5 | `mock://storage/drain-5-latest.jpg` | `ai_service/samples/drain_5.jpg` |
+| 1 | `mock://storage/drain-1-latest.jpg` | `mock_data/ai_image_samples/drain_1.jpg` |
+| 2 | `mock://storage/drain-2-latest.jpg` | `mock_data/ai_image_samples/drain_2.jpg` |
+| 3 | `mock://storage/drain-3-latest.jpg` | `mock_data/ai_image_samples/drain_3.jpg` |
+| 4 | `mock://storage/drain-4-latest.jpg` | `mock_data/ai_image_samples/drain_4.jpg` |
+| 5 | `mock://storage/drain-5-latest.jpg` | `mock_data/ai_image_samples/drain_5.jpg` |
+
+`drain_5.jpg`는 현재 의도적으로 없는 파일이다. CCTV 또는 외부 이미지 확보 실패 상황을 확인하기 위한 케이스이며, `check_samples`에서는 예상된 누락으로 처리한다.
 
 ## 없는 drain_id 정책
 
@@ -140,7 +152,23 @@ YOLO는 이미지를 분석해 아래 dict를 반환한다.
 }
 ```
 
-`obstruction_ratio`는 `0.0`부터 `1.0` 사이 값이어야 한다.
+정상 분석의 `obstruction_ratio`는 `0.0`부터 `1.0` 사이 값이어야 한다.
+
+`yolo_status`가 `good`, `dirty`, `blocked`이면 `obstruction_ratio`와 `confidence_score`는 모두 `0.0` 이상 `1.0` 이하의 숫자여야 한다.
+
+`yolo_status`가 `unknown`이면 `obstruction_ratio`와 `confidence_score`는 모두 `-1.0`이어야 한다. 문자열, `NaN`, `None`, dict 같은 값은 YOLO contract에서 거절한다.
+
+이미지가 없거나 읽을 수 없거나 YOLO가 drain을 탐지하지 못하면 YOLO unknown 결과를 반환한다.
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+이 `-1.0` 값은 XGBoost가 YOLO 이상값 시나리오로 받아들이도록 `analysis` 계층에서 그대로 XGBoost feature에 전달한다.
 
 ## XGBoost 역할
 
@@ -158,12 +186,6 @@ ai_service/xgboost/model_predictor.py
 4. `flow_velocity`
 
 XGBoost 결과는 `analysis`에서 backend callback contract에 맞게 정리된다.
-
-## Legacy 코드
-
-`ai_service/yolo_legacy_example`는 예전 fake YOLO predictor 참고용이다. production flow에서 사용하지 않는다.
-
-`ai_service/xgboost/rule_baseline_predictor.py`도 이전 rule-based baseline 참고용이다. production flow는 `model_predictor.py`를 사용한다.
 
 ## 로컬 실행 명령어
 
@@ -207,7 +229,7 @@ python -m pip install -r .\ai_service\requirements.txt
 python -m ai_service.scripts.smoke_analysis --drain-id 2
 ```
 
-이 스크립트는 먼저 `drain_id`에 해당하는 `source_url`과 `local_path`를 출력한다. `local_path` 파일이 없으면 실제 YOLO 분석을 실행하지 않고 종료한다. 실제 분석까지 확인하려면 예를 들어 `ai_service/samples/drain_2.jpg` 위치에 mock CCTV 이미지가 있어야 한다.
+이 스크립트는 먼저 `drain_id`에 해당하는 `source_url`과 `local_path`를 출력한다. `local_path` 파일이 없으면 실제 YOLO 분석을 실행하지 않고 종료한다. 실제 분석까지 확인하려면 예를 들어 `mock_data/ai_image_samples/drain_2.jpg` 위치에 mock CCTV 이미지가 있어야 한다.
 
 이 smoke test는 백엔드 callback을 보내지 않는다. callback 전송 확인은 FastAPI 서버와 백엔드를 같이 띄운 상태에서 `/ai/analysis/run`으로 확인해야 한다.
 
@@ -216,11 +238,11 @@ python -m ai_service.scripts.smoke_analysis --drain-id 2
 실제 YOLO smoke test를 실행하려면 mock image source가 가리키는 샘플 이미지가 필요하다. 이미지는 직접 생성하지 않고 사용자가 아래 경로에 배치한다.
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
 
 배치 여부는 아래 명령으로 확인한다.

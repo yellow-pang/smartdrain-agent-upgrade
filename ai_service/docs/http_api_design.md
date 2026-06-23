@@ -2,7 +2,7 @@
 
 이 문서는 SmartDrain 백엔드와 AI 서버 사이의 HTTP 연동 계약을 설명한다.
 
-현재 AI 서버는 `ai_service/model`의 학습된 YOLO/XGBoost artifact를 사용하는 production flow 골격과, 백엔드 비동기 callback 연동 구조를 제공한다.
+현재 AI 서버는 `ai_service/model`의 YOLO/XGBoost artifact를 사용하는 production flow 골격과 백엔드 비동기 callback 연동 구조를 제공한다.
 
 ## 책임 경계
 
@@ -67,7 +67,9 @@ python -m uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000 --reload
 }
 ```
 
-AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` mock provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다.
+AI 서버는 `drain_id`를 기준으로 `ai_service/image_source` provider에서 이미지 소스를 찾는다. 현재 backend는 `image_path`를 보내지 않는다. 백엔드 연동 흐름에서는 보통 DB PK 정수 id가 전달되지만, AI 서버 직접 호출과 테스트를 위해 `DR-002` 같은 drain 코드도 허용한다.
+
+현재 로컬 목업 이미지는 `ai_service/` 밖의 `mock_data/ai_image_samples` 폴더에 둔다. 기본 경로는 `mock_data/ai_image_samples`이며, 필요하면 `IMAGE_SOURCE_BASE_DIR` 환경변수로 바꿀 수 있다.
 
 현재 AI 서버는 이 요청을 받은 뒤 즉시 accepted response를 반환하고, 실제 분석 및 callback 전송은 background task 흐름으로 처리한다.
 
@@ -86,8 +88,6 @@ accepted response 예시:
 
 `job_id = AI_JOB_{request_id}`
 
-이 정책은 MVP용 결정이며, 이후 queue나 DB job table을 도입하면 변경될 수 있다.
-
 ## 내부 처리 흐름
 
 `POST /ai/analysis/run`은 HTTP 입력을 받은 뒤 내부적으로 아래 함수를 사용한다.
@@ -98,7 +98,7 @@ accepted response 예시:
 
 1. 요청 payload를 검증한다.
 2. accepted response를 만든다.
-3. `drain_id` 기준으로 `image_source`에서 mock source를 resolve한다.
+3. `drain_id` 기준으로 `image_source`에서 source를 resolve한다.
 4. resolve된 `local_path`로 YOLO 단계를 호출한다.
 5. YOLO 결과와 센서값을 XGBoost feature로 변환한다.
 6. XGBoost 단계를 호출한다.
@@ -141,7 +141,19 @@ YOLO 결과 필드:
 - `blocked`
 - `unknown`
 
-현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다. `ai_service/yolo_legacy_example`는 legacy/reference 용도로만 남아 있다.
+이미지가 없거나 읽을 수 없거나 YOLO가 drain을 탐지하지 못하면 아래 unknown 결과를 보낸다.
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+이 `-1.0` 값은 XGBoost 입력 feature로 그대로 전달한다.
+
+현재 production flow는 `ai_service/yolo/analyzer.py`를 사용한다.
 
 ## XGBoost callback 계약
 
@@ -170,7 +182,7 @@ XGBoost 결과 필드:
 
 - `risk_score`: 위험도 점수
 - `risk_level`: 위험 등급
-- `final_decision`: 백엔드/화면에서 사용할 최종 판단 코드
+- `final_decision`: 백엔드 화면에서 사용할 최종 판단 코드
 - `evaluated_at`: 평가 시각
 
 허용 `risk_level`:
@@ -187,7 +199,7 @@ XGBoost 결과 필드:
 - `field_check`
 - `dispatch_required`
 
-현재 production flow는 `ai_service/xgboost/model_predictor.py`와 `ai_service/model/sewer_xgboost_model.json`을 사용한다. `rule_baseline_predictor.py`는 legacy/reference 용도로만 남아 있다.
+현재 production flow는 `ai_service/xgboost/model_predictor.py`와 `ai_service/model/sewer_xgboost_model.json`을 사용한다.
 
 ## Callback 전송 정책
 
@@ -198,7 +210,7 @@ XGBoost 결과 필드:
 - YOLO callback을 먼저 시도한다.
 - YOLO callback이 실패해도 XGBoost callback은 시도한다.
 - 각 callback에는 timeout을 적용한다.
-- 현재 retry는 제한적으로만 수행한다.
+- retry는 제한적으로만 수행한다.
 - persistent retry queue나 callback 상태 DB 저장은 구현되어 있지 않다.
 
 callback 전송 구현 위치:
@@ -210,6 +222,15 @@ callback 전송 구현 위치:
 `analysis` 계층은 잘못된 payload에 대해 `ValueError`를 발생시킨다.
 
 HTTP 계층은 이 오류를 `400 Bad Request` 형태로 변환한다.
+
+요청 단계에서 검증하는 항목:
+
+- `request_id`는 비어 있지 않은 문자열이어야 한다.
+- `drain_id`는 정수 id 또는 `DR-###` 형식 drain 코드여야 한다.
+- `sensor_data.measured_at`은 날짜와 시간이 포함된 ISO datetime 문자열이어야 한다.
+- `sensor_data.water_level_cm`은 유한한 숫자여야 한다.
+- `sensor_data.flow_velocity_mps`는 유한한 숫자여야 한다.
+- `sensor_data.quality_status`는 `valid`여야 한다.
 
 현재 `image_source`에 등록되지 않은 `drain_id`가 들어오면 `ValueError`가 발생한다. 이 상태는 등록되지 않은 drain ID 또는 CCTV/스토리지 이미지 소스 설정 이상으로 본다. HTTP 요청 처리 단계에서 source availability를 확인하고 현재는 `400 Bad Request`로 거절한다. 별도 실패 callback payload는 만들지 않으며, 추후 backend contract가 필요로 하면 HTTP `422` 또는 실패 callback을 별도 설계한다.
 

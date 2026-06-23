@@ -5,6 +5,7 @@ import pytest
 from ai_service.analysis.decision_mapper import map_risk_level_to_backend_decision
 from ai_service.analysis import service as analysis_service
 from ai_service.analysis.service import run_analysis_job
+from ai_service.analysis.validator import validate_analysis_request
 from ai_service.analysis.xgboost_adapter import build_xgboost_input_batch
 
 
@@ -54,7 +55,7 @@ def stub_model_predictors(monkeypatch):
         "resolve_image_source_by_drain_id",
         lambda drain_id: FakeImageSource(
             source_url=f"mock://storage/drain-{drain_id}-latest.jpg",
-            local_path=f"ai_service/samples/drain_{drain_id}.jpg",
+            local_path=f"mock_data/ai_image_samples/drain_{drain_id}.jpg",
         ),
     )
     monkeypatch.setattr(analysis_service, "predict_yolo_by_image_path", fake_yolo_result)
@@ -119,7 +120,7 @@ def test_run_analysis_job_resolves_image_source_from_drain_id(monkeypatch):
         seen_drain_ids.append(drain_id)
         return FakeImageSource(
             source_url=f"mock://storage/drain-{drain_id}-latest.jpg",
-            local_path=f"ai_service/samples/drain_{drain_id}.jpg",
+            local_path=f"mock_data/ai_image_samples/drain_{drain_id}.jpg",
         )
 
     def spy_yolo_result(image_path):
@@ -132,7 +133,7 @@ def test_run_analysis_job_resolves_image_source_from_drain_id(monkeypatch):
     run_analysis_job(make_payload())
 
     assert seen_drain_ids == [2]
-    assert seen_image_paths == ["ai_service/samples/drain_2.jpg"]
+    assert seen_image_paths == ["mock_data/ai_image_samples/drain_2.jpg"]
 
 
 @pytest.mark.parametrize(
@@ -159,6 +160,66 @@ def test_missing_required_payload_key_raises_value_error():
         run_analysis_job(payload)
 
 
+def test_empty_request_id_raises_value_error():
+    payload = make_payload()
+    payload["request_id"] = "  "
+
+    with pytest.raises(ValueError):
+        validate_analysis_request(payload)
+
+
+@pytest.mark.parametrize("drain_id", ["not-an-int", 2.5, True])
+def test_invalid_drain_id_raises_value_error(drain_id):
+    payload = make_payload()
+    payload["drain_id"] = drain_id
+
+    with pytest.raises(ValueError):
+        validate_analysis_request(payload)
+
+
+@pytest.mark.parametrize("drain_id", [2, "2", "DR-002", "dr-002"])
+def test_drain_id_accepts_numeric_id_or_drain_code(drain_id):
+    payload = make_payload()
+    payload["drain_id"] = drain_id
+
+    validate_analysis_request(payload)
+
+
+@pytest.mark.parametrize("drain_id", ["DR-", "DR-ABC", "DR-001A"])
+def test_invalid_drain_code_raises_value_error(drain_id):
+    payload = make_payload()
+    payload["drain_id"] = drain_id
+
+    with pytest.raises(ValueError):
+        validate_analysis_request(payload)
+
+
+@pytest.mark.parametrize("measured_at", ["not-a-date", "2026-06-18"])
+def test_invalid_measured_at_raises_value_error(measured_at):
+    payload = make_payload()
+    payload["sensor_data"]["measured_at"] = measured_at
+
+    with pytest.raises(ValueError):
+        validate_analysis_request(payload)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("water_level_cm", "not-a-number"),
+        ("flow_velocity_mps", {}),
+        ("water_level_cm", float("nan")),
+        ("flow_velocity_mps", float("inf")),
+    ],
+)
+def test_invalid_sensor_numeric_value_raises_value_error(field_name, value):
+    payload = make_payload()
+    payload["sensor_data"][field_name] = value
+
+    with pytest.raises(ValueError):
+        validate_analysis_request(payload)
+
+
 def test_invalid_quality_status_raises_value_error():
     payload = make_payload()
     payload["sensor_data"]["quality_status"] = "invalid"
@@ -182,6 +243,26 @@ def test_xgboost_adapter_normalizes_sensor_units():
     assert result == {
         "obstruction_ratio": [0.057],
         "confidence_score": [0.9404],
+        "water_level": [0.9813],
+        "flow_velocity": [0.4512],
+    }
+
+
+def test_xgboost_adapter_preserves_yolo_unknown_sentinel_values():
+    sensor_data = {
+        "water_level_cm": 98.13,
+        "flow_velocity_mps": 0.4512,
+    }
+    yolo_result = {
+        "obstruction_ratio": -1.0,
+        "confidence_score": -1.0,
+    }
+
+    result = build_xgboost_input_batch(sensor_data, yolo_result)
+
+    assert result == {
+        "obstruction_ratio": [-1.0],
+        "confidence_score": [-1.0],
         "water_level": [0.9813],
         "flow_velocity": [0.4512],
     }

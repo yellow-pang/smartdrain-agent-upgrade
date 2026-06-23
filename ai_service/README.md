@@ -48,7 +48,7 @@
 - AI 서버 자체 DB 저장
 - WebSocket 처리
 
-현재 production flow는 `ai_service/yolo/analyzer.py`와 `ai_service/xgboost/model_predictor.py`를 사용한다. `ai_service/yolo_legacy_example`와 `ai_service/xgboost/rule_baseline_predictor.py`는 legacy/reference 코드로 남겨둔다.
+현재 production flow는 `ai_service/yolo/analyzer.py`와 `ai_service/xgboost/model_predictor.py`를 사용한다.
 
 ## 디렉터리 책임
 
@@ -61,7 +61,6 @@
 | `ai_service/image_source` | `drain_id` 기준 mock image source resolve. 현재 `source_url`과 `local_path`를 관리 |
 | `ai_service/yolo` | YOLO predictor 역할만 수행. 입력을 받아 YOLO 결과 dict 반환 |
 | `ai_service/xgboost` | XGBoost predictor 역할만 수행. feature batch를 받아 위험도 결과 dict 반환 |
-| `ai_service/yolo_legacy_example` | 예전 fake YOLO predictor 참고/테스트용. production에서 사용하지 않음 |
 
 중요한 규칙:
 
@@ -78,7 +77,7 @@
 - `ai_service/yolo/README.md`: 실제 YOLO 추론에서 지켜야 할 출력 계약
 - `ai_service/xgboost/README.md`: 실제 XGBoost 모델에서 지켜야 할 입력/출력 계약
 - `ai_service/analysis/README.md`: YOLO 결과가 XGBoost 입력으로 변환되는 위치와 sensor normalization 정책
-- `ai_service/HTTP_API_DESIGN.md`: 백엔드와 AI 서버 사이의 HTTP 요청/응답/callback 계약
+- `ai_service/docs/http_api_design.md`: 백엔드와 AI 서버 사이의 HTTP 요청/응답/callback 계약
 - `ai_service/docs/korean_service_guide.md`: 사람이 읽기 쉬운 한글 운영/구조 가이드
 
 ## 실행
@@ -126,12 +125,14 @@ ai_service\.venv\Scripts\python.exe -m pytest ai_service
 실제 YOLO smoke test를 실행하려면 mock image source가 가리키는 샘플 이미지가 필요하다. 파일은 직접 생성하지 않으며, 사용자가 아래 경로에 배치한다.
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
+
+현재 `drain_5.jpg`는 CCTV 또는 이미지 확보 실패 상황을 확인하기 위해 의도적으로 없는 파일이다. `check_samples`는 이 누락을 실패로 처리하지 않는다.
 
 배치 상태 확인:
 

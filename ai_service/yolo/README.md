@@ -1,8 +1,6 @@
 # YOLO Predictor
 
-`ai_service/yolo` is the target package for the real YOLO/OpenCV image analysis integration.
-
-This package is intentionally separate from `ai_service/yolo_legacy_example`, which contains the legacy temporary fake predictor. Production analysis uses `ai_service/yolo/analyzer.py`.
+`ai_service/yolo` is the target package for the real YOLO/OpenCV image analysis integration. Production analysis uses `ai_service/yolo/analyzer.py`.
 
 ## Scope
 
@@ -33,9 +31,27 @@ Real YOLO predictors must return:
 
 Required fields:
 
-- `obstruction_ratio`: blockage ratio normalized to `0.0` through `1.0`
-- `confidence_score`: YOLO confidence score normalized to `0.0` through `1.0`
+- `obstruction_ratio`: blockage ratio normalized to `0.0` through `1.0`; use `-1.0` when image analysis cannot produce a valid YOLO result
+- `confidence_score`: YOLO confidence score normalized to `0.0` through `1.0`; use `-1.0` when image analysis cannot produce a valid YOLO result
 - `yolo_status`: one of `good`, `dirty`, `blocked`, `unknown`
+
+Validation rules:
+
+- For `good`, `dirty`, or `blocked`, `obstruction_ratio` and `confidence_score` must be numeric values from `0.0` through `1.0`.
+- For `unknown`, `obstruction_ratio` and `confidence_score` must both be `-1.0`.
+- `None`, `NaN`, strings, dicts, and other non-numeric values are rejected.
+
+When the image is missing, unreadable, or YOLO cannot detect a drain, the unknown result contract is:
+
+```json
+{
+  "obstruction_ratio": -1.0,
+  "confidence_score": -1.0,
+  "yolo_status": "unknown"
+}
+```
+
+The analysis layer passes these `-1.0` sentinel values to XGBoost unchanged.
 
 ## Stage 3 Note
 
@@ -66,7 +82,3 @@ yolo_result = predict_yolo_by_image_path(local_path)
 ```
 
 The production `analysis.service` flow receives `drain_id`, resolves it through `ai_service/image_source`, and then calls `predict_yolo_by_image_path(local_path)`.
-
-## Legacy Package
-
-`ai_service/yolo_legacy_example` is kept for historical tests and previous fake-flow reference only. Do not use it from production orchestration.

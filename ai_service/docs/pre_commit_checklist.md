@@ -10,21 +10,27 @@ Do not commit from this checklist step unless explicitly requested.
   - `request_id`
   - `drain_id`
   - `sensor_data`
+- [ ] `request_id` is a non-empty string.
+- [ ] `drain_id` is either an integer ID or a `DR-###` drain code.
 - [ ] Backend request body does not use `image_path`.
 - [ ] `sensor_data` contains:
   - `measured_at`
   - `water_level_cm`
   - `flow_velocity_mps`
   - `quality_status`
+- [ ] `measured_at` is an ISO datetime string with both date and time.
+- [ ] `water_level_cm` and `flow_velocity_mps` are finite numeric values.
 - [ ] `quality_status` is currently `valid`.
 - [ ] HTTP callback payload shape is unchanged:
   - YOLO callback: `request_id`, `job_id`, `yolo_result`
   - XGBoost callback: `request_id`, `job_id`, `xgboost_result`
+- [ ] YOLO `unknown` result uses `obstruction_ratio=-1.0` and `confidence_score=-1.0`.
+- [ ] YOLO non-`unknown` result numeric fields stay within `0.0` through `1.0`.
 
 ## Image Source Check
 
 - [ ] `ai_service/image_source` resolves images by `drain_id`.
-- [ ] Mock provider supports `drain_id` values `1` through `5`.
+- [ ] Mock provider supports `drain_id` values `1` through `5`, including equivalent codes like `DR-001`.
 - [ ] Unknown `drain_id` is treated as an unregistered drain or CCTV/storage image source configuration problem.
 - [ ] Unknown `drain_id` is rejected before background callback processing.
 - [ ] `source_url` remains a future CCTV/storage placeholder.
@@ -35,14 +41,15 @@ Do not commit from this checklist step unless explicitly requested.
 Required local files for real YOLO smoke tests:
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
 
-- [ ] Sample image files are present if running real YOLO smoke.
+- [ ] `drain_1.jpg` through `drain_4.jpg` are present if running real YOLO smoke.
+- [ ] `drain_5.jpg` remains intentionally missing for the image acquisition failure case.
 - [ ] Missing sample image files are acceptable when only checking code/docs.
 - [ ] No real CCTV images are committed unless sanitized fixtures are explicitly approved.
 
@@ -70,18 +77,6 @@ ai_service/yolo/analyzer.py
 
 ```text
 ai_service/xgboost/model_predictor.py
-```
-
-- [ ] Legacy fake YOLO is reference/test-only:
-
-```text
-ai_service/yolo_legacy_example
-```
-
-- [ ] Rule baseline XGBoost is reference-only:
-
-```text
-ai_service/xgboost/rule_baseline_predictor.py
 ```
 
 ## Environment Check
@@ -133,7 +128,8 @@ python -m ai_service.scripts.smoke_analysis --drain-id 2
 
 - `compileall` should pass.
 - `pytest` should pass only after `pytest` and runtime dependencies are installed.
-- `check_samples` returns non-zero if sample images are missing. That is acceptable before sample images are placed.
+- `check_samples` returns `0` when `drain_1.jpg` through `drain_4.jpg` exist and only `drain_5.jpg` is missing as expected.
+- `check_samples` returns non-zero if required sample images other than `drain_5.jpg` are missing.
 - `smoke_analysis` returns:
   - `0` when local image exists and analysis completes
   - `1` when `drain_id` cannot resolve

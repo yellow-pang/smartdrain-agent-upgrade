@@ -103,7 +103,7 @@ Requirements:
 
 - Python 3.12 venv is active.
 - `python -m pip install -r .\ai_service\requirements.txt` has completed.
-- The resolved `local_path` image file exists, for example `ai_service/samples/drain_2.jpg`.
+- The resolved `local_path` image file exists, for example `mock_data/ai_image_samples/drain_2.jpg`.
 
 If the image file does not exist, the script prints the resolved source and exits without running YOLO.
 
@@ -112,12 +112,14 @@ If the image file does not exist, the script prints the resolved source and exit
 The mock image source registry expects these files:
 
 ```text
-ai_service/samples/drain_1.jpg
-ai_service/samples/drain_2.jpg
-ai_service/samples/drain_3.jpg
-ai_service/samples/drain_4.jpg
-ai_service/samples/drain_5.jpg
+mock_data/ai_image_samples/drain_1.jpg
+mock_data/ai_image_samples/drain_2.jpg
+mock_data/ai_image_samples/drain_3.jpg
+mock_data/ai_image_samples/drain_4.jpg
+mock_data/ai_image_samples/drain_5.jpg
 ```
+
+`drain_5.jpg` is intentionally missing in the current mock data. It represents a CCTV/image acquisition failure case and is not treated as a required sample by `check_samples`.
 
 Check whether the files exist:
 
