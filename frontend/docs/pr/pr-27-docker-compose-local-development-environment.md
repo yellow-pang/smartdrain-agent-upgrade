@@ -33,7 +33,7 @@ Browser HTTPS
 | 개발 asset mount | `docker-compose.dev.yml` |
 | 환경변수 안내 | `.env.example` |
 | 실행·Tunnel 안내 | `README.md` |
-| 계획·결과 기록 | `frontend/docs/plans/plan-22-*`, `frontend/docs/steps/step-22-*` |
+| 계획·결과 기록 | `frontend/docs/plans/plan-22-*`, `frontend/docs/steps/step-22-*`, `frontend/docs/steps/step-35-*` |
 
 ## 검증 결과
 
