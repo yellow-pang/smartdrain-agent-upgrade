@@ -231,12 +231,14 @@ WebSocket 이벤트 타입:
   "type": "YOLO_RESULT_UPDATED",
   "payload": {
     "drainId": "DR-004",
-    "requestId": "REQ_202606190001_4",
-    "jobId": "AI_JOB_001",
+    "yoloResultId": 8,
+    "imageUrl": "/test-snapshots/drain-001-b.jpg",
     "obstructionRatio": 0.82,
     "confidenceScore": 0.94,
     "yoloStatus": "blocked",
-    "updatedAt": "2026-06-18T08:36:20+09:00"
+    "capturedAt": "2026-06-19T12:42:00+09:00",
+    "analyzedAt": "2026-06-19T12:42:01+09:00",
+    "updatedAt": "2026-06-19T12:42:01+09:00"
   }
 }
 ```
@@ -272,6 +274,17 @@ WebSocket 이벤트 타입:
 ## Frontend WebSocket / Analysis History Contract
 
 프론트엔드는 단일 WebSocket endpoint인 `/ws/drains/status`에 연결하고, 수신한 메시지의 `type` 값으로 이벤트를 구분합니다.
+
+### Drain 목록 이미지 필드
+
+`GET /api/drains`의 각 item에는 기존 필드에 더해 최신 YOLO 이미지 정보가 optional 필드로 포함됩니다.
+
+- `latestImageUrl`: 해당 drain의 가장 최근 YOLO 분석 이미지 URL입니다. 이미지가 없으면 `null`입니다.
+- `latestImageCapturedAt`: 해당 이미지의 `capturedAt` ISO 8601 문자열입니다. 이미지가 없으면 `null`입니다.
+
+최신 YOLO 결과는 `capturedAt` 기준으로 판단하고, `capturedAt`이 없거나 같은 경우 `createdAt`을 보조 기준으로 사용합니다.
+
+프론트는 목록/선택 시설 패널의 초기 이미지에 `latestImageUrl`을 사용하고, 실시간 갱신은 `YOLO_RESULT_UPDATED.payload.imageUrl`을 사용합니다.
 
 지원 이벤트:
 
