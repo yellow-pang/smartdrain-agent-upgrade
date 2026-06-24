@@ -1,0 +1,21 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: smartdrain-jenkins:lts-docker
+    container_name: smartdrain-jenkins
+    user: root
+    ports:
+      - "8082:8080"
+      - "50001:50000"
+    volumes:
+      - smartdrain-jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Docker socket을 통해 실행되는 Compose의 상대 bind mount가 VM host에서도
+      # 같은 경로를 가리키도록 source와 target을 동일한 절대 경로로 유지한다.
+      - /home/yp/apps/smart-drain:/home/yp/apps/smart-drain
+    restart: unless-stopped
+
+volumes:
+  smartdrain-jenkins-home:
