@@ -99,7 +99,10 @@ export function DashboardMainContent({
             <section className="hidden xl:col-span-12 xl:block 2xl:col-span-2 2xl:h-[clamp(34rem,calc(100dvh-10rem),46rem)]">
                 {selectedDrain ? (
                     <div className="h-full shadow-sm">
-                        <DrainDetailPanel drain={selectedDrain} />
+                        <DrainDetailPanel
+                            drain={selectedDrain}
+                            imageUrl={selectedDrain.latestImageUrl ?? undefined}
+                        />
                     </div>
                 ) : !isLoading && drains.length === 0 ? (
                     <PlaceholderState
