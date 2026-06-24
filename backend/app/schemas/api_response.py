@@ -157,12 +157,42 @@ def latest_sensor_data(db: Session, drain_id: int) -> SensorData | None:
 
 
 def latest_yolo_result(db: Session, drain_id: int) -> YoloResult | None:
-    return (
+    results = (
         db.query(YoloResult)
         .filter(YoloResult.drain_id == drain_id)
-        .order_by(YoloResult.captured_at.desc())
-        .first()
+        .order_by(YoloResult.id.desc())
+        .all()
     )
+    if not results:
+        return None
+    return max(results, key=_yolo_latest_sort_key)
+
+
+def _yolo_latest_sort_key(yolo_result: YoloResult) -> tuple[datetime, datetime]:
+    captured_at = getattr(yolo_result, "captured_at", None)
+    created_at = getattr(yolo_result, "created_at", None)
+    return (_datetime_sort_value(captured_at or created_at), _datetime_sort_value(created_at))
+
+
+def _datetime_sort_value(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def _yolo_image_url(yolo_result: YoloResult | None) -> str | None:
+    if yolo_result is None:
+        return None
+    value = getattr(yolo_result, "image_url", None) or getattr(yolo_result, "image_uri", None)
+    return value or None
+
+
+def _yolo_captured_at(yolo_result: YoloResult | None) -> datetime | None:
+    if yolo_result is None:
+        return None
+    return getattr(yolo_result, "captured_at", None)
 
 
 def latest_xgboost_result(db: Session, drain_id: int) -> XgboostResult | None:
@@ -179,6 +209,7 @@ def drain_list_item_dto(db: Session, drain: Drain) -> dict[str, Any]:
     yolo_result = latest_yolo_result(db, drain.id)
     xgboost_result = latest_xgboost_result(db, drain.id)
     updated_at = xgboost_result.evaluated_at if xgboost_result else drain.updated_at
+    latest_image_url = _yolo_image_url(yolo_result)
     return {
         "id": drain.drain_code,
         "roadAddress": drain.address,
@@ -192,6 +223,8 @@ def drain_list_item_dto(db: Session, drain: Drain) -> dict[str, Any]:
         "flowVelocityMps": sensor_data.flow_velocity_mps if sensor_data else None,
         "finalDecision": xgboost_result.final_decision if xgboost_result else None,
         "updatedAt": format_datetime(updated_at),
+        "latestImageUrl": latest_image_url,
+        "latestImageCapturedAt": format_datetime(_yolo_captured_at(yolo_result)) if latest_image_url else None,
     }
 
 
