@@ -30,31 +30,31 @@ function DashboardSummaryBar({ summary }: { summary: DashboardSummaryDto }) {
         {
             label: "전체",
             value: summary.totalCount,
-            className: "text-slate-900",
+            className: "text-slate-900 dark:text-slate-100",
             layoutClassName: "col-span-2 sm:col-span-2 lg:col-span-1",
         },
         {
             label: "위험",
             value: summary.dangerCount,
-            className: "text-red-600",
+            className: "text-red-600 dark:text-red-400",
             layoutClassName: "sm:col-span-4 lg:col-span-2",
         },
         {
             label: "주의",
             value: summary.cautionCount,
-            className: "text-amber-600",
+            className: "text-amber-600 dark:text-amber-400",
             layoutClassName: "sm:col-span-2 lg:col-span-1",
         },
         {
             label: "양호",
             value: summary.goodCount,
-            className: "text-emerald-600",
+            className: "text-emerald-600 dark:text-emerald-400",
             layoutClassName: "sm:col-span-2 lg:col-span-1",
         },
         {
             label: "판단불가",
             value: summary.unknownCount,
-            className: "text-slate-500",
+            className: "text-slate-500 dark:text-slate-300",
             layoutClassName: "sm:col-span-2 lg:col-span-1",
         },
     ];
