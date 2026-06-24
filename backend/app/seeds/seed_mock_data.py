@@ -26,6 +26,10 @@ from app.models.sensor_data import SensorData
 from app.models.xgboost_result import XgboostResult
 from app.models.yolo_result import YoloResult
 
+MOCK_IMAGE_URL_PREFIX = "/api/mock-images"
+PROJECT_ROOT_DIR = Path(__file__).resolve().parents[3]
+MOCK_IMAGE_SOURCE_DIR = PROJECT_ROOT_DIR / "mock_data" / "ai_image_samples"
+
 
 @dataclass(frozen=True)
 class MockDrainData:
@@ -146,7 +150,7 @@ def _create_mock_drain(db: Session, item: MockDrainData, measured_at: datetime) 
 
     yolo_result = YoloResult(
         drain_id=drain.id,
-        image_url=f"https://example.com/{item.drain_code.lower()}.jpg",
+        image_url=_mock_image_url(drain.id),
         obstruction_ratio=item.obstruction_ratio,
         confidence_score=item.confidence_score,
         yolo_status=item.yolo_status,
@@ -165,6 +169,13 @@ def _create_mock_drain(db: Session, item: MockDrainData, measured_at: datetime) 
         evaluated_at=measured_at,
     )
     db.add(xgboost_result)
+
+
+def _mock_image_url(drain_id: int) -> str | None:
+    image_path = MOCK_IMAGE_SOURCE_DIR / f"drain_{drain_id}.jpg"
+    if not image_path.is_file():
+        return None
+    return f"{MOCK_IMAGE_URL_PREFIX}/drain_{drain_id}.jpg"
 
 
 def _summary_line(item: MockDrainData, skipped: bool = False) -> str:
