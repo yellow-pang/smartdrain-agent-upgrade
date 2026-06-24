@@ -247,6 +247,7 @@ def drain_detail_dto(db: Session, drain: Drain) -> dict[str, Any]:
     detail = drain_list_item_dto(db, drain)
     detail.update(
         {
+            "internalId": drain.id,
             "imageUrl": latest_yolo.image_url if latest_yolo else None,
             "sensorSummary": sensor_summary_dto(latest_sensor),
             "sensorHistory": [sensor_history_dto(item) for item in sensor_history],
@@ -286,6 +287,8 @@ def drain_status_event_payload(
     yolo_result: YoloResult | None = None,
 ) -> dict[str, Any]:
     sensor_data = sensor_data or latest_sensor_data(db, drain.id)
+    if yolo_result is None and result.yolo_result_id is not None:
+        yolo_result = db.get(YoloResult, result.yolo_result_id)
     yolo_result = yolo_result or latest_yolo_result(db, drain.id)
     return {
         "type": DRAIN_STATUS_UPDATED,

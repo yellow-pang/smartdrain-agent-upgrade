@@ -167,6 +167,7 @@ ANALYSIS_JOB_TIMEOUT_SECONDS=600
 4. 같은 YOLO callback을 2번 호출해 `yolo_results`가 중복 생성되지 않는지 확인합니다.
 5. 같은 XGBoost callback을 2번 호출해 `xgboost_results`가 중복 생성되지 않는지 확인합니다.
 6. `ANALYSIS_SCHEDULER_ENABLED=true`로 켠 뒤 initial delay 이후 조건을 만족하는 drain에만 scheduled job이 생성되는지 확인합니다.
+7. `GET /api/drains`, `GET /api/drains/{id}`, `POST /api/drains` 응답에서 `roadAddress`, `fullAddress`, `finalDecision` 등 한글 문자열이 깨지지 않고 UTF-8 JSON으로 내려오는지 확인합니다.
 
 분석 시작 요청 예시:
 
@@ -341,6 +342,13 @@ WebSocket 이벤트 타입:
   "xgboostResultId": 1
 }
 ```
+
+### XGBoost / Drain Status 연결 기준
+
+- `XGBOOST_RESULT_UPDATED.payload.yoloResultId`는 XGBoost 결과가 실제 저장될 때 연결된 `xgboost_results.yolo_result_id`입니다.
+- `DRAIN_STATUS_UPDATED.payload.yoloResultId`도 같은 XGBoost 결과에 연결된 YOLO 결과 ID입니다.
+- `DRAIN_STATUS_UPDATED.payload.obstructionRatio`는 최신 YOLO 결과가 아니라, 해당 XGBoost 결과의 `yoloResultId`로 연결된 YOLO 결과의 `obstructionRatio`입니다.
+- `POST /api/drains` 응답은 기존 `id` 필드 값을 유지하며, 내부 숫자 PK는 하위 호환 optional 필드인 `internalId`로 함께 내려갑니다.
 
 분석 이력은 WebSocket이 아니라 REST API로 조회합니다.
 
