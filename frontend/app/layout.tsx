@@ -29,6 +29,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://smartdrain.healthq.store/"),
   applicationName: "SmartDrain",
   title: "SmartDrain | 지능형 도시 침수 관리",
   description:
