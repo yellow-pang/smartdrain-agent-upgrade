@@ -6,7 +6,7 @@
 
 상세 화면의 XGBoost 탭은 여섯 항목을 빈칸 없이 2열×3행으로 정리했다. 날짜와 긴 판단 문구가 카드 폭 또는 높이를 과도하게 밀지 않도록 말줄임 규칙을 적용했다.
 
-모바일 상세 화면에는 대시보드 복귀 버튼과, 충분히 아래로 스크롤했을 때만 표시되는 상단 이동 버튼을 추가했다.
+모바일 상세 화면에는 콘텐츠를 가리는 전체 폭 복귀 바 대신, 충분히 아래로 스크롤했을 때만 표시되는 작은 `대시보드` 플로팅 칩과 상단 이동 버튼을 추가했다.
 
 ## 변경 흐름
 
@@ -30,8 +30,8 @@
 | `components/drain-risk-list.tsx` | 모바일에서 선택한 목록 항목 뒤에 `MobileDrainInlineSummary`를 렌더링하고, 선택 강조 색상을 위험 상태색과 분리 |
 | `components/dashboard/dashboard-main-content.tsx` | 모바일의 목록 전체 하단 요약을 제거하고, 1024px 이상 1280px 미만의 보조 요약만 유지 |
 | `components/drain-detail/ai-analysis-tabs.tsx` | XGBoost 정보 6개를 2열×3행으로 배치하고 날짜·판정 문구의 넘침을 제한 |
-| `components/drain-detail/drain-detail-page-frame.tsx` | 모바일 고정 대시보드 복귀 버튼, 안전 영역 여백, 상단 이동 버튼 연결 |
-| `components/drain-detail/mobile-scroll-top-button.tsx` | 480px 스크롤 뒤 표시되는 44×44px 상단 이동 버튼 추가 |
+| `components/drain-detail/drain-detail-page-frame.tsx` | 전체 폭 모바일 복귀 바를 제거하고 안전 영역 여백과 빠른 행동 연결 |
+| `components/drain-detail/mobile-scroll-top-button.tsx` | 480px 스크롤 뒤 표시되는 `대시보드` 플로팅 칩과 44×44px 상단 이동 버튼 추가 |
 | `docs/plans/plan-26-dashboard-mobile-selection-summary.md` | 승인된 UX 방향과 검증 기준 보완 |
 
 ## XGBoost 탭 배치
@@ -59,8 +59,8 @@
 ## 남은 수동 확인
 
 1. 360×740, 375×667, 390×844에서 목록의 첫 시설 기본 선택과 다른 시설 선택 모두 요약 카드가 해당 항목 바로 아래에 표시되는지 확인한다.
-2. 모바일 상세 화면에서 고정 대시보드 복귀 버튼이 마지막 콘텐츠를 가리지 않고, 안전 영역 안에 표시되는지 확인한다.
-3. 480px 전후 스크롤에서 상단 이동 버튼이 의도한 시점에 나타나며, 대시보드 복귀 버튼과 터치 영역이 겹치지 않는지 확인한다.
+2. 모바일 상세 화면에서 전체 폭 복귀 바가 보이지 않고, 마지막 콘텐츠가 안전 영역과 플로팅 빠른 행동에 가려지지 않는지 확인한다.
+3. 480px 전후 스크롤에서 `대시보드` 칩과 상단 이동 버튼이 의도한 시점에 나타나며, 터치 영역이 서로 겹치지 않는지 확인한다.
 4. XGBoost 탭에서 긴 날짜·판단 문구가 360px, 640px, 1024px 폭에서 셀 밖으로 넘치지 않는지 확인한다.
 5. 지도 선택, 목록 선택, WebSocket 갱신 후 선택 시설의 요약·상세 링크·목록 강조가 같은 대상을 가리키는지 확인한다.
 
