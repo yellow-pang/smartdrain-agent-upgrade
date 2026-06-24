@@ -42,13 +42,13 @@ SmartDrain은 다음 데이터를 하나의 흐름으로 연결합니다.
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="frontend/docs/images/frontend-dashboard-api-connected.png" alt="SmartDrain 메인 대시보드" width="100%" />
+      <img src="frontend/docs/images/main-page.png" alt="SmartDrain 메인 대시보드" width="100%" />
       <br />
       <strong>메인 대시보드</strong><br />
       시설 위치, 상태별 통계, 위험 시설 우선순위
     </td>
     <td width="50%" align="center">
-      <img src="frontend/docs/images/frontend-detail-api-connected.png" alt="SmartDrain 시설 상세 화면" width="100%" />
+      <img src="frontend/docs/images/detail-page.png" alt="SmartDrain 시설 상세 화면" width="100%" />
       <br />
       <strong>시설 상세 화면</strong><br />
       CCTV 이미지, 센서 추세, AI 결과, 위험 이력
@@ -191,29 +191,29 @@ YOLO/OpenCV 결과와 센서값을 다음 순서로 입력합니다.
 
 ## 기술 스택
 
-| 영역 | 기술 |
-| --- | --- |
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
-| 상태·데이터 | TanStack Query, Zustand, Axios |
-| 지도·시각화 | Kakao Maps SDK, Recharts |
-| Backend | FastAPI, SQLAlchemy, Alembic, Pydantic |
-| Database | PostgreSQL 16 |
-| AI | Ultralytics YOLO, OpenCV, XGBoost, scikit-learn |
-| 실시간 통신 | WebSocket |
-| Infra | Docker Compose, Nginx |
-| CI/CD | Jenkins |
+| 영역        | 기술                                            |
+| ----------- | ----------------------------------------------- |
+| Frontend    | Next.js 16, React 19, TypeScript, Tailwind CSS  |
+| 상태·데이터 | TanStack Query, Zustand, Axios                  |
+| 지도·시각화 | Kakao Maps SDK, Recharts                        |
+| Backend     | FastAPI, SQLAlchemy, Alembic, Pydantic          |
+| Database    | PostgreSQL 16                                   |
+| AI          | Ultralytics YOLO, OpenCV, XGBoost, scikit-learn |
+| 실시간 통신 | WebSocket                                       |
+| Infra       | Docker Compose, Nginx                           |
+| CI/CD       | Jenkins                                         |
 
 ---
 
 ## 데이터 모델
 
-| 테이블 | 역할 |
-| --- | --- |
-| `drains` | 시설 기본 정보와 현재 상태 |
-| `sensor_data` | 수위·유속 시계열 데이터 |
-| `yolo_results` | 이미지 분석 결과 |
-| `xgboost_results` | 최종 위험 등급과 판단 결과 |
-| `analysis_jobs` | 비동기 분석 작업 상태와 오류 추적 |
+| 테이블            | 역할                              |
+| ----------------- | --------------------------------- |
+| `drains`          | 시설 기본 정보와 현재 상태        |
+| `sensor_data`     | 수위·유속 시계열 데이터           |
+| `yolo_results`    | 이미지 분석 결과                  |
+| `xgboost_results` | 최종 위험 등급과 판단 결과        |
+| `analysis_jobs`   | 비동기 분석 작업 상태와 오류 추적 |
 
 Alembic migration은 Compose의 `migrate` 서비스에서 자동 실행됩니다.
 
@@ -221,19 +221,19 @@ Alembic migration은 Compose의 `migrate` 서비스에서 자동 실행됩니다
 
 ## 주요 API
 
-| Method | Path | 설명 |
-| --- | --- | --- |
-| `GET` | `/api/drains` | 시설 목록 조회 |
-| `GET` | `/api/drains/{drain_id}` | 시설 상세 조회 |
-| `GET` | `/api/dashboard/summary` | 대시보드 상태 요약 |
-| `GET` | `/api/drains/{drain_id}/sensor-data` | 센서 이력 조회 |
-| `GET` | `/api/drains/{drain_id}/analysis/latest` | 최신 통합 분석 결과 |
-| `GET` | `/api/drains/{drain_id}/risk-history` | 위험 이력 조회 |
-| `POST` | `/api/sensor-data` | 센서 데이터 저장 |
-| `POST` | `/api/analysis/async-run` | 비동기 AI 분석 시작 |
-| `POST` | `/api/ai-callback/yolo-result` | YOLO 결과 callback |
-| `POST` | `/api/ai-callback/xgboost-result` | XGBoost 결과 callback |
-| `WS` | `/ws/drains/status` | 시설·분석 상태 실시간 이벤트 |
+| Method | Path                                     | 설명                         |
+| ------ | ---------------------------------------- | ---------------------------- |
+| `GET`  | `/api/drains`                            | 시설 목록 조회               |
+| `GET`  | `/api/drains/{drain_id}`                 | 시설 상세 조회               |
+| `GET`  | `/api/dashboard/summary`                 | 대시보드 상태 요약           |
+| `GET`  | `/api/drains/{drain_id}/sensor-data`     | 센서 이력 조회               |
+| `GET`  | `/api/drains/{drain_id}/analysis/latest` | 최신 통합 분석 결과          |
+| `GET`  | `/api/drains/{drain_id}/risk-history`    | 위험 이력 조회               |
+| `POST` | `/api/sensor-data`                       | 센서 데이터 저장             |
+| `POST` | `/api/analysis/async-run`                | 비동기 AI 분석 시작          |
+| `POST` | `/api/ai-callback/yolo-result`           | YOLO 결과 callback           |
+| `POST` | `/api/ai-callback/xgboost-result`        | XGBoost 결과 callback        |
+| `WS`   | `/ws/drains/status`                      | 시설·분석 상태 실시간 이벤트 |
 
 개발 환경에서는 `http://localhost:8080/docs`에서 전체 Swagger 문서를 확인할 수 있습니다.
 
@@ -307,11 +307,11 @@ COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY=your-kakao-javascript-key
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-| 대상 | 주소 |
-| --- | --- |
-| 대시보드 | `http://localhost:8080` |
-| Swagger | `http://localhost:8080/docs` |
-| REST API | `http://localhost:8080/api/...` |
+| 대상      | 주소                                   |
+| --------- | -------------------------------------- |
+| 대시보드  | `http://localhost:8080`                |
+| Swagger   | `http://localhost:8080/docs`           |
+| REST API  | `http://localhost:8080/api/...`        |
 | WebSocket | `ws://localhost:8080/ws/drains/status` |
 
 ### 3. 샘플 데이터 생성
@@ -347,17 +347,17 @@ docker compose down -v
 
 ## 환경변수
 
-| 변수 | 설명 | 기본값 |
-| --- | --- | --- |
-| `SMARTDRAIN_YOLO_MODEL_PATH` | 호스트의 YOLO 모델 절대 경로 | `./ai_service/model/best.pt` |
-| `COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY` | Kakao Maps JavaScript 키 | 빈 값 |
-| `COMPOSE_FRONTEND_API_BASE_URL` | Frontend API base URL | 빈 값, same-origin |
-| `COMPOSE_DATABASE_URL` | Backend PostgreSQL 연결 문자열 | 로컬 기본값 |
-| `COMPOSE_AI_SERVER_ENABLED` | Backend의 AI 요청 활성화 | `true` |
-| `COMPOSE_ANALYSIS_SCHEDULER_ENABLED` | 자동 분석 scheduler 활성화 | `false` |
-| `COMPOSE_ANALYSIS_SCHEDULER_INTERVAL_SECONDS` | 분석 대상 탐색 주기 | `300` |
-| `COMPOSE_ANALYSIS_JOB_TIMEOUT_SECONDS` | 분석 작업 timeout | `600` |
-| `COMPOSE_CORS_ORIGINS` | Backend 직접 호출 허용 origin | localhost 목록 |
+| 변수                                          | 설명                           | 기본값                       |
+| --------------------------------------------- | ------------------------------ | ---------------------------- |
+| `SMARTDRAIN_YOLO_MODEL_PATH`                  | 호스트의 YOLO 모델 절대 경로   | `./ai_service/model/best.pt` |
+| `COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY`          | Kakao Maps JavaScript 키       | 빈 값                        |
+| `COMPOSE_FRONTEND_API_BASE_URL`               | Frontend API base URL          | 빈 값, same-origin           |
+| `COMPOSE_DATABASE_URL`                        | Backend PostgreSQL 연결 문자열 | 로컬 기본값                  |
+| `COMPOSE_AI_SERVER_ENABLED`                   | Backend의 AI 요청 활성화       | `true`                       |
+| `COMPOSE_ANALYSIS_SCHEDULER_ENABLED`          | 자동 분석 scheduler 활성화     | `false`                      |
+| `COMPOSE_ANALYSIS_SCHEDULER_INTERVAL_SECONDS` | 분석 대상 탐색 주기            | `300`                        |
+| `COMPOSE_ANALYSIS_JOB_TIMEOUT_SECONDS`        | 분석 작업 timeout              | `600`                        |
+| `COMPOSE_CORS_ORIGINS`                        | Backend 직접 호출 허용 origin  | localhost 목록               |
 
 전체 설정은 [`.env.example`](.env.example)을 참고하세요.
 
@@ -430,18 +430,18 @@ Nginx는 다음 경로를 단일 origin으로 제공합니다.
 
 ## 프로젝트 상태
 
-| 항목 | 상태 |
-| --- | --- |
-| MVP 기능 개발 | 완료 |
-| `main` 브랜치 병합 | 완료 |
-| 메인·상세 화면 | 완료 |
-| REST API·DB migration | 완료 |
-| 비동기 AI callback | 완료 |
-| WebSocket 실시간 반영 | 완료 |
-| Docker·Nginx 환경 | 완료 |
-| Jenkins 검증·배포 pipeline | 완료 |
-| 실제 CCTV·IoT 연동 | MVP 범위 외 |
-| 운영 사용자 인증·권한 | MVP 범위 외 |
+| 항목                       | 상태        |
+| -------------------------- | ----------- |
+| MVP 기능 개발              | 완료        |
+| `main` 브랜치 병합         | 완료        |
+| 메인·상세 화면             | 완료        |
+| REST API·DB migration      | 완료        |
+| 비동기 AI callback         | 완료        |
+| WebSocket 실시간 반영      | 완료        |
+| Docker·Nginx 환경          | 완료        |
+| Jenkins 검증·배포 pipeline | 완료        |
+| 실제 CCTV·IoT 연동         | MVP 범위 외 |
+| 운영 사용자 인증·권한      | MVP 범위 외 |
 
 ### MVP 데이터 범위
 
@@ -458,15 +458,15 @@ Nginx는 다음 경로를 단일 origin으로 제공합니다.
 
 ## 주요 문서
 
-| 문서 | 내용 |
-| --- | --- |
-| [프로젝트 정의](docs/01_프로젝트정의서.md) | 프로젝트 배경과 목표 |
-| [요구사항 정의서](docs/03_요구사항정의서.md) | 기능·비기능 요구사항 |
-| [MVP 범위](docs/04_MVP범위.md) | 구현 범위와 제외 범위 |
-| [시스템 아키텍처](docs/06_시스템아키텍처.md) | 시스템 구성과 데이터 흐름 |
-| [ERD](docs/07_ERD.md) | 데이터 모델과 관계 |
-| [YOLO·XGBoost PoC](docs/09_YOLO_XGBoost_PoC.md) | AI 분석 설계와 실험 |
-| [API 명세](docs/11_API명세서.md) | Frontend·Backend API 계약 |
+| 문서                                                                              | 내용                      |
+| --------------------------------------------------------------------------------- | ------------------------- |
+| [프로젝트 정의](docs/01_프로젝트정의서.md)                                        | 프로젝트 배경과 목표      |
+| [요구사항 정의서](docs/03_요구사항정의서.md)                                      | 기능·비기능 요구사항      |
+| [MVP 범위](docs/04_MVP범위.md)                                                    | 구현 범위와 제외 범위     |
+| [시스템 아키텍처](docs/06_시스템아키텍처.md)                                      | 시스템 구성과 데이터 흐름 |
+| [ERD](docs/07_ERD.md)                                                             | 데이터 모델과 관계        |
+| [YOLO·XGBoost PoC](docs/09_YOLO_XGBoost_PoC.md)                                   | AI 분석 설계와 실험       |
+| [API 명세](docs/11_API명세서.md)                                                  | Frontend·Backend API 계약 |
 | [개발·운영 배포 가이드](frontend/docs/deployment/development-production-guide.md) | 실행·배포·환경변수 가이드 |
 
 ---
