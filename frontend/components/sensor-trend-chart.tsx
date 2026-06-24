@@ -28,6 +28,17 @@ export function SensorTrendChart({
     summary: SensorSummary;
     isFallback?: boolean;
 }) {
+    const hasSensorPoints = points.length > 0;
+    const isSinglePoint = points.length === 1;
+    const waterLevelDomain = getAxisDomain(
+        points.map((point) => point.level),
+        25,
+    );
+    const flowVelocityDomain = getAxisDomain(
+        points.map((point) => point.flow),
+        1.5,
+    );
+
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-start justify-between gap-3">
@@ -44,8 +55,8 @@ export function SensorTrendChart({
 
             {/* legend */}
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                <LegendItem color="#0e7490" label="수위 (cm)" />
-                <LegendItem color="#059669" label="유속 (m/s)" />
+                <LegendItem color="#0e7490" label="수위 (cm, 왼쪽 축)" />
+                <LegendItem color="#059669" label="유속 (m/s, 오른쪽 축)" />
             </div>
 
             {isFallback ? (
@@ -56,12 +67,20 @@ export function SensorTrendChart({
                     statusLabel="API 데이터 대기"
                     className="mt-2 h-[280px]"
                 />
+            ) : !hasSensorPoints ? (
+                <PlaceholderState
+                    image={PLACEHOLDER_IMAGES.chart}
+                    title="측정 데이터가 없습니다"
+                    description="센서 측정값이 수집되면 수위와 유속 추세가 표시됩니다."
+                    statusLabel="측정 이력 없음"
+                    className="mt-2 h-[280px]"
+                />
             ) : (
                 <div className="mt-2 h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                             data={points}
-                            margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
+                            margin={{ top: 10, right: 12, left: 0, bottom: 0 }}
                         >
                             <CartesianGrid
                                 strokeDasharray="3 3"
@@ -76,28 +95,42 @@ export function SensorTrendChart({
                                 interval="preserveStartEnd"
                             />
                             <YAxis
-                                tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
+                                yAxisId="waterLevel"
+                                orientation="left"
+                                width={44}
+                                tick={{ fontSize: 11, fill: "#0e7490" }}
                                 tickLine={false}
-                                axisLine={false}
-                                domain={["auto", "auto"]}
+                                axisLine={{ stroke: "#0e7490" }}
+                                domain={waterLevelDomain}
+                            />
+                            <YAxis
+                                yAxisId="flowVelocity"
+                                orientation="right"
+                                width={44}
+                                tick={{ fontSize: 11, fill: "#059669" }}
+                                tickLine={false}
+                                axisLine={{ stroke: "#059669" }}
+                                domain={flowVelocityDomain}
                             />
                             <Tooltip content={<ChartTooltip />} />
                             <Line
+                                yAxisId="waterLevel"
                                 type="monotone"
                                 dataKey="level"
                                 name="수위"
                                 stroke="#0e7490"
                                 strokeWidth={2}
-                                dot={false}
+                                dot={isSinglePoint ? { r: 4 } : false}
                                 isAnimationActive={false}
                             />
                             <Line
+                                yAxisId="flowVelocity"
                                 type="monotone"
                                 dataKey="flow"
                                 name="유속"
                                 stroke="#059669"
                                 strokeWidth={2}
-                                dot={false}
+                                dot={isSinglePoint ? { r: 4 } : false}
                                 isAnimationActive={false}
                             />
                         </LineChart>
@@ -105,17 +138,24 @@ export function SensorTrendChart({
                 </div>
             )}
 
-            {!isFallback && (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <SummaryCard
-                        label="현재 수위"
-                        value={formatMeasurement(summary.currentLevel, "cm")}
-                    />
-                    <SummaryCard
-                        label="현재 유속"
-                        value={formatMeasurement(summary.currentFlow, "m/s")}
-                    />
-                </div>
+            {!isFallback && hasSensorPoints && (
+                <>
+                    {isSinglePoint && (
+                        <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+                            측정 데이터 1건 — 추세를 표시하려면 추가 측정이 필요합니다.
+                        </p>
+                    )}
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <SummaryCard
+                            label="현재 수위"
+                            value={formatMeasurement(summary.currentLevel, "cm")}
+                        />
+                        <SummaryCard
+                            label="현재 유속"
+                            value={formatMeasurement(summary.currentFlow, "m/s")}
+                        />
+                    </div>
+                </>
             )}
         </div>
     );
@@ -162,6 +202,16 @@ function SummaryCard({
 
 function formatMeasurement(value: number | null, unit: string) {
     return value == null ? "-" : `${value} ${unit}`;
+}
+
+function getAxisDomain(values: Array<number | null>, defaultMaximum: number) {
+    const maximum = values.reduce<number>(
+        (currentMaximum, value) =>
+            value == null ? currentMaximum : Math.max(currentMaximum, value),
+        0,
+    );
+
+    return [0, Math.max(defaultMaximum, maximum)] as const;
 }
 
 function ChartTooltip({
