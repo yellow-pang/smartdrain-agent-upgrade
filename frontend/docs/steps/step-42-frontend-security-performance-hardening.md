@@ -69,3 +69,29 @@ Docker Compose로 기동한 통합 환경의 Nginx(`http://127.0.0.1:18080`)를 
 - **NO_CHANGE:** 지도와 차트의 dynamic import, memoization 변경, virtualization은 적용하지 않는다.
 - **추가 측정 필요:** 배포 이미지 또는 staging에서 같은 뷰포트·네트워크 조건으로 cold/warm 각 3회 이상 측정하고, 상세 차트 탭 전환·대시보드 시설 선택의 INP/long task를 함께 기록한다.
 - **다음 판단 기준:** production 측정에서도 상세 첫 표시 LCP가 반복적으로 높고 차트가 LCP 요소가 아닌 경우에만, 상세 차트의 제한적 지연 로딩을 별도 승인 항목으로 제안한다.
+
+## Production 모바일 재측정
+
+개발 서버 수치를 배포 품질로 오해하지 않도록, Dockerfile `runner` 단계의 standalone frontend와 분리된 backend·DB·Nginx를 일시적으로 기동해 같은 조건으로 재측정했다. 기존 18080 개발 스택은 유지했고, 측정용 stack은 18081 포트와 별도 DB·mock seed를 사용한 뒤 종료·삭제했다.
+
+측정 조건은 375×667, device scale factor 2, 캐시 비활성 cold run 및 캐시 사용 warm run 각 3회, 왕복 지연 150ms·다운로드 200KB/s·업로드 75KB/s의 4G 유사 조건이다. 아래 값은 합성 측정의 산술 평균이며 실제 사용자 필드 데이터(CrUX)는 아니다.
+
+| 화면 | Cold LCP | Warm LCP | Cold 전송량 | CLS | Long task 합계 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 대시보드 `/` | 2.37초 | 557ms | 약 339KB | 0.013 | 평균 91ms |
+| 상세 `/drains/DR-001` | 803ms | 265ms | 약 487KB | 0 | 평균 224ms |
+
+### 조작 반응 확인
+
+초기 로드가 끝난 warm production 화면에서 각 동작을 3회 반복하고, click 뒤 두 번의 `requestAnimationFrame`까지 걸린 시간을 기록했다. 이 값은 Event Timing 기반 INP가 아니라 동일 환경에서 비교하기 위한 **click-to-next-frame 근사치**다.
+
+| 동작 | 결과 | 해석 |
+| --- | ---: | --- |
+| 대시보드 `DR-003` 시설 선택 | 32~33ms | 선택 강조와 모바일 요약 표시가 즉시 반영됐다. |
+| 상세 XGBoost 탭 전환 | 33~41ms | 2열×3행 정보 패널이 정상 표시됐고, 탭 전환 자체는 병목이 아니었다. |
+
+### 최종 판단
+
+- **NO_CHANGE:** 대시보드 지도 지연 로딩, 상세 차트 `next/dynamic`, 목록 virtualization, 기존 memoization 변경은 적용하지 않는다. 상세의 cold LCP는 양호하고, 차트는 LCP 요소가 아닌 것으로 관찰됐다.
+- **관찰 항목:** 상세 화면은 대시보드보다 cold 전송량과 long task 합계가 크다. 현재 MVP 데이터와 조작 반응에서는 체감 지연이 재현되지 않았으므로, 실제 시설·차트 데이터가 증가하거나 저사양 실기기에서 입력 지연이 확인될 때만 다시 프로파일링한다.
+- **측정 재현성:** 이 결과는 production Docker build가 성공하고, API 데이터·Nginx same-origin 경로·모바일 화면이 함께 동작하는 것을 확인한 기준선으로 보관한다.
