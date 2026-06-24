@@ -29,35 +29,55 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "지능형 도시 침수 관리 대시보드",
+  applicationName: "SmartDrain",
+  title: "SmartDrain | 지능형 도시 침수 관리",
   description:
-    "도시 배수 시설의 CCTV 스냅샷과 센서 데이터를 실시간으로 모니터링하는 관제 대시보드",
-  generator: "v0.app",
+    "CCTV 스냅샷, 수위·유속 센서 데이터, AI 분석을 결합해 도시 배수 시설의 침수 위험을 실시간으로 모니터링합니다.",
+  keywords: [
+    "SmartDrain",
+    "도시 침수",
+    "빗물받이",
+    "CCTV 모니터링",
+    "침수 위험 관제",
+  ],
   icons: {
-    icon: [
+    icon: {
+      url: "/images/metaimage/smartdrain-icon.png",
+      type: "image/png",
+    },
+    apple: {
+      url: "/images/metaimage/smartdrain-icon.png",
+      type: "image/png",
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    siteName: "SmartDrain",
+    title: "SmartDrain | 지능형 도시 침수 관리",
+    description:
+      "CCTV 스냅샷, 수위·유속 센서 데이터, AI 분석을 결합한 도시 배수 시설 침수 위험 관제 서비스입니다.",
+    images: [
       {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
+        url: "/images/metaimage/smartdrain-og-image.png",
+        width: 1672,
+        height: 941,
+        alt: "SmartDrain 도시 침수 모니터링 대시보드",
       },
     ],
-    apple: "/apple-icon.png",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SmartDrain | 지능형 도시 침수 관리",
+    description:
+      "CCTV와 AI 분석으로 도시 배수 시설의 침수 위험을 실시간 관제합니다.",
+    images: ["/images/metaimage/smartdrain-og-image.png"],
   },
 };
 
 export const viewport: Viewport = {
   colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
+  themeColor: "#0e7490",
 };
 
 export default function RootLayout({
