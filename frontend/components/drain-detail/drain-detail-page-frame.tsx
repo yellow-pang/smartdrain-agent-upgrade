@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
+import { MobileScrollTopButton } from "@/components/drain-detail/mobile-scroll-top-button";
 import type { DrainFacility } from "@/lib/mock-data";
 
 export function DrainDetailPageFrame({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <AppHeader />
-            <main className="mx-auto max-w-[1600px] p-4 md:p-6">{children}</main>
+            <main className="mx-auto max-w-[1600px] p-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] md:p-6 lg:pb-6">{children}</main>
+            <MobileScrollTopButton />
+            <MobileDashboardReturnButton />
         </div>
     );
 }
@@ -62,6 +65,18 @@ function BackToDashboardLink() {
         <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+            <ArrowLeft className="size-4" />
+            대시보드로 돌아가기
+        </Link>
+    );
+}
+
+function MobileDashboardReturnButton() {
+    return (
+        <Link
+            href="/"
+            className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 z-40 flex h-11 items-center justify-center gap-1.5 rounded-lg bg-cyan-700 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 focus-visible:ring-offset-2 lg:hidden"
         >
             <ArrowLeft className="size-4" />
             대시보드로 돌아가기
