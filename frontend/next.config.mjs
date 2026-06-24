@@ -1,4 +1,9 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
+
 const composePublicEnv = {};
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 if (process.env.COMPOSE_FRONTEND_API_BASE_URL !== undefined) {
   composePublicEnv.NEXT_PUBLIC_API_BASE_URL =
@@ -19,4 +24,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig);

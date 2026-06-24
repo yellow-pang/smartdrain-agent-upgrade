@@ -142,3 +142,24 @@ docs: frontend 보안·성능 리팩터링 계획을 추가
 - 기존 URL 경계와 실시간 렌더링 최적화의 유지 기준을 기록한다.
 - 라이브러리 도입 조건과 사용자 승인 항목을 분리한다.
 ```
+
+## 10. 2단계 번들 측정 결과
+
+`@next/bundle-analyzer`를 devDependency로 추가하고, `ANALYZE=true`일 때만 분석 wrapper가 동작하도록 설정했다. 기본 Turbopack build에서는 이 플러그인이 리포트를 만들지 않으므로, 측정 전용으로 아래 명령을 사용했다.
+
+```text
+ANALYZE=true pnpm exec next build --webpack
+```
+
+| 측정 항목 | 결과 | 해석 |
+| --- | --- | --- |
+| Webpack client 공통 chunk | parsed 약 354KB, gzip 약 103KB | `recharts`, `react-kakao-maps-sdk`와 그 하위 의존성이 함께 포함된 가장 큰 client chunk다. |
+| 대시보드 route 전용 chunk | parsed 약 29KB, gzip 약 7KB | 대시보드 자체 표시 코드 비중은 상대적으로 작다. |
+| 상세 route 전용 chunk | parsed 약 31KB, gzip 약 8KB | 상세 표시 코드 비중은 상대적으로 작다. |
+| 기본 Turbopack build | analyzer 리포트 미생성 | 현재 Next.js 16에서는 `@next/bundle-analyzer` 측정 시에만 Webpack flag가 필요하다. 기본 production build 설정은 바꾸지 않는다. |
+
+### 측정 후 결정
+
+- **추가 측정:** 지도와 차트가 공통 chunk를 키우는 사실은 확인됐지만, 실제 첫 화면 LCP·모바일 입력 지연·네트워크 속도 측정은 아직 없다.
+- **NO_CHANGE:** 대시보드 지도는 핵심 첫 화면 기능이므로 이번 단계에서 지연 로딩하지 않는다.
+- **다음 승인 필요:** 상세 화면의 차트만 제한적으로 dynamic import해 공통 chunk 분리를 시도할지 여부는, 실제 모바일 성능 측정과 기존 loading/fallback UX 검토 후 별도로 결정한다.
