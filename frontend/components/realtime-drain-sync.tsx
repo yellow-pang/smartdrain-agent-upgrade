@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { mergeDrainStatusEventIntoFacility } from "@/lib/api/adapters";
+import {
+    mergeDrainStatusEventIntoFacility,
+    mergeYoloEventIntoFacility,
+} from "@/lib/api/adapters";
 import { drainQueryKeys } from "@/lib/query/drain-query-keys";
 import { useDrainsQuery } from "@/lib/query/drain-queries";
 import type { DrainFacility } from "@/lib/mock-data";
@@ -14,7 +17,7 @@ export function RealtimeDrainSync() {
     const queryClient = useQueryClient();
     const { isSuccess } = useDrainsQuery();
     const storeStatusEvent = useDrainStore((state) => state.applyStatusEvent);
-    const applyYoloEvent = useDrainStore((state) => state.applyYoloEvent);
+    const storeYoloEvent = useDrainStore((state) => state.applyYoloEvent);
     const applyXgboostEvent = useDrainStore((state) => state.applyXgboostEvent);
     const setSocketStatus = useDrainStore((state) => state.setSocketStatus);
     const markMessageReceived = useDrainStore((state) => state.markMessageReceived);
@@ -41,6 +44,14 @@ export function RealtimeDrainSync() {
         storeStatusEvent(event);
         markMessageReceived();
     }, [markMessageReceived, queryClient, storeStatusEvent, upsertUrgentAlert]);
+
+    const applyYoloEvent = useCallback((event: Parameters<typeof mergeYoloEventIntoFacility>[1]) => {
+        queryClient.setQueryData<DrainFacility[]>(drainQueryKeys.all, (drains) =>
+            drains?.map((drain) => mergeYoloEventIntoFacility(drain, event)),
+        );
+        storeYoloEvent(event);
+        markMessageReceived();
+    }, [markMessageReceived, queryClient, storeYoloEvent]);
 
     const handleConnected = useCallback((reconnected: boolean) => {
         if (!reconnected) return;

@@ -15,6 +15,8 @@ export interface DrainFacility {
     waterLevelCm: number | null; // 수위 (cm)
     flowVelocityMps: number | null; // 유속 (m/s)
     updatedAt: string;
+    latestImageUrl?: string | null;
+    latestImageCapturedAt?: string | null;
     judgement: string; // 판정 결과
     latitude: number;
     longitude: number;

@@ -7,6 +7,7 @@ import type {
     DrainListItemDto,
     RiskHistoryDto,
     SensorHistoryDto,
+    YoloResultUpdatedEventDto,
 } from "@/lib/api/types";
 import type {
     DrainFacility,
@@ -37,6 +38,8 @@ export function drainListItemDtoToFacility(
         waterLevelCm: dto.waterLevelCm,
         flowVelocityMps: dto.flowVelocityMps,
         updatedAt: dto.updatedAt ?? "",
+        latestImageUrl: dto.latestImageUrl ?? null,
+        latestImageCapturedAt: dto.latestImageCapturedAt ?? null,
         judgement: dto.finalDecision ?? "-",
         latitude: dto.latitude,
         longitude: dto.longitude,
@@ -158,6 +161,24 @@ export function mergeDrainStatusEventIntoFacility(
         flowVelocityMps: flowVelocityMps ?? drain.flowVelocityMps,
         judgement: finalDecision ?? drain.judgement,
         updatedAt,
+    };
+}
+
+export function mergeYoloEventIntoFacility(
+    drain: DrainFacility,
+    event: YoloResultUpdatedEventDto,
+): DrainFacility {
+    if (drain.id !== event.payload.drainId) return drain;
+
+    return {
+        ...drain,
+        blockage:
+            event.payload.obstructionRatio == null
+                ? drain.blockage
+                : ratioToPercent(event.payload.obstructionRatio),
+        latestImageUrl: event.payload.imageUrl,
+        latestImageCapturedAt: event.payload.capturedAt,
+        updatedAt: event.payload.updatedAt,
     };
 }
 

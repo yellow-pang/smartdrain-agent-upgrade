@@ -32,6 +32,8 @@ export type DrainListItemDto = {
     flowVelocityMps: number | null;
     finalDecision: string | null;
     updatedAt: string | null;
+    latestImageUrl?: string | null;
+    latestImageCapturedAt?: string | null;
 };
 
 export type DrainDetailDto = DrainListItemDto & {
