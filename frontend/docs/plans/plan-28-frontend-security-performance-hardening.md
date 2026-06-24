@@ -163,3 +163,15 @@ ANALYZE=true pnpm exec next build --webpack
 - **추가 측정:** 지도와 차트가 공통 chunk를 키우는 사실은 확인됐지만, 실제 첫 화면 LCP·모바일 입력 지연·네트워크 속도 측정은 아직 없다.
 - **NO_CHANGE:** 대시보드 지도는 핵심 첫 화면 기능이므로 이번 단계에서 지연 로딩하지 않는다.
 - **다음 승인 필요:** 상세 화면의 차트만 제한적으로 dynamic import해 공통 chunk 분리를 시도할지 여부는, 실제 모바일 성능 측정과 기존 loading/fallback UX 검토 후 별도로 결정한다.
+
+## 11. 모바일 런타임 측정 결과
+
+Compose 통합 환경의 Nginx 경로를 375×667 모바일 뷰포트와 4G 유사 네트워크 조건으로 측정했다. 대시보드는 LCP 876ms, CLS 0, long task 1건(131ms)이었고, 상세 화면은 LCP 3,100ms, CLS 0, long task 1건(79ms)이었다.
+
+다만 현재 `frontend` Compose 서비스는 `pnpm dev` 기반의 development target이다. Next DevTools·Turbopack 개발 청크와 route compile 비용이 관측됐으므로, 이 수치는 화면 간 병목 후보를 찾는 **개발 기준선**일 뿐 배포 품질 판정 수치가 아니다.
+
+### 이번 단계 결정
+
+- **NO_CHANGE:** 한 번의 development 측정만으로 지도·차트 lazy loading, virtualization, memoization 조정을 적용하지 않는다.
+- **다음 측정:** production 이미지 또는 staging에서 동일 조건 cold/warm 각 3회 이상을 수행하고, 대시보드 시설 선택과 상세 차트 탭 전환의 입력 반응도 함께 확인한다.
+- **승인 조건 유지:** production에서도 상세 LCP 문제가 반복되고 차트가 첫 표시 핵심 요소가 아닌 경우에만 상세 차트의 제한적 `next/dynamic` 적용을 별도 제안한다.
