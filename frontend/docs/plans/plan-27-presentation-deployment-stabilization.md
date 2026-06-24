@@ -78,6 +78,13 @@
 | Jenkins/Compose 실행 | **실제 발표 VM 또는 Jenkins에서 read-only 확인부터 수행** | 로컬 Compose 문법 통과만으로 Secret File·host mount·네트워크를 보장할 수 없다. |
 | smoke 확장 | **대규모 자동화 대신 수동 시연 체크리스트 우선** | 6영업일 내 자동화 도입으로 배포를 늦추지 않는다. |
 
+## 5-1. 승인된 작업 경계
+
+- 이번 구현은 **frontend와 배포 인프라 문서**에만 적용한다.
+- Backend·AI Service·DB schema·분석 알고리즘·API/WebSocket 계약은 변경하지 않는다.
+- Compose·Jenkins·Nginx의 구조 변경은 실제 실패가 확인될 때까지 하지 않고, 현재 서비스명 기준의 검증·복구 절차만 문서화한다.
+- 패키지·lockfile·환경변수 값은 변경하지 않는다.
+
 ## 6. 검증 계획
 
 ### Frontend
