@@ -48,7 +48,7 @@
 | 구분 | 테스트 항목 | 결과 | 비고 |
 |---|---|---|---|
 | DB | DB 실행 결과 | 통과 | 테스트 진행 가능 상태 확인 |
-| Migration | `alembic upgrade head` | 통과 | 마이그레이션 적용 후 테스트 진행 |
+| Migration | `cd backend` 후 `python -m alembic upgrade head` | 통과 | 마이그레이션 적용 후 테스트 진행 |
 | Backend | FastAPI 서버 실행 | 통과 | `http://localhost:8000` 기준 |
 | Frontend | Next.js 서버 실행 | 통과 | `http://localhost:3000` 기준 |
 | Create API | `POST /api/drains` | 통과 | Swagger 기준 테스트 데이터 생성 |

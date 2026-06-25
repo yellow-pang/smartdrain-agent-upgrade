@@ -96,17 +96,17 @@ CORS_ORIGINS=["http://localhost:3000"]
 
 ### 3.3 백엔드 실행
 
-루트 경로에서 진행한다.
+루트 경로에서 `backend`로 이동한 뒤 진행한다.
 
 ```powershell
+cd backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\activate
 python --version
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
-cd backend
-uvicorn app.main:app --reload
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
 `python --version`이 `Python 3.12.x`가 아니면 venv를 잘못 만든 상태이므로, 통합 테스트를 시작하지 않고 Python 3.12 venv를 다시 만든다.
@@ -116,14 +116,14 @@ uvicorn app.main:app --reload
 **Anaconda/Miniconda** 사용자는 다음과 같이 별도 Conda 환경을 생성하여 실행할 수 있다.
 
 ```powershell
+cd backend
 conda create -n smartdrain-py312 python=3.12
 conda activate smartdrain-py312
 python --version
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
-cd backend
-uvicorn app.main:app --reload
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
 백엔드 확인:

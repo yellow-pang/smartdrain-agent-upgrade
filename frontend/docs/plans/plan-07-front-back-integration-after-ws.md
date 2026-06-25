@@ -86,13 +86,13 @@ git status --short --branch
 
 ```powershell
 docker compose up -d db
+cd backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
-cd backend
-uvicorn app.main:app --reload
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
 확인 URL:

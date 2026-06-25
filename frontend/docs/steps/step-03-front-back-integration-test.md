@@ -53,7 +53,7 @@ FastAPI Swagger 테스트
 |---|---|---|
 | 1 | PostgreSQL 컨테이너 실행 | 사용자 수동 테스트 완료 |
 | 2 | Python 3.12 venv 생성 및 의존성 설치 | 사용자 수동 테스트 완료 |
-| 3 | `alembic upgrade head` 실행 | 사용자 수동 테스트 완료 |
+| 3 | `cd backend` 후 `python -m alembic upgrade head` 실행 | 사용자 수동 테스트 완료 |
 | 4 | FastAPI 서버 실행 및 Swagger 접속 | 사용자 수동 테스트 완료 |
 | 5 | Swagger에서 테스트 데이터 생성 API 실행 | 사용자 수동 테스트 완료 |
 | 6 | Swagger에서 REST 조회 API 실행 | 사용자 수동 테스트 완료 |
@@ -67,7 +67,7 @@ FastAPI Swagger 테스트
 | 이슈 | 원인 | 대응 |
 |---|---|---|
 | Python 3.14 사용 시 의존성 리스크 | `opencv-python`, `ultralytics`, `xgboost`, `psycopg[binary]`가 최신 Python에서 설치 또는 실행 문제가 날 수 있음 | Python 3.12 기준으로 venv 생성 |
-| `alembic upgrade head` 설정 파싱 오류 | `CORS_ORIGINS`가 list 설정인데 단일 문자열로 읽히면 pydantic-settings에서 JSON 파싱 오류 발생 가능 | 로컬 `.env`에서 `CORS_ORIGINS=["http://localhost:3000"]` 형식 확인 |
+| `python -m alembic upgrade head` 설정 파싱 오류 | `CORS_ORIGINS`가 list 설정인데 단일 문자열로 읽히면 pydantic-settings에서 JSON 파싱 오류 발생 가능 | `backend/.env`에서 `CORS_ORIGINS=["http://localhost:3000"]` 형식 확인 |
 | Swagger/PowerShell 혼용 혼란 | 테스트 문서에 두 방식이 섞이면 진행자가 어떤 도구를 써야 하는지 헷갈릴 수 있음 | 첫 통합 테스트는 Swagger 기준으로 통일 |
 
 ## 6. 변경 전/후

@@ -48,7 +48,7 @@
 | 항목 | 결과 | 비고 |
 |---|---|---|
 | PostgreSQL 실행 | 사용자 수동 테스트 완료 | 세부 로그는 별도 확인 |
-| `alembic upgrade head` | 사용자 수동 테스트 완료 | CORS 설정 파싱 이슈 확인 후 진행 |
+| `cd backend` 후 `python -m alembic upgrade head` | 사용자 수동 테스트 완료 | CORS 설정 파싱 이슈 확인 후 진행 |
 | FastAPI Swagger | 사용자 수동 테스트 완료 | `http://localhost:8000/docs` 기준 |
 | 테스트 데이터 생성 API | 사용자 수동 테스트 완료 | Swagger 기준 |
 | REST 조회 API | 사용자 수동 테스트 완료 | Swagger 기준 |

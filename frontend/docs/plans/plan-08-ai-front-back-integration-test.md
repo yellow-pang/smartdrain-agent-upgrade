@@ -92,14 +92,14 @@ git status --short --branch
 
 ### 6.2 DB와 백엔드 실행
 
-루트 경로에서 실행한다.
+루트 경로에서 DB를 실행한 뒤 backend 경로에서 migration과 서버를 실행한다.
 
 ```powershell
 docker compose up -d db
-.\.venv\Scripts\activate
-alembic upgrade head
 cd backend
-uvicorn app.main:app --reload
+.\.venv\Scripts\activate
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
 확인 URL:
