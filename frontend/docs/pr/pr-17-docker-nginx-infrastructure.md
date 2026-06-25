@@ -36,7 +36,7 @@
 
 ## 리뷰 포인트
 
-- root `alembic.ini`과 root `requirements.txt`는 이번 PR에서 이동하지 않았습니다. 이유와 후속 정리 방안은 step-14의 **`alembic.ini`과 root `requirements.txt` 판단**을 확인해주세요.
+- `refactor/global-architecture` 기준으로 `alembic.ini`는 `backend/alembic.ini`로 이동했고 root `requirements.txt`는 제거했습니다. 현재 migration은 `cd backend` 후 `python -m alembic upgrade head` 또는 Compose `migrate` 서비스로 실행합니다.
 - `COMPOSE_FRONTEND_API_BASE_URL`은 Docker same-origin에서 빈 값이 정상입니다. API 함수가 이미 `/api/*` 경로를 포함하므로 `/api`를 base URL로 넣으면 중복 경로가 됩니다.
 - 실제 `.env` 파일과 배포 secret은 커밋하지 않습니다. 팀원은 각 `.env.example`을 복사해 사용합니다.
 

@@ -60,8 +60,8 @@
 | Frontend build 안정화 | `frontend/next.config.mjs` | P0 검증 통과 후 `ignoreBuildErrors` 제거 또는 `false` 전환 |
 | Font fallback | `frontend/app/layout.tsx`, `frontend/app/globals.css` | 외부 폰트 실패가 재현될 때만 시스템 폰트 기반으로 최소 전환 |
 | Frontend 실행 기준 | `frontend/README.md` | pnpm 기준 명령, 직접 URL·새로고침·오류 화면 확인 절차 보완 |
-| 발표 운영 절차 | `docs/17_배포_운영_런북.md` | 실제 서비스명 기준 health·로그·복구·수동 시연 체크리스트 추가 |
-| 검증 기준 | `docs/16_테스트_전략_및_E2E_검증.md` | 자동 범위와 발표 전 수동 분석·callback·WebSocket 확인 범위 명확화 |
+| 발표 운영 절차 | `docs/verification/17_배포_운영_런북.md` | 실제 서비스명 기준 health·로그·복구·수동 시연 체크리스트 추가 |
+| 검증 기준 | `docs/verification/16_테스트_전략_및_E2E_검증.md` | 자동 범위와 발표 전 수동 분석·callback·WebSocket 확인 범위 명확화 |
 | 완료 기록 | `frontend/docs/steps/step-41-presentation-deployment-stabilization.md` | 실제 변경·실행 명령·미실행 사유·남은 리스크 기록 |
 | PR 요약 | `frontend/docs/pr/pr-32-presentation-deployment-stabilization.md` | 변경 요약·검증·리뷰 포인트 기록 |
 
@@ -152,3 +152,4 @@ chore: 발표 환경의 빌드와 배포 재현성을 안정화
 - Compose, 환경변수, 모델 mount, Nginx proxy의 발표 전 확인 절차를 고정한다.
 - 분석 callback과 WebSocket 반영을 포함한 수동 시연·복구 체크리스트를 문서화한다.
 ```
+

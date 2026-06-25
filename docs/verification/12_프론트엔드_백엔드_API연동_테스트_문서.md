@@ -10,7 +10,7 @@
 | 테스트 목적      | FastAPI 백엔드와 Next.js 프론트엔드가 REST API 기준으로 정상 연동되는지 확인     |
 | 테스트 브랜치    | `text/front-back-first-merge-test`                                               |
 | 테스트 기준 문서 | `frontend/docs/front-back-integration-test-guideline.md`                         |
-| API 명세 기준 1  | `docs/11_API명세서.md`                                                           |
+| API 명세 기준 1  | `docs/reference/11_API명세서.md`                                                           |
 | API 명세 기준 2  | `frontend/docs/api-spec/2026-06-18_mvp_api_spec_v1.md`                           |
 | 테스트 방식      | Swagger를 통해 테스트 데이터를 생성한 뒤, 프론트엔드 화면에서 API 연동 결과 확인 |
 | WebSocket 테스트 | 이번 문서에서는 제외                                                             |
@@ -117,17 +117,17 @@ CORS_ORIGINS=["http://localhost:3000"]
 
 ### 5.3 백엔드 실행
 
-루트 경로에서 진행한다.
+루트 경로에서 `backend`로 이동한 뒤 진행한다.
 
 ```powershell
+cd backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\activate
 python --version
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
-cd backend
-uvicorn app.main:app --reload
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
 `python --version`이 `Python 3.12.x`가 아니면 venv를 잘못 만든 상태이므로, 통합 테스트를 시작하지 않고 Python 3.12 venv를 다시 만든다.
@@ -136,17 +136,17 @@ uvicorn app.main:app --reload
 
 Anaconda 또는 Miniconda를 사용하는 경우에도 프로젝트 실행 환경은 반드시 **Python 3.12**로 맞춘다.
 
-기존 `venv` 대신 Conda 환경을 사용할 수 있으며, 루트 경로에서 다음과 같이 진행한다.
+기존 `venv` 대신 Conda 환경을 사용할 수 있으며, 루트 경로에서 `backend`로 이동한 뒤 다음과 같이 진행한다.
 
 ```powershell
+cd backend
 conda create -n smartdrain-py312 python=3.12
 conda activate smartdrain-py312
 python --version
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
-cd backend
-uvicorn app.main:app --reload
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
 `python --version` 결과가 `Python 3.12.x`가 아니면 통합 테스트를 시작하지 않는다.
@@ -191,7 +191,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 | 순서 | 작업                           | 목적                                |
 | ---- | ------------------------------ | ----------------------------------- |
 | 1    | PostgreSQL 실행 확인           | 백엔드가 DB에 연결 가능한지 확인    |
-| 2    | `alembic upgrade head` 실행    | DB 테이블 구조가 최신 상태인지 확인 |
+| 2    | `cd backend` 후 `python -m alembic upgrade head` 실행 | DB 테이블 구조가 최신 상태인지 확인 |
 | 3    | 백엔드 서버 실행               | FastAPI API 서버 실행 확인          |
 | 4    | 프론트엔드 서버 실행           | Next.js 화면 실행 확인              |
 | 5    | Swagger에서 테스트 데이터 생성 | 프론트에서 조회할 데이터 준비       |
@@ -214,8 +214,8 @@ Swagger에서 다음 순서로 테스트 데이터를 생성하였다.
 
 ### 7.1 증빙 이미지
 
-![Swagger 테스트 데이터 생성 화면](./images/swagger-create-test-data.png)
-![Swagger 테스트 데이터 생성 화면](./images/swagger-create-test-data-1.png)
+![Swagger 테스트 데이터 생성 화면](../../frontend/docs/images/swagger-create-test-data.png)
+![Swagger 테스트 데이터 생성 화면](../../frontend/docs/images/swagger-create-test-data-1.png)
 
 ## 8. REST API 조회 테스트 결과
 
@@ -232,7 +232,7 @@ Swagger에서 다음 순서로 테스트 데이터를 생성하였다.
 
 ### 8.1 증빙 이미지
 
-![Swagger API 조회 결과](./images/swagger-get-api-result.png)
+![Swagger API 조회 결과](../../frontend/docs/images/swagger-get-api-result.png)
 
 ## 9. 화면 연동 확인 결과
 
@@ -251,7 +251,7 @@ Swagger에서 다음 순서로 테스트 데이터를 생성하였다.
 
 ### 9.2 대시보드 증빙 이미지
 
-![대시보드 API 연동 확인 화면](./images/frontend-dashboard-api-connected.png)
+![대시보드 API 연동 확인 화면](../../frontend/docs/images/frontend-dashboard-api-connected.png)
 
 ### 9.3 상세 페이지 화면
 
@@ -267,14 +267,14 @@ Swagger에서 다음 순서로 테스트 데이터를 생성하였다.
 
 ### 9.4 상세 페이지 증빙 이미지
 
-![상세 페이지 API 연동 확인 화면](./images/frontend-detail-api-connected.png)
+![상세 페이지 API 연동 확인 화면](../../frontend/docs/images/frontend-detail-api-connected.png)
 
 ## 10. 전체 테스트 결과 요약
 
 | 구분       | 테스트 항목                                  | 결과      | 메모                             |
 | ---------- | -------------------------------------------- | --------- | -------------------------------- |
 | DB         | DB 실행 결과                                 | 통과      | 테스트 진행 가능 상태 확인       |
-| Migration  | `alembic upgrade head` 결과                  | 통과      | 마이그레이션 적용 후 테스트 진행 |
+| Migration  | `cd backend` 후 `python -m alembic upgrade head` 결과 | 통과      | 마이그레이션 적용 후 테스트 진행 |
 | Backend    | 백엔드 서버 실행 결과                        | 통과      | `http://localhost:8000` 기준     |
 | Frontend   | 프론트 서버 실행 결과                        | 통과      | `http://localhost:3000` 기준     |
 | Create API | `POST /api/drains`                           | 통과      | Swagger 기준 테스트 데이터 생성  |
@@ -327,3 +327,4 @@ Swagger에서 다음 순서로 테스트 데이터를 생성하였다.
 | 자동화 테스트  | Playwright 또는 API 테스트 도구를 이용한 반복 검증 검토     |
 
 따라서 이번 테스트 결과는 **REST API 기준 프론트엔드-백엔드 1차 연동 완료**로 판단한다.
+

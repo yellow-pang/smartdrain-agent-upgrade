@@ -207,16 +207,16 @@ Copy-Item frontend\.env.example frontend\.env.local
 | AI 단독 실행 | `ai_service/.env` | backend callback 주소는 단독 실행 주소를 사용 |
 | frontend 단독 실행 | `frontend/.env.local` | `NEXT_PUBLIC_*`은 브라우저에 공개됨 |
 
-### `alembic.ini`과 root `requirements.txt` 판단
+### backend tooling 위치 판단
 
 | 파일 | 현재 상태 | 이번 PR 결정 | 후속 정리 권장안 |
 | --- | --- | --- | --- |
-| `/alembic.ini` | backend Alembic migration 설정이지만 루트 경로·`backend/alembic` 경로·Dockerfile이 모두 이 위치를 참조 | **루트 유지**. 지금 이동하면 Dockerfile, migration command, 문서와 path 계산을 함께 바꿔야 하므로 브랜치 종료 직전 변경은 위험 | 별도 `refactor/backend-tooling-layout` 브랜치에서 `backend/alembic.ini` 이동, `script_location`, Docker workdir, migration 명령, README를 한 번에 변경 |
-| `/requirements.txt` | FastAPI와 ML/CUDA 계열을 포함한 과거 통합/실험 의존성 목록 | **루트 유지, Compose 미사용으로 명시**. runtime Docker 이미지는 `backend/requirements.txt`만 사용 | 실제 소유자를 합의한 뒤 `requirements-ml-experiment.txt`처럼 목적이 드러나는 이름으로 변경하거나, 더 이상 쓰지 않으면 제거 |
+| `/backend/alembic.ini` | backend Alembic migration 설정 | `backend/`로 이동 완료. `script_location = %(here)s/alembic`, Docker `WORKDIR /app/backend`, Compose `migrate` command를 함께 맞춤 | migration은 `cd backend` 후 `python -m alembic upgrade head`로 실행 |
+| `/requirements.txt` | FastAPI와 ML/CUDA 계열을 포함한 과거 통합/실험 의존성 목록 | 루트에서 제거. runtime Docker 이미지는 `backend/requirements.txt`만 사용 | 실제 모델 의존성은 backend가 아니라 `ai_service/requirements.txt` 또는 별도 실험 의존성 파일로 관리 |
 | `/backend/requirements.txt` | 현재 backend Docker runtime 의존성 | backend runtime의 단일 기준 | backend 담당자가 API/DB 의존성 변경 시 갱신 |
 | `/ai_service/requirements.txt` | 현재 AI FastAPI callback service 의존성 | AI runtime의 단일 기준 | 모델 추론 패키지 도입 시 backend가 아닌 이 파일/AI 전용 image에 추가 |
 
-root `requirements.txt`의 `ultralytics`, `xgboost`, `opencv-python` 등은 현재 Compose backend image에 설치하지 않는다. 실제 YOLO/XGBoost 모델을 도입할 때 AI 담당자가 모델 artifact, GPU/CUDA 필요 여부, image 크기를 함께 검토해 AI service 전용 의존성으로 추가한다.
+기존 root `requirements.txt`의 `ultralytics`, `xgboost`, `opencv-python` 등은 현재 Compose backend image에 설치하지 않는다. 실제 YOLO/XGBoost 모델을 도입할 때 AI 담당자가 모델 artifact, GPU/CUDA 필요 여부, image 크기를 함께 검토해 AI service 전용 의존성으로 추가한다.
 
 ### 에이전트 사용 시 서비스 경계
 
