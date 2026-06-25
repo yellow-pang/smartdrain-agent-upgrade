@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend
 
-WORKDIR /app
+WORKDIR /app/backend
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y libgl1 libglib2.0-0 \
@@ -13,8 +13,7 @@ RUN apt-get update \
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY alembic.ini ./
-COPY backend/ ./backend/
+COPY backend/ ./
 
 RUN useradd --create-home appuser \
     && chown -R appuser:appuser /app
