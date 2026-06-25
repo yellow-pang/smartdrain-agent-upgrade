@@ -167,6 +167,19 @@ ANALYSIS_JOB_TIMEOUT_SECONDS=600
 - scheduler는 최신 센서 데이터가 없거나, 같은 drain에 진행 중 job이 있거나, 마지막 job 생성 시각이 주기 이내이면 skip합니다.
 - timeout을 초과한 `processing`/`yolo_completed` job은 `failed`로 변경합니다.
 
+### Realtime Simulator (런타임 자동 모드)
+
+- 수동 `POST /api/analysis/async-run` 방식은 그대로 유지합니다.
+- 별도 런타임 제어 API로 자동 시뮬레이션을 시작/중지할 수 있습니다.
+- 자동 모드는 주기적으로 센서 데이터를 생성하고, drain별 비동기 분석 요청을 실행합니다.
+- 자동 모드 분석 요청의 `analysis_jobs.trigger_type`은 `scheduled`로 저장됩니다.
+
+시뮬레이터 제어 API:
+
+- `GET /api/realtime-simulator/status`
+- `POST /api/realtime-simulator/start`
+- `POST /api/realtime-simulator/stop`
+
 ## 주요 API 확인
 
 - `GET /api/drains`
@@ -176,6 +189,9 @@ ANALYSIS_JOB_TIMEOUT_SECONDS=600
 - `GET /api/drains/DR-004/risk-history`
 - `GET /api/drains/DR-004/analysis/latest`
 - `POST /api/analysis/async-run`
+- `GET /api/realtime-simulator/status`
+- `POST /api/realtime-simulator/start`
+- `POST /api/realtime-simulator/stop`
 
 분석 시작 요청 예시:
 

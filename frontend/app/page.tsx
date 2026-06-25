@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { AppHeader } from "@/components/app-header";
 import { DashboardMainContent } from "@/components/dashboard/dashboard-main-content";
+import { RealtimeSimulatorControl } from "@/components/dashboard/realtime-simulator-control";
 import { DashboardSummarySection } from "@/components/dashboard/dashboard-summary-section";
 import type {
     DrainRealtimeStatus,
@@ -81,6 +82,7 @@ export default function DashboardPage() {
                     isLoading={summaryQuery.isLoading}
                     onRetry={reloadDashboard}
                 />
+                <RealtimeSimulatorControl />
                 <DashboardMainContent
                     mapDrains={dashboardData?.drains ?? []}
                     hasDashboardData={dashboardData !== null}

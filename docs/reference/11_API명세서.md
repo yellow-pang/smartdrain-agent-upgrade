@@ -363,6 +363,9 @@ type ApiListResponse<T> = ApiResponse<{
 | 센서 데이터 저장 | POST | `/api/sensor-data` | 수위, 유속 모의 데이터 저장 | 데모/테스트 | Backend |
 | YOLO 결과 저장 | POST | `/api/analysis/yolo` | 이미지 분석 결과 저장 | 데모/테스트 | Backend / AI |
 | XGBoost 위험도 판단 | POST | `/api/analysis/xgboost` | 센서 데이터와 YOLO 결과 기반 최종 위험도 판단 | 데모/테스트 | Backend / AI |
+| 자동 시뮬레이터 상태 조회 | GET | `/api/realtime-simulator/status` | 자동 모드 실행 상태와 최근 tick 정보 조회 | 데모/테스트 | Backend |
+| 자동 시뮬레이터 시작 | POST | `/api/realtime-simulator/start` | 자동 센서·분석 시뮬레이션 시작 | 데모/테스트 | Backend |
+| 자동 시뮬레이터 중지 | POST | `/api/realtime-simulator/stop` | 자동 센서·분석 시뮬레이션 중지 | 데모/테스트 | Backend |
 
 ### 7.3 호환용 endpoint 정리
 
@@ -1070,6 +1073,9 @@ export async function getDrainSensorHistory(id: string, params?: { range?: strin
 export async function getDrainRiskHistory(id: string, params?: { days?: number; limit?: number });
 export async function getDashboardSummary();
 export async function getLatestAnalysis(id: string);
+export async function getRealtimeSimulatorStatus();
+export async function startRealtimeSimulator(intervalSeconds?: number);
+export async function stopRealtimeSimulator();
 ```
 
 ---

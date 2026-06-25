@@ -17,9 +17,10 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.routers import ai_callback, analysis, dashboard, drains, sensor_data, websocket
+from app.routers import ai_callback, analysis, dashboard, drains, realtime_simulator, sensor_data, websocket
 from app.schemas.api_response import api_error_response, api_response
 from app.services.analysis_scheduler import start_analysis_scheduler, stop_analysis_scheduler
+from app.services.realtime_simulator import shutdown_realtime_simulator
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -54,6 +55,7 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
+    await shutdown_realtime_simulator()
     await stop_analysis_scheduler(app)
 
 
@@ -126,3 +128,4 @@ app.include_router(analysis.router)
 app.include_router(ai_callback.router)
 app.include_router(dashboard.router)
 app.include_router(websocket.router)
+app.include_router(realtime_simulator.router)

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
     drainListDtoToFacilities,
 } from "@/lib/api/adapters";
-import { getDashboardSummary, getDrains } from "@/lib/api/drains";
+import { getDashboardSummary, getDrains, getRealtimeSimulatorStatus } from "@/lib/api/drains";
 import { loadDrainDetailData } from "@/lib/api/drain-data";
 import { drainQueryKeys } from "@/lib/query/drain-query-keys";
 
@@ -20,6 +20,14 @@ export async function fetchDashboardSummary() {
     const response = await getDashboardSummary();
     if (!response.success || !response.data) {
         throw new Error(response.error?.message ?? "대시보드 요약을 불러오지 못했습니다.");
+    }
+    return response.data;
+}
+
+export async function fetchRealtimeSimulatorStatus() {
+    const response = await getRealtimeSimulatorStatus();
+    if (!response.success || !response.data) {
+        throw new Error(response.error?.message ?? "자동 시뮬레이터 상태를 불러오지 못했습니다.");
     }
     return response.data;
 }
@@ -49,6 +57,17 @@ export function useDrainDetailQuery(drainId: string) {
         queryKey: drainQueryKeys.detail(drainId),
         queryFn: () => loadDrainDetailData(drainId),
         staleTime: REALTIME_STALE_TIME,
+        refetchOnWindowFocus: false,
+        retry: 1,
+    });
+}
+
+export function useRealtimeSimulatorStatusQuery() {
+    return useQuery({
+        queryKey: drainQueryKeys.realtimeSimulatorStatus,
+        queryFn: fetchRealtimeSimulatorStatus,
+        staleTime: 0,
+        refetchInterval: 5000,
         refetchOnWindowFocus: false,
         retry: 1,
     });
