@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import {
@@ -26,7 +27,7 @@ import {
     RiskHistoryCard,
 } from "@/components/drain-detail/facility-overview-panels";
 import { CctvSnapshotCard } from "@/components/cctv-snapshot-card";
-import { SensorTrendChart } from "@/components/sensor-trend-chart";
+import type { SensorTrendChartProps } from "@/components/sensor-trend-chart";
 import { PlaceholderState } from "@/components/placeholder-state";
 import { STATUS_META, type RiskStatus } from "@/lib/mock-data";
 import {
@@ -45,6 +46,17 @@ import type {
     YoloResultDto,
     YoloResultUpdatedEventDto,
 } from "@/lib/api/types";
+
+const SensorTrendChart = dynamic<SensorTrendChartProps>(
+    () =>
+        import("@/components/sensor-trend-chart").then(
+            (module) => module.SensorTrendChart,
+        ),
+    {
+        ssr: false,
+        loading: () => <SensorTrendChartLoadingState />,
+    },
+);
 
 export default function DrainDetailPage({
     params,
@@ -342,6 +354,32 @@ export default function DrainDetailPage({
                     </div>
             </div>
         </DrainDetailPageFrame>
+    );
+}
+
+function SensorTrendChartLoadingState() {
+    return (
+        <div
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            aria-hidden="true"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="h-5 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-4 w-16 rounded bg-slate-100 dark:bg-slate-800" />
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+                <div className="h-3 w-20 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-slate-800" />
+            </div>
+            <div className="mt-2 flex h-[280px] w-full flex-col justify-between rounded-lg bg-slate-50 px-4 py-5 dark:bg-slate-800/70">
+                {Array.from({ length: 5 }).map((_, index) => (
+                    <div
+                        key={index}
+                        className="h-px w-full bg-slate-200/80 dark:bg-slate-700/70"
+                    />
+                ))}
+            </div>
+        </div>
     );
 }
 

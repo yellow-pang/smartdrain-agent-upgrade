@@ -82,7 +82,7 @@ export function DashboardMainContent({
                 </div>
             </section>
 
-            <section className="lg:col-span-12 xl:hidden">
+            <section className="hidden lg:col-span-12 lg:block xl:hidden">
                 {selectedDrain ? (
                     <MobileDrainInlineSummary drain={selectedDrain} />
                 ) : !isLoading && drains.length === 0 ? (
