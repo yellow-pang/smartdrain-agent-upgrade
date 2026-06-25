@@ -2,7 +2,7 @@
 실시간 대시보드 자동 시뮬레이터를 관리합니다.
 
 주요 역할:
-- 주기적으로 센서 데이터를 생성하고 비동기 분석 요청을 시작
+- 주기적으로 상태별 시나리오 센서/분석 결과를 생성
 - 런타임 start/stop/status 제어
 - 수동 분석 흐름을 유지하면서 자동 모드를 추가
 """
@@ -10,28 +10,89 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import random
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import quote
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.models.analysis_job import AnalysisJob
 from app.models.drain import Drain
 from app.models.sensor_data import SensorData
-from app.schemas.api_response import format_datetime
-from app.services import analysis_async_service
+from app.models.xgboost_result import XgboostResult
+from app.models.yolo_result import YoloResult
+from app.schemas.api_response import drain_status_event_payload, format_datetime
+from app.websocket.events import XGBOOST_RESULT_UPDATED, YOLO_RESULT_UPDATED
+from app.websocket.manager import manager
 
 LOGGER = logging.getLogger(__name__)
 ACTIVE_JOB_STATUSES = {"processing", "yolo_completed"}
 DEFAULT_INTERVAL_SECONDS = 20
-MIN_WATER_LEVEL_CM = 5.0
-MAX_WATER_LEVEL_CM = 95.0
-MIN_FLOW_VELOCITY_MPS = 0.1
-MAX_FLOW_VELOCITY_MPS = 4.5
+MOCK_IMAGE_URL_PREFIX = "/api/mock-images"
+PROJECT_ROOT_DIR = Path(__file__).resolve().parents[3]
+SCENARIO_IMAGE_ROOT_DIR = PROJECT_ROOT_DIR / "mock_data" / "ai_image_samples" / "scenarios"
+SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+@dataclass(frozen=True)
+class ScenarioProfile:
+    risk_level: str
+    water_level_range: tuple[float, float]
+    flow_velocity_range: tuple[float, float]
+    obstruction_ratio_range: tuple[float, float]
+    confidence_score_range: tuple[float, float]
+    risk_score_range: tuple[float, float]
+    yolo_status: str
+    final_decision: str
+
+
+SCENARIO_PROFILES: tuple[ScenarioProfile, ...] = (
+    ScenarioProfile(
+        risk_level="good",
+        water_level_range=(8.0, 28.0),
+        flow_velocity_range=(0.9, 2.4),
+        obstruction_ratio_range=(0.02, 0.24),
+        confidence_score_range=(0.86, 0.98),
+        risk_score_range=(0.05, 0.28),
+        yolo_status="clear",
+        final_decision="막힘과 수위가 낮아 정상 상태입니다.",
+    ),
+    ScenarioProfile(
+        risk_level="caution",
+        water_level_range=(35.0, 62.0),
+        flow_velocity_range=(0.35, 1.2),
+        obstruction_ratio_range=(0.42, 0.68),
+        confidence_score_range=(0.78, 0.94),
+        risk_score_range=(0.46, 0.69),
+        yolo_status="partially_blocked",
+        final_decision="일부 막힘 또는 수위 상승이 감지되어 주의 관찰이 필요합니다.",
+    ),
+    ScenarioProfile(
+        risk_level="danger",
+        water_level_range=(68.0, 95.0),
+        flow_velocity_range=(0.05, 0.45),
+        obstruction_ratio_range=(0.74, 0.96),
+        confidence_score_range=(0.84, 0.99),
+        risk_score_range=(0.78, 0.97),
+        yolo_status="blocked",
+        final_decision="막힘률과 수위가 높아 현장 조치가 필요합니다.",
+    ),
+    ScenarioProfile(
+        risk_level="unknown",
+        water_level_range=(0.0, 12.0),
+        flow_velocity_range=(0.0, 0.25),
+        obstruction_ratio_range=(0.0, 0.08),
+        confidence_score_range=(0.12, 0.42),
+        risk_score_range=(0.0, 0.12),
+        yolo_status="unknown",
+        final_decision="센서 또는 이미지 신뢰도가 낮아 위험도를 판단하기 어렵습니다.",
+    ),
+)
 
 
 @dataclass
@@ -99,6 +160,9 @@ def get_realtime_simulator_status() -> dict[str, object]:
         "totalRunCount": _runtime.total_run_count,
         "lastError": _runtime.last_error,
         "triggerType": "scheduled",
+        "mode": "scenario",
+        "imageRoot": str(SCENARIO_IMAGE_ROOT_DIR),
+        "scenarioLevels": [profile.risk_level for profile in SCENARIO_PROFILES],
     }
 
 
@@ -122,18 +186,17 @@ async def _run_once() -> int:
     generated = 0
     with SessionLocal() as db:
         drains = db.query(Drain).order_by(Drain.id.asc()).all()
-        for drain in drains:
+        for drain, scenario in zip(drains, _scenario_sequence(len(drains)), strict=False):
             if _has_active_job(db, drain.id):
                 continue
-            _create_simulated_sensor_data(db, drain.id)
             try:
-                await analysis_async_service.start_analysis_for_drain(db, drain, trigger_type="scheduled")
+                events = _create_simulated_scenario_results(db, drain, scenario)
+                for event in events:
+                    await manager.broadcast(json.dumps(event))
                 generated += 1
-            except HTTPException as exc:
-                LOGGER.warning("Realtime simulator analysis skipped drain_id=%s detail=%s", drain.id, exc.detail)
             except Exception:
                 db.rollback()
-                LOGGER.exception("Realtime simulator analysis failed drain_id=%s", drain.id)
+                LOGGER.exception("Realtime simulator scenario failed drain_id=%s", drain.id)
     return generated
 
 
@@ -149,31 +212,115 @@ def _has_active_job(db: Session, drain_id: int) -> bool:
     )
 
 
-def _create_simulated_sensor_data(db: Session, drain_id: int) -> SensorData:
-    latest = (
-        db.query(SensorData)
-        .filter(SensorData.drain_id == drain_id)
-        .order_by(SensorData.measured_at.desc())
-        .first()
-    )
-    water_level_base = latest.water_level_cm if latest else 20.0 + (drain_id % 5) * 8.0
-    flow_velocity_base = latest.flow_velocity_mps if latest else 0.8 + (drain_id % 3) * 0.5
+def _scenario_sequence(count: int) -> list[ScenarioProfile]:
+    scenarios = list(SCENARIO_PROFILES)
+    sequence: list[ScenarioProfile] = []
+    while len(sequence) < count:
+        _rng.shuffle(scenarios)
+        sequence.extend(scenarios)
+    return sequence[:count]
 
+
+def _create_simulated_scenario_results(
+    db: Session,
+    drain: Drain,
+    scenario: ScenarioProfile,
+) -> list[dict[str, object]]:
+    measured_at = datetime.now(timezone.utc)
     sensor_data = SensorData(
-        drain_id=drain_id,
-        water_level_cm=_clamp(water_level_base + _rng.uniform(-7.0, 9.0), MIN_WATER_LEVEL_CM, MAX_WATER_LEVEL_CM),
-        flow_velocity_mps=_clamp(
-            flow_velocity_base + _rng.uniform(-0.35, 0.45),
-            MIN_FLOW_VELOCITY_MPS,
-            MAX_FLOW_VELOCITY_MPS,
-        ),
-        measured_at=datetime.now(timezone.utc),
+        drain_id=drain.id,
+        water_level_cm=_random_range(scenario.water_level_range),
+        flow_velocity_mps=_random_range(scenario.flow_velocity_range),
+        measured_at=measured_at,
     )
     db.add(sensor_data)
+    db.flush()
+
+    yolo_result = YoloResult(
+        drain_id=drain.id,
+        image_url=_scenario_image_url(scenario.risk_level),
+        obstruction_ratio=_random_range(scenario.obstruction_ratio_range),
+        confidence_score=_random_range(scenario.confidence_score_range),
+        yolo_status=scenario.yolo_status,
+        captured_at=measured_at,
+    )
+    db.add(yolo_result)
+    db.flush()
+
+    xgboost_result = XgboostResult(
+        drain_id=drain.id,
+        sensor_data_id=sensor_data.id,
+        yolo_result_id=yolo_result.id,
+        risk_score=_random_range(scenario.risk_score_range),
+        risk_level=scenario.risk_level,
+        final_decision=scenario.final_decision,
+        evaluated_at=measured_at,
+    )
+    db.add(xgboost_result)
+    drain.status = scenario.risk_level
     db.commit()
     db.refresh(sensor_data)
-    return sensor_data
+    db.refresh(yolo_result)
+    db.refresh(xgboost_result)
+    db.refresh(drain)
+
+    return [
+        _yolo_result_event_payload(drain, yolo_result),
+        _xgboost_result_event_payload(drain, xgboost_result),
+        drain_status_event_payload(db, drain, xgboost_result, sensor_data=sensor_data, yolo_result=yolo_result),
+    ]
 
 
-def _clamp(value: float, minimum: float, maximum: float) -> float:
-    return max(minimum, min(maximum, value))
+def _scenario_image_url(risk_level: str) -> str | None:
+    scenario_dir = SCENARIO_IMAGE_ROOT_DIR / risk_level
+    if not scenario_dir.is_dir():
+        return None
+
+    image_paths = [
+        path
+        for path in scenario_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS
+    ]
+    if not image_paths:
+        return None
+
+    image_path = _rng.choice(image_paths)
+    return f"{MOCK_IMAGE_URL_PREFIX}/scenarios/{risk_level}/{quote(image_path.name)}"
+
+
+def _yolo_result_event_payload(drain: Drain, yolo_result: YoloResult) -> dict[str, object]:
+    return {
+        "type": YOLO_RESULT_UPDATED,
+        "payload": {
+            "drainId": drain.drain_code,
+            "yoloResultId": yolo_result.id,
+            "imageUrl": yolo_result.image_url,
+            "obstructionRatio": yolo_result.obstruction_ratio,
+            "confidenceScore": yolo_result.confidence_score,
+            "yoloStatus": yolo_result.yolo_status,
+            "capturedAt": format_datetime(yolo_result.captured_at),
+            "analyzedAt": format_datetime(yolo_result.created_at),
+            "updatedAt": format_datetime(yolo_result.created_at),
+        },
+    }
+
+
+def _xgboost_result_event_payload(drain: Drain, result: XgboostResult) -> dict[str, object]:
+    return {
+        "type": XGBOOST_RESULT_UPDATED,
+        "payload": {
+            "drainId": drain.drain_code,
+            "xgboostResultId": result.id,
+            "sensorDataId": result.sensor_data_id,
+            "yoloResultId": result.yolo_result_id,
+            "riskLevel": result.risk_level,
+            "riskScore": result.risk_score,
+            "finalDecision": result.final_decision,
+            "evaluatedAt": format_datetime(result.evaluated_at),
+            "updatedAt": format_datetime(result.evaluated_at),
+        },
+    }
+
+
+def _random_range(value_range: tuple[float, float]) -> float:
+    return round(_rng.uniform(value_range[0], value_range[1]), 3)
