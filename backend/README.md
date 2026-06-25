@@ -167,6 +167,34 @@ ANALYSIS_JOB_TIMEOUT_SECONDS=600
 - scheduler는 최신 센서 데이터가 없거나, 같은 drain에 진행 중 job이 있거나, 마지막 job 생성 시각이 주기 이내이면 skip합니다.
 - timeout을 초과한 `processing`/`yolo_completed` job은 `failed`로 변경합니다.
 
+### Realtime Simulator (런타임 자동 모드)
+
+- 수동 `POST /api/analysis/async-run` 방식은 그대로 유지합니다.
+- 별도 런타임 제어 API로 자동 시뮬레이션을 시작/중지할 수 있습니다.
+- 자동 모드는 주기적으로 상태별 시나리오를 선택하고, `sensor_data`, `yolo_results`, `xgboost_results`, `drains.status`를 직접 저장합니다.
+- 시나리오 모드는 외부 AI Service를 호출하지 않습니다. 실제 AI callback 통합 검증은 수동 `POST /api/analysis/async-run` 흐름으로 확인합니다.
+- 한 tick 안에서 가능한 한 `good`, `caution`, `danger`, `unknown` 상태가 모두 배분되도록 섞어서 drain에 적용합니다.
+
+상태별 이미지 경로:
+
+```text
+mock_data/ai_image_samples/scenarios/good/
+mock_data/ai_image_samples/scenarios/caution/
+mock_data/ai_image_samples/scenarios/danger/
+mock_data/ai_image_samples/scenarios/unknown/
+```
+
+- `unknown`은 화면의 `판단불가` 상태입니다.
+- 지원 확장자는 `.jpg`, `.jpeg`, `.png`, `.webp`입니다.
+- 해당 상태 폴더에 이미지가 있으면 `/api/mock-images/scenarios/<상태>/<파일명>` URL로 `yolo_results.image_url`에 저장됩니다.
+- 폴더가 비어 있어도 센서/분석 결과 저장은 계속되며, 이 경우 `image_url`은 `null`입니다.
+
+시뮬레이터 제어 API:
+
+- `GET /api/realtime-simulator/status`
+- `POST /api/realtime-simulator/start`
+- `POST /api/realtime-simulator/stop`
+
 ## 주요 API 확인
 
 - `GET /api/drains`
@@ -176,6 +204,9 @@ ANALYSIS_JOB_TIMEOUT_SECONDS=600
 - `GET /api/drains/DR-004/risk-history`
 - `GET /api/drains/DR-004/analysis/latest`
 - `POST /api/analysis/async-run`
+- `GET /api/realtime-simulator/status`
+- `POST /api/realtime-simulator/start`
+- `POST /api/realtime-simulator/stop`
 
 분석 시작 요청 예시:
 

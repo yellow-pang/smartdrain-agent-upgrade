@@ -110,6 +110,17 @@ export type DashboardSummaryDto = {
     latestUpdatedAt?: string;
 };
 
+export type RealtimeSimulatorStatusDto = {
+    running: boolean;
+    intervalSeconds: number;
+    startedAt: string | null;
+    lastTickAt: string | null;
+    lastRunDrainCount: number;
+    totalRunCount: number;
+    lastError: string | null;
+    triggerType: "scheduled";
+};
+
 export type DrainStatusUpdatedEventDto = {
     type: "DRAIN_STATUS_UPDATED";
     payload: {

@@ -7,6 +7,7 @@
 ## 현재 용도
 
 현재 실제 CCTV API나 외부 이미지 저장소가 없으므로, AI 서버는 `drain_id`를 기준으로 이 폴더의 로컬 이미지를 찾는다.
+또한 backend realtime simulator는 상태별 시연 이미지를 `scenarios/` 아래에서 찾는다.
 
 기본 경로:
 
@@ -40,9 +41,31 @@ drain_5.jpg
 | 2 | `drain_2.jpg` | 정상 분석 샘플 |
 | 3 | `drain_3.jpg` | 정상 분석 샘플 |
 | 4 | `drain_4.jpg` | 정상 분석 샘플 |
-| 5 | `drain_5.jpg` | 의도적으로 없음 |
+| 5 | `drain_5.jpg` | 판단불가/저신뢰도 샘플 |
 
-`drain_5.jpg`는 CCTV 또는 외부 이미지 확보 실패 상황을 확인하기 위한 케이스다. 파일이 없는 것이 정상이다.
+`drain_5.jpg`는 판단불가 또는 저신뢰도 상황을 확인하기 위한 케이스다.
+
+## 상태별 시나리오 이미지
+
+backend realtime simulator는 외부 AI Service 없이 시연용 센서/분석 결과를 DB에 직접 저장할 때 아래 경로의 이미지를 사용한다.
+
+```text
+mock_data/ai_image_samples/scenarios/good/
+mock_data/ai_image_samples/scenarios/caution/
+mock_data/ai_image_samples/scenarios/danger/
+mock_data/ai_image_samples/scenarios/unknown/
+```
+
+상태 매핑:
+
+| 폴더 | 화면 상태 | DB/API 값 |
+| --- | --- | --- |
+| `good` | 양호 | `good` |
+| `caution` | 주의 | `caution` |
+| `danger` | 위험 | `danger` |
+| `unknown` | 판단불가 | `unknown` |
+
+지원 확장자는 `.jpg`, `.jpeg`, `.png`, `.webp`다. 폴더가 비어 있으면 `image_url`은 비워 두고 센서/분석 결과만 저장한다.
 
 ## 점검 명령
 
@@ -52,7 +75,7 @@ drain_5.jpg
 python -m ai_service.scripts.check_samples
 ```
 
-`check_samples`는 `drain_5.jpg` 누락을 예상된 누락으로 보고 실패 처리하지 않는다. 그 외 필수 샘플 이미지가 없으면 실패를 반환한다.
+`check_samples`는 필수 샘플 이미지가 없으면 실패를 반환한다.
 
 ## 주의사항
 
