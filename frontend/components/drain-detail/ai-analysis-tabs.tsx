@@ -88,23 +88,28 @@ function YoloAnalysisPanel({ result }: { result?: YoloResultDto }) {
 
 function XgboostAnalysisPanel({ result }: { result?: XgboostResultDto }) {
     if (!result) return <EmptyAnalysisState label="XGBoost 판단 정보가 없습니다." />;
+    const evaluatedAt = formatDateTimeForDisplay(result.evaluatedAt ?? result.predictedAt);
 
     return (
-        <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <AnalysisInfoRow label="XGBoost Result ID" value={formatNullable(result.id)} />
-            <AnalysisInfoRow label="위험 상태" value={<StatusBadge status={result.riskLevel} />} />
-            <AnalysisInfoRow label="참조 Sensor ID" value={formatNullable(result.sensorDataId)} />
-            <AnalysisInfoRow label="참조 YOLO ID" value={formatNullable(result.yoloResultId)} />
+        <dl className="grid grid-cols-2 gap-3">
+            <AnalysisInfoRow fixedHeight label="XGBoost Result ID" value={formatNullable(result.id)} />
+            <AnalysisInfoRow fixedHeight label="위험 상태" value={<StatusBadge status={result.riskLevel} />} />
+            <AnalysisInfoRow fixedHeight label="참조 Sensor ID" value={formatNullable(result.sensorDataId)} />
+            <AnalysisInfoRow fixedHeight label="참조 YOLO ID" value={formatNullable(result.yoloResultId)} />
             <AnalysisInfoRow
+                fixedHeight
                 label="판단 시각"
-                value={formatDateTimeForDisplay(result.evaluatedAt ?? result.predictedAt)}
+                value={evaluatedAt}
+                valueClassName="truncate whitespace-nowrap"
+                valueTitle={evaluatedAt}
             />
-            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 md:col-span-2 dark:border-slate-800 dark:bg-slate-800/70">
-                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">최종 판단 문구</dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    {result.finalDecision ?? "-"}
-                </dd>
-            </div>
+            <AnalysisInfoRow
+                fixedHeight
+                label="최종 판단 문구"
+                value={result.finalDecision ?? "-"}
+                valueClassName="line-clamp-2 leading-5"
+                valueTitle={result.finalDecision ?? "-"}
+            />
         </dl>
     );
 }
@@ -142,11 +147,36 @@ function AnalysisHistoryPanel({
     );
 }
 
-function AnalysisInfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+function AnalysisInfoRow({
+    label,
+    value,
+    fixedHeight = false,
+    valueClassName,
+    valueTitle,
+}: {
+    label: string;
+    value: React.ReactNode;
+    fixedHeight?: boolean;
+    valueClassName?: string;
+    valueTitle?: string;
+}) {
     return (
-        <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/70">
+        <div
+            className={cn(
+                "min-w-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/70",
+                fixedHeight && "h-[76px]",
+            )}
+        >
             <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</dt>
-            <dd className="mt-1 break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{value}</dd>
+            <dd
+                className={cn(
+                    "mt-1 min-w-0 overflow-hidden text-sm font-semibold text-slate-800 dark:text-slate-100",
+                    valueClassName,
+                )}
+                title={valueTitle}
+            >
+                {value}
+            </dd>
         </div>
     );
 }
