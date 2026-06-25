@@ -196,3 +196,13 @@ REST API 응답은 TypeScript DTO만으로는 런타임 payload 누락을 막을
 - **수정:** `getDrains`, `getDrainDetail`, 센서·위험도 이력, 대시보드 요약, 최신 분석, 분석 이력 응답에 런타임 guard를 적용한다.
 - **NO_CHANGE:** API 경로, DTO 이름, Backend 계약, React Query retry 정책, Zod 도입은 변경하지 않는다.
 - **남은 범위:** 실제 운영 payload에서 필드 변형이 반복되면 백엔드 스키마와 함께 guard 범위를 조정한다.
+
+## 14. WebSocket URL 입력 경계 보강
+
+`NEXT_PUBLIC_WS_URL`과 `NEXT_PUBLIC_API_BASE_URL`은 공개 환경변수이므로 비밀값 노출은 확인되지 않았지만, 잘못된 scheme이나 깨진 URL이 그대로 `new WebSocket()`에 전달될 수 있었다. WebSocket 연결 URL 생성 단계에서 `http`, `https`, `ws`, `wss`, same-origin 상대 경로만 허용하고 그 외 값은 연결 오류 상태로 떨어지도록 정리했다.
+
+### 이번 단계 결정
+
+- **수정:** WebSocket URL 조립을 `toDrainStatusSocketUrl` 경계로 모아 허용 scheme과 고정 path를 확인한다.
+- **NO_CHANGE:** WebSocket payload type guard, reconnect delay, React Query invalidation 흐름은 변경하지 않는다.
+- **남은 범위:** 배포 환경에서 별도 WebSocket 경로가 필요해지면 현재 고정 경로(`/ws/drains/status`) 정책과 함께 재검토한다.
