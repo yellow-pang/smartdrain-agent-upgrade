@@ -1,5 +1,9 @@
 # PR 00. Docs Structure Reorganization
 
+## PR 제목
+
+docs: 문서 구조 목적별 분리
+
 ## 변경 목적
 
 기존 팀 MVP 산출물과 개인 고도화 프로젝트의 신규 작업 이력을 분리해 문서 탐색성과 유지보수성을 높인다.
