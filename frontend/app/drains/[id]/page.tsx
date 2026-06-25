@@ -359,13 +359,27 @@ export default function DrainDetailPage({
 
 function SensorTrendChartLoadingState() {
     return (
-        <PlaceholderState
-            image={PLACEHOLDER_IMAGES.chart}
-            title="센서 차트를 준비하고 있습니다"
-            description="수위와 유속 추세 차트 리소스를 불러오는 중입니다."
-            statusLabel="차트 로딩"
-            className="min-h-[320px]"
-        />
+        <div
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            aria-hidden="true"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="h-5 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-4 w-16 rounded bg-slate-100 dark:bg-slate-800" />
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+                <div className="h-3 w-20 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-slate-800" />
+            </div>
+            <div className="mt-2 flex h-[280px] w-full flex-col justify-between rounded-lg bg-slate-50 px-4 py-5 dark:bg-slate-800/70">
+                {Array.from({ length: 5 }).map((_, index) => (
+                    <div
+                        key={index}
+                        className="h-px w-full bg-slate-200/80 dark:bg-slate-700/70"
+                    />
+                ))}
+            </div>
+        </div>
     );
 }
 

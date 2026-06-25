@@ -5,7 +5,7 @@
 ## 작업 내용
 
 - 상세 센서 차트를 `next/dynamic`으로 분리해 `recharts` 기반 차트 리소스를 상세 페이지에서 지연 로딩하도록 변경했습니다.
-- 차트 로딩 중 기존 `PlaceholderState` 패턴을 재사용해 상세 화면이 비어 보이지 않도록 했습니다.
+- 차트 로딩 중 텍스트형 placeholder 대신 경량 skeleton fallback을 사용해 레이아웃 흔들림과 짧은 깜빡임을 줄였습니다.
 - 위험도 지도에서 범례 count와 Kakao marker 생성에 memoization을 적용했습니다.
 - 백엔드 schema에 맞춰 배수구 좌표와 상세 이미지 URL의 nullable 가능성을 frontend DTO와 guard에 반영했습니다.
 - API guard가 정상적인 `null` 응답을 잘못 실패 처리하지 않도록 조정했습니다.
@@ -42,7 +42,7 @@ guard는 더 엄격하게 만드는 대신 백엔드 계약과 맞췄습니다. 
 
 ## 리뷰 포인트
 
-- 상세 차트 dynamic import가 상세 페이지 UX를 해치지 않고 placeholder 뒤 정상 표시되는지 확인합니다.
+- 상세 차트 dynamic import가 상세 페이지 UX를 해치지 않고 skeleton fallback 뒤 자연스럽게 정상 차트로 전환되는지 확인합니다.
 - 대시보드 지도는 첫 화면 핵심 UI라 dynamic import를 적용하지 않은 판단이 적절한지 확인합니다.
 - nullable 좌표가 들어와도 API 응답은 통과하고, 지도에서는 유효 좌표만 렌더링되는지 확인합니다.
 - 목록 virtualization을 보류한 판단이 현재 MVP 데이터량과 모바일 inline summary UX 기준으로 적절한지 확인합니다.
