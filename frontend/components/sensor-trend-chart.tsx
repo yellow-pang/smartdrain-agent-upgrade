@@ -19,15 +19,17 @@ type SensorSummary = {
     currentFlow: number | null;
 };
 
+export type SensorTrendChartProps = {
+    points: SensorPoint[];
+    summary: SensorSummary;
+    isFallback?: boolean;
+};
+
 export function SensorTrendChart({
     points,
     summary,
     isFallback = false,
-}: {
-    points: SensorPoint[];
-    summary: SensorSummary;
-    isFallback?: boolean;
-}) {
+}: SensorTrendChartProps) {
     const hasSensorPoints = points.length > 0;
     const isSinglePoint = points.length === 1;
     const waterLevelDomain = getAxisDomain(

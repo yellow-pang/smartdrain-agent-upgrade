@@ -80,8 +80,8 @@ export function isDrainListItemDto(value: unknown): value is DrainListItemDto {
     return (
         isNonEmptyString(value.id) &&
         isString(value.roadAddress) &&
-        isFiniteNumber(value.latitude) &&
-        isFiniteNumber(value.longitude) &&
+        isNullableNumber(value.latitude) &&
+        isNullableNumber(value.longitude) &&
         isNullableRiskLevel(value.riskLevel) &&
         isNullableNumber(value.riskScore) &&
         isNullableNumber(value.obstructionRatio) &&
@@ -102,7 +102,7 @@ export function isDrainDetailDto(value: unknown): value is DrainDetailDto {
     if (!isDrainListItemDto(value)) return false;
 
     return (
-        isOptionalString(detailFields.imageUrl) &&
+        isOptionalNullableString(detailFields.imageUrl) &&
         isOptionalValue(detailFields.sensorSummary, isSensorSummaryDto) &&
         isOptionalArray(detailFields.sensorHistory, isSensorHistoryDto) &&
         isOptionalValue(detailFields.yoloResult, isYoloResultDto) &&

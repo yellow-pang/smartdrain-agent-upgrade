@@ -23,8 +23,8 @@ export type DrainListItemDto = {
     id: string;
     roadAddress: string;
     fullAddress?: string;
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
     riskLevel: RiskLevel | null;
     riskScore: number | null;
     obstructionRatio: number | null;
@@ -37,7 +37,7 @@ export type DrainListItemDto = {
 };
 
 export type DrainDetailDto = DrainListItemDto & {
-    imageUrl?: string;
+    imageUrl?: string | null;
     sensorSummary?: SensorSummaryDto;
     sensorHistory?: SensorHistoryDto[];
     yoloResult?: YoloResultDto;

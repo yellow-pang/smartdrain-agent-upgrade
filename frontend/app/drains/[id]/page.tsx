@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notFound } from "next/navigation";
 import {
@@ -26,7 +27,7 @@ import {
     RiskHistoryCard,
 } from "@/components/drain-detail/facility-overview-panels";
 import { CctvSnapshotCard } from "@/components/cctv-snapshot-card";
-import { SensorTrendChart } from "@/components/sensor-trend-chart";
+import type { SensorTrendChartProps } from "@/components/sensor-trend-chart";
 import { PlaceholderState } from "@/components/placeholder-state";
 import { STATUS_META, type RiskStatus } from "@/lib/mock-data";
 import {
@@ -45,6 +46,17 @@ import type {
     YoloResultDto,
     YoloResultUpdatedEventDto,
 } from "@/lib/api/types";
+
+const SensorTrendChart = dynamic<SensorTrendChartProps>(
+    () =>
+        import("@/components/sensor-trend-chart").then(
+            (module) => module.SensorTrendChart,
+        ),
+    {
+        ssr: false,
+        loading: () => <SensorTrendChartLoadingState />,
+    },
+);
 
 export default function DrainDetailPage({
     params,
@@ -342,6 +354,18 @@ export default function DrainDetailPage({
                     </div>
             </div>
         </DrainDetailPageFrame>
+    );
+}
+
+function SensorTrendChartLoadingState() {
+    return (
+        <PlaceholderState
+            image={PLACEHOLDER_IMAGES.chart}
+            title="센서 차트를 준비하고 있습니다"
+            description="수위와 유속 추세 차트 리소스를 불러오는 중입니다."
+            statusLabel="차트 로딩"
+            className="min-h-[320px]"
+        />
     );
 }
 

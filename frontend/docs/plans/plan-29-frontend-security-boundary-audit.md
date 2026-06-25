@@ -24,13 +24,22 @@
 
 ## 3. 추천 진행 방향
 
-이번 브랜치는 **추가 최적화 브랜치가 아니라 감사·정리 브랜치**로 진행한다.
+이번 브랜치는 **감사 결과를 바탕으로 적용 가능한 최적화와 guard 정리까지 진행하는 브랜치**로 진행한다.
 
 1. 코드 추적으로 guard가 실제 화면 데이터 흐름과 맞는지 확인한다.
 2. 실제 API 응답 샘플과 현재 guard 조건을 비교한다.
-3. 성능 측정 결과를 기준으로 dynamic import, virtualization, memoization을 다시 적용할 이유가 있는지 확인한다.
+3. 성능 측정 결과를 기준으로 dynamic import, virtualization, memoization 적용 여부를 결정하고 필요한 범위는 직접 반영한다.
 4. 불필요하거나 읽기 어려운 guard만 줄이고, 의미 있는 누락만 보강한다.
-5. 수정이 없으면 `NO_CHANGE`와 근거를 Step 문서로 남긴다.
+5. 적용하지 않는 후보는 `NO_CHANGE`가 아니라 왜 보류하는지와 재검토 조건을 Step 문서로 남긴다.
+
+### 우선 적용 추천
+
+| 후보 | 추천 방향 | 이유 |
+| --- | --- | --- |
+| 상세 센서 차트 `dynamic import` | **적용** | `recharts`는 공통 client chunk의 큰 비중을 차지했고, 상세 화면의 차트는 첫 화면 핵심 액션보다 아래에 있는 독립 카드다. |
+| 지도 `dynamic import` | **적용하지 않음** | 대시보드 핵심 첫 화면 기능이라 지도 로딩 지연이 UX를 떨어뜨릴 수 있다. |
+| 목록 virtualization | **현재 보류** | 실제 시설 수가 작고 새 패키지 없이 직접 구현하면 선택·모바일 inline summary UX 복잡도가 커진다. |
+| 지도·목록 memoization | **필요한 계산만 적용** | 마커·범례처럼 반복 계산되는 부분은 줄이되, 근거 없는 광범위 memoization은 피한다. |
 
 ## 4. 점검 대상과 판단 기준
 
@@ -55,7 +64,7 @@
 | Zod 도입 | **이번 브랜치에서는 도입하지 않음** | 새 패키지와 schema 중복 비용이 크고, 현재 type guard로 충분히 좁게 막고 있다. |
 | `next/image` 전환 | **이번 브랜치에서는 보류** | 외부 이미지 도메인·최적화 비용·remotePatterns 정책 확인이 먼저 필요하다. |
 | CSP/security headers | **Nginx·배포 설정과 함께 별도 브랜치에서 진행** | Kakao 지도, inline theme script, 외부 이미지와 충돌 가능성이 있다. |
-| dynamic import | **새 성능 병목 근거 없으면 적용하지 않음** | Step 42 production 측정에서 핵심 UX 지연이 확인되지 않았다. |
+| dynamic import | **상세 차트에 한정해 적용** | 지도는 첫 화면 핵심 UI라 보류하고, 차트는 chunk 분리 효과를 확인할 가치가 있다. |
 | package 정리 | **삭제하지 말고 후보만 문서화** | dev 서버·Docker·Jenkins 재현성을 깨뜨릴 수 있다. |
 | Backend/API 계약 변경 | **이번 범위에서 제외** | frontend 감사 브랜치가 통합 계약을 임의로 바꾸면 위험하다. |
 
