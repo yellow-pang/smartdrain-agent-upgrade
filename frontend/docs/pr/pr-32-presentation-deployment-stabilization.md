@@ -32,6 +32,7 @@
 ## 비고
 
 - Backend·AI Service·DB schema·분석 로직·API/WebSocket 계약은 변경하지 않았습니다.
-- 루트 `docs/16_테스트_전략_및_E2E_검증.md`, `docs/17_배포_운영_런북.md`과 Compose·Jenkins·Nginx 설정은 이번 PR 범위에서 제외했습니다.
+- 루트 `docs/verification/16_테스트_전략_및_E2E_검증.md`, `docs/verification/17_배포_운영_런북.md`과 Compose·Jenkins·Nginx 설정은 이번 PR 범위에서 제외했습니다.
 - Google Fonts는 현재 build가 통과해 변경하지 않았습니다. Jenkins/Docker에서 다운로드 실패가 재현될 때만 fallback을 검토합니다.
 - pnpm은 Dockerfile·배포 기준으로 유지합니다. 로컬 pnpm 실행은 도구 환경의 registry/권한 문제로 미실행이므로 Jenkins 또는 Docker에서 재검증이 필요합니다.
+

@@ -194,7 +194,7 @@ pr-<번호>-<작업명>.md
 | `ai-vision/`            | 모델 학습, PoC, 실험 코드와 산출물                                   |
 | `mock_data/`            | 로컬/시연용 샘플 이미지와 데이터                                     |
 | `nginx/`                | same-origin reverse proxy 설정                                       |
-| `docs/`                 | 원 MVP 산출물과 전체 아키텍처/요구사항 문서                          |
+| `docs/`                 | 목적별 프로젝트 문서. `legacy-mvp/`는 기존 MVP 산출물, `reference/`는 현재 참조 기준, `verification/`은 검증·운영 기준, `plans/steps/pr`은 신규 작업 이력 |
 | `.jenkins/`, `jenkins/` | CI/CD와 배포 보조 파일                                               |
 
 ## Frontend 작업

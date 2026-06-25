@@ -7,7 +7,7 @@
 | 기준일      | 2026-06-18                                                                     |
 | 대상 브랜치 | `test/front-back-first-merge-test` 또는 현재 작업 브랜치                       |
 | 작업 범위   | SmartDrain backend와 frontend의 첫 통합 테스트                                 |
-| 기준 명세   | `docs/11_API명세서.md`, `frontend/docs/api-spec/2026-06-18_mvp_api_spec_v1.md` |
+| 기준 명세   | `docs/reference/11_API명세서.md`, `frontend/docs/api-spec/2026-06-18_mvp_api_spec_v1.md` |
 | 테스트 목적 | API 명세서대로 데이터가 저장, 조회, 화면 표시되는지 확인하고 문제 항목을 기록  |
 
 이 문서는 plan 문서 대신 통합 테스트 진행 순서를 남기기 위한 가이드이다. 테스트 중 문제가 발견되면 이 문서의 체크리스트와 이슈 기록 표에 바로 표시한다.
@@ -629,3 +629,4 @@ docs: 프론트-백엔드 통합 테스트 가이드 추가
 - REST, WebSocket, 프론트 화면 확인 기준과 이슈 기록 양식을 추가한다.
 - 첫 병합 테스트에서 확인할 환경 설정과 완료 기준을 문서화한다.
 ```
+

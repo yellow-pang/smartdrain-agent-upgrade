@@ -15,8 +15,8 @@
 
 | 문서 | 변경 이유 | 코드 근거 |
 | --- | --- | --- |
-| `docs/07_ERD.md` | 과거 논리 모델의 테이블명·PK·필드가 migration과 불일치 | Alembic 0001~0003 |
-| `docs/11_API명세서.md` | 초안의 제안 endpoint가 현재 구현 경로와 혼동될 수 있음 | `backend/app/routers/analysis.py`, `sensor_data.py` |
+| `docs/legacy-mvp/07_ERD.md` | 과거 논리 모델의 테이블명·PK·필드가 migration과 불일치 | Alembic 0001~0003 |
+| `docs/reference/11_API명세서.md` | 초안의 제안 endpoint가 현재 구현 경로와 혼동될 수 있음 | `backend/app/routers/analysis.py`, `sensor_data.py` |
 | `docs/14`~`docs/17` | 구현, 모델 artifact, 테스트, 배포 운영의 current source of truth 부재 | 코드·Compose·Nginx·Jenkins·test 구조 |
 
 ## 4. 변경하지 않은 항목
@@ -39,3 +39,4 @@
 | `npm.cmd --prefix frontend run lint` | 통과(경고 1건) | 기존 `fallback-image.tsx`의 `<img>` 경고 |
 | `npm.cmd --prefix frontend exec -- tsc --project frontend/tsconfig.json --noEmit` | 통과 | 타입 오류 없음 |
 | `python -m pytest ai_service -q` | 미실행 | `pytest` 모듈이 현재 환경에 없음 |
+

@@ -90,7 +90,13 @@ smartdrain-agent-upgrade/
 ├─ ai-vision/                # 모델 학습, PoC, 실험 코드
 ├─ mock_data/                # 로컬/시연용 샘플 이미지
 ├─ nginx/                    # reverse proxy 설정
-├─ docs/                     # 원 MVP 산출물과 전체 아키텍처 문서
+├─ docs/                     # 목적별 프로젝트 문서
+│  ├─ legacy-mvp/            # 기존 팀 MVP 산출물
+│  ├─ reference/             # API, AI, 모델 artifact 기준
+│  ├─ verification/          # 구현 현황, 테스트, 운영 기준
+│  ├─ plans/                 # 신규 작업 계획
+│  ├─ steps/                 # 신규 작업 완료 기록
+│  └─ pr/                    # 신규 PR 요약
 ├─ .jenkins/                 # Jenkins 배포/검증 스크립트
 ├─ jenkins/                  # Jenkins 실행 보조 구성
 ├─ docker-compose.yml        # 운영 기준 Compose
@@ -441,13 +447,14 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 
 | 문서 | 내용 |
 | --- | --- |
-| [프로젝트 정의](docs/01_프로젝트정의서.md) | 기존 MVP 프로젝트 배경과 목표 |
-| [요구사항 정의서](docs/03_요구사항정의서.md) | 기능·비기능 요구사항 |
-| [MVP 범위](docs/04_MVP범위.md) | 구현 범위와 제외 범위 |
-| [시스템 아키텍처](docs/06_시스템아키텍처.md) | 시스템 구성과 데이터 흐름 |
-| [ERD](docs/07_ERD.md) | 데이터 모델과 관계 |
-| [YOLO·XGBoost PoC](docs/09_YOLO_XGBoost_PoC.md) | AI 분석 설계와 실험 |
-| [API 명세](docs/11_API명세서.md) | Frontend·Backend API 계약 |
+| [문서 인덱스](docs/README.md) | 목적별 문서 구조와 빠른 링크 |
+| [프로젝트 정의](docs/legacy-mvp/01_프로젝트정의서.md) | 기존 MVP 프로젝트 배경과 목표 |
+| [요구사항 정의서](docs/legacy-mvp/03_요구사항정의서.md) | 기능·비기능 요구사항 |
+| [MVP 범위](docs/legacy-mvp/04_MVP범위.md) | 구현 범위와 제외 범위 |
+| [시스템 아키텍처](docs/legacy-mvp/06_시스템아키텍처.md) | 시스템 구성과 데이터 흐름 |
+| [ERD](docs/legacy-mvp/07_ERD.md) | 데이터 모델과 관계 |
+| [YOLO·XGBoost PoC](docs/legacy-mvp/09_YOLO_XGBoost_PoC.md) | AI 분석 설계와 실험 |
+| [API 명세](docs/reference/11_API명세서.md) | Frontend·Backend API 계약 |
 | [개발·운영 배포 가이드](frontend/docs/deployment/development-production-guide.md) | 실행·배포·환경변수 가이드 |
 
 ---
@@ -465,3 +472,5 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 **SmartDrain의 핵심 성과는 이미지 분석, 센서 데이터, 비동기 AI 처리, DB 저장과 실시간 대시보드를 하나의 추적 가능한 흐름으로 연결한 것입니다. 현재 저장소는 이 MVP를 개인 고도화 프로젝트로 확장하는 작업 공간입니다.**
 
 </div>
+
+
