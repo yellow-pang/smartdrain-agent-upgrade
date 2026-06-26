@@ -7,6 +7,7 @@ export type DemoStatus = {
     enabled: boolean;
     mode: string;
     autoStart: boolean;
+    randomize: boolean;
     running: boolean;
     paused: boolean;
     weatherStep: string;
@@ -170,6 +171,7 @@ function isDemoStatus(value: unknown): value is DemoStatus {
         typeof value.enabled === "boolean" &&
         typeof value.mode === "string" &&
         typeof value.autoStart === "boolean" &&
+        typeof value.randomize === "boolean" &&
         typeof value.running === "boolean" &&
         typeof value.paused === "boolean" &&
         typeof value.weatherStep === "string" &&

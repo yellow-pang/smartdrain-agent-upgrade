@@ -282,11 +282,11 @@ export default function DemoControlPage() {
                                     <CloudRain className="size-4" />
                                     {status ? weatherLabel(status.weatherStep) : "상태 확인 중"}
                                 </div>
-                                {status && (
-                                    <p className="mt-1 text-sm text-cyan-800/80 dark:text-cyan-100/70">
-                                        {status.weatherStepIndex + 1} / {status.weatherSteps.length} 단계 · {status.intervalSeconds}초 간격
-                                    </p>
-                                )}
+                        {status && (
+                            <p className="mt-1 text-sm text-cyan-800/80 dark:text-cyan-100/70">
+                                {status.weatherStepIndex + 1} / {status.weatherSteps.length} 단계 · {status.intervalSeconds}초 간격 · {status.randomize ? "자연화 ON" : "고정값"}
+                            </p>
+                        )}
                             </div>
 
                             <div className="grid gap-2 sm:grid-cols-2">

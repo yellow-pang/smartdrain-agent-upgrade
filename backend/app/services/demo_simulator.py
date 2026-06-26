@@ -86,6 +86,20 @@ ANALYSIS_RANGES = {
     "danger": ((0.86, 0.96), (0.80, 0.92), (0.90, 0.96)),
     "unknown": ((0.0, 0.08), (0.0, 0.08), (0.25, 0.38)),
 }
+SCENARIO_SENSOR_RANGES = {
+    "good": ((4.0, 12.0), (0.18, 0.50), (0.04, 0.18), (0.90, 0.98), (0.08, 0.22)),
+    "caution": ((16.0, 30.0), (0.55, 1.15), (0.26, 0.50), (0.84, 0.94), (0.48, 0.68)),
+    "danger": ((34.0, 60.0), (1.05, 1.90), (0.58, 0.92), (0.88, 0.97), (0.84, 0.96)),
+    "unknown": ((20.0, 36.0), (0.45, 1.20), (0.0, 0.08), (0.22, 0.38), (0.0, 0.08)),
+}
+FACILITY_BEHAVIOR = {
+    "DR-001": {"water": 0.70, "flow": 0.85, "obstruction": 0.75, "recovery": 1.20},
+    "DR-002": {"water": 1.05, "flow": 0.90, "obstruction": 1.35, "recovery": 0.95},
+    "DR-003": {"water": 1.35, "flow": 1.10, "obstruction": 1.05, "recovery": 0.90},
+    "DR-004": {"water": 1.00, "flow": 1.00, "obstruction": 0.90, "recovery": 1.00},
+    "DR-005": {"water": 1.10, "flow": 0.85, "obstruction": 1.05, "recovery": 0.55},
+}
+SMOOTHING_RATIO = 0.58
 
 PRESET_SCENARIOS: dict[str, DemoScenario] = {
     "GOOD": DemoScenario("", "good", 0.16, 7, 0.30, 0.08, 0.94, "clear", "normal"),
@@ -367,7 +381,10 @@ async def _apply_weather_step(db: Session, weather_step: str) -> None:
         if drain is None:
             LOGGER.warning("Demo scenario skipped missing drain: %s", drain_code)
             continue
-        await _apply_direct_scenario(db, drain, _scenario_from_preset(drain_code, preset))
+        scenario = _scenario_from_preset(drain_code, preset)
+        if settings.DEMO_SIMULATOR_RANDOMIZE:
+            scenario = _naturalize_weather_scenario(db, drain, scenario)
+        await _apply_direct_scenario(db, drain, scenario)
         await asyncio.sleep(0.05)
 
 
@@ -500,6 +517,46 @@ def _scenario_from_preset(drain_code: str, preset: str) -> DemoScenario:
     return replace(scenario, drain_code=drain_code.strip())
 
 
+def _naturalize_weather_scenario(db: Session, drain: Drain, scenario: DemoScenario) -> DemoScenario:
+    ranges = SCENARIO_SENSOR_RANGES.get(scenario.risk_level)
+    if ranges is None:
+        return scenario
+
+    water_range, flow_range, obstruction_range, confidence_range, risk_range = ranges
+    behavior = FACILITY_BEHAVIOR.get(drain.drain_code, {})
+    recovery_factor = float(behavior.get("recovery", 1.0))
+    latest_sensor = _latest_sensor_data(db, drain.id)
+    latest_yolo = _latest_yolo_result(db, drain.id)
+
+    sampled_water = _sample_scaled_value(water_range, float(behavior.get("water", 1.0)), max_value=95.0)
+    sampled_flow = _sample_scaled_value(flow_range, float(behavior.get("flow", 1.0)), max_value=2.5)
+    sampled_obstruction = _sample_scaled_value(
+        obstruction_range,
+        float(behavior.get("obstruction", 1.0)),
+        max_value=0.98,
+    )
+
+    if latest_sensor is not None:
+        sampled_water = _smooth_value(latest_sensor.water_level_cm, sampled_water, recovery_factor)
+        sampled_flow = _smooth_value(latest_sensor.flow_velocity_mps, sampled_flow, recovery_factor)
+
+    if latest_yolo is not None:
+        sampled_obstruction = _smooth_value(
+            latest_yolo.obstruction_ratio,
+            sampled_obstruction,
+            recovery_factor,
+        )
+
+    return replace(
+        scenario,
+        water_level_cm=round(sampled_water, 1),
+        flow_velocity_mps=round(sampled_flow, 2),
+        obstruction_ratio=round(sampled_obstruction, 4),
+        confidence_score=_sample_float(*confidence_range, digits=4),
+        risk_score=_sample_float(*risk_range, digits=4),
+    )
+
+
 def _retarget_scenario(scenario: DemoScenario, drain_code: str) -> DemoScenario:
     target_drain_code = drain_code.strip()
     if not target_drain_code or target_drain_code == scenario.drain_code:
@@ -520,6 +577,20 @@ def _retarget_scenario(scenario: DemoScenario, drain_code: str) -> DemoScenario:
 
 def _sample_float(minimum: float, maximum: float, digits: int) -> float:
     return round(random.uniform(minimum, maximum), digits)
+
+
+def _sample_scaled_value(value_range: tuple[float, float], factor: float, max_value: float) -> float:
+    minimum, maximum = value_range
+    value = random.uniform(minimum, maximum) * factor
+    return min(max_value, max(0.0, value))
+
+
+def _smooth_value(current: float, target: float, recovery_factor: float) -> float:
+    if target < current:
+        ratio = min(0.85, SMOOTHING_RATIO * recovery_factor)
+    else:
+        ratio = SMOOTHING_RATIO
+    return current + ((target - current) * ratio)
 
 
 async def _broadcast_events(
@@ -574,6 +645,24 @@ def _get_drain_by_code(db: Session, drain_code: str) -> Drain | None:
     return db.query(Drain).filter(Drain.drain_code == drain_code).first()
 
 
+def _latest_sensor_data(db: Session, drain_id: int) -> SensorData | None:
+    return (
+        db.query(SensorData)
+        .filter(SensorData.drain_id == drain_id)
+        .order_by(SensorData.measured_at.desc(), SensorData.id.desc())
+        .first()
+    )
+
+
+def _latest_yolo_result(db: Session, drain_id: int) -> YoloResult | None:
+    return (
+        db.query(YoloResult)
+        .filter(YoloResult.drain_id == drain_id)
+        .order_by(YoloResult.captured_at.desc(), YoloResult.id.desc())
+        .first()
+    )
+
+
 def _has_active_job(db: Session, drain_id: int) -> bool:
     return (
         db.query(AnalysisJob)
@@ -610,6 +699,7 @@ def _control_status() -> dict[str, Any]:
         "enabled": settings.DEMO_SIMULATOR_ENABLED,
         "mode": settings.DEMO_SIMULATOR_MODE,
         "autoStart": settings.DEMO_SIMULATOR_AUTO_START,
+        "randomize": settings.DEMO_SIMULATOR_RANDOMIZE,
         "running": _CONTROL_STATE.running,
         "paused": _CONTROL_STATE.paused,
         "weatherStep": WEATHER_STEPS[_CONTROL_STATE.weather_step_index],

@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     DEMO_SIMULATOR_START_DELAY_SECONDS: int = 10
     DEMO_SIMULATOR_TARGET_DRAIN_CODE: str = "DR-003"
     DEMO_SIMULATOR_AUTO_START: bool = False
+    DEMO_SIMULATOR_RANDOMIZE: bool = True
     DEMO_CONTROL_TOKEN: str | None = None
 
     model_config = SettingsConfigDict(

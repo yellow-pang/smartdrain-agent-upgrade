@@ -8,6 +8,7 @@ import { ComingSoonPopover } from "@/components/coming-soon-popover";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
 import { getDrainDetailHref } from "@/lib/drain-route";
+import { STATUS_META } from "@/lib/risk";
 import { useDrainStore } from "@/store/drain-store";
 
 export function AppHeader() {
@@ -23,6 +24,12 @@ export function AppHeader() {
     (state) => state.markAllUrgentAlertsRead,
   );
   const unreadCount = urgentAlerts.filter((alert) => !alert.read).length;
+  const unreadDangerCount = urgentAlerts.filter(
+    (alert) => !alert.read && alert.riskLevel === "danger",
+  ).length;
+  const unreadUnknownCount = urgentAlerts.filter(
+    (alert) => !alert.read && alert.riskLevel === "unknown",
+  ).length;
   const closeComingSoon = useCallback(() => setComingSoonTarget(null), []);
 
   return (
@@ -91,7 +98,7 @@ export function AppHeader() {
                     긴급 알림
                   </h2>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    위험 시설은 시설별 한 건으로 최신 상태를 갱신합니다.
+                    시설별 한 건으로 최신 위험·판단불가 상태를 갱신합니다.
                   </p>
                 </div>
                 {unreadCount > 0 && (
@@ -104,6 +111,12 @@ export function AppHeader() {
                   </button>
                 )}
               </div>
+              {urgentAlerts.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+                  <AlertSummary label="읽지 않은 위험" count={unreadDangerCount} tone="danger" />
+                  <AlertSummary label="판단불가" count={unreadUnknownCount} tone="unknown" />
+                </div>
+              )}
               {urgentAlerts.length > 0 ? (
                 <ul className="dashboard-scrollbar max-h-80 overflow-y-auto p-2">
                   {urgentAlerts.map((alert) => (
@@ -119,9 +132,14 @@ export function AppHeader() {
                         <div className="flex items-start gap-2">
                           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              {alert.facilityName ?? alert.drainId}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                {alert.facilityName ?? alert.drainId}
+                              </p>
+                              <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_META[alert.riskLevel].badgeClass}`}>
+                                {STATUS_META[alert.riskLevel].label}
+                              </span>
+                            </div>
                             <p className="mt-0.5 break-words text-xs text-slate-600 dark:text-slate-300">
                               {alert.message}
                             </p>
@@ -170,5 +188,27 @@ export function AppHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function AlertSummary({
+  label,
+  count,
+  tone,
+}: {
+  label: string;
+  count: number;
+  tone: "danger" | "unknown";
+}) {
+  const toneClass =
+    tone === "danger"
+      ? "border-red-100 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
+      : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
+
+  return (
+    <div className={`rounded-lg border px-3 py-2 ${toneClass}`}>
+      <p className="text-[11px] font-medium">{label}</p>
+      <p className="mt-0.5 text-lg font-bold leading-none">{count}</p>
+    </div>
   );
 }

@@ -13,6 +13,7 @@
 | Backend config | `DEMO_SIMULATOR_AUTO_START`, `DEMO_CONTROL_TOKEN` 설정 추가 |
 | Backend router | `/api/demo/status`, `/api/demo/drains/{drainId}/preset`, `/api/demo/scenario/*` API 추가 |
 | Backend simulator | 수동 preset, 자동 날씨 단계, manual override, reset/recover 제어 함수 추가 |
+| Backend 자연화 | 자동 날씨 시나리오에서 수위, 유속, 막힘률을 상태별 범위와 시설별 특성에 맞춰 부드럽게 변동 |
 | Frontend API | `frontend/lib/api/demo.ts` 추가 |
 | Frontend route | `frontend/app/demo-control/page.tsx` 추가 |
 | Compose/env | backend container에 demo 제어 환경변수 전달 |
@@ -29,7 +30,7 @@
 | 자동 시나리오 | 5개 시설이 날씨 단계에 따라 서로 다르게 변한다. |
 | 자동 시작 | 서버 시작 시 자동 실행하지 않는다. 발표자가 직접 시작한다. |
 | 접근 보호 | `/demo-control`과 `/api/demo/*`는 발표자만 접근 가능하게 보호한다. |
-| 알림 | 상태가 실제로 바뀔 때만 만든다. 같은 상태 반복 갱신은 알림을 만들지 않는다. |
+| 알림 | `danger`와 `unknown`을 종 알림에 올리고, 시설별 최신 상태로 병합한다. |
 
 ## 2.1 실제 API와 환경변수
 
@@ -65,6 +66,7 @@ X-Demo-Control-Token: <DEMO_CONTROL_TOKEN>
 COMPOSE_DEMO_SIMULATOR_ENABLED=true
 COMPOSE_DEMO_SIMULATOR_MODE=direct
 COMPOSE_DEMO_SIMULATOR_AUTO_START=false
+COMPOSE_DEMO_SIMULATOR_RANDOMIZE=true
 COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS=30
 COMPOSE_DEMO_SIMULATOR_START_DELAY_SECONDS=10
 COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE=DR-003
@@ -72,6 +74,96 @@ DEMO_CONTROL_TOKEN=<발표자가-입력할-긴-토큰>
 ```
 
 Jenkins Secret File을 쓰는 VM 배포에서는 `DEMO_CONTROL_TOKEN`도 Secret File에 추가한다. 토큰은 발표 자료나 공개 QR에 넣지 않는다.
+
+`COMPOSE_DEMO_SIMULATOR_RANDOMIZE=true`이면 자동 날씨 시나리오에서 수위, 유속, 막힘률이 상태별 범위 안에서 조금씩 달라진다. 수동 preset은 항상 고정값이다.
+
+## 2.2 자동 시나리오 자연화 기준
+
+자동 날씨 시나리오는 완전 랜덤이 아니라 현재 상태와 목표 상태 사이를 부드럽게 이동한다.
+
+| 상태 | 수위 | 유속 | 막힘률 | 설명 |
+| --- | ---: | ---: | ---: | --- |
+| 양호 | 4~12cm | 0.18~0.50m/s | 4~18% | 안정적인 배수 상태 |
+| 주의 | 16~30cm | 0.55~1.15m/s | 26~50% | 수위와 막힘이 올라가는 상태 |
+| 위험 | 34~60cm | 1.05~1.90m/s | 58~92% | 현장 확인이 필요한 상태 |
+| 판단불가 | 20~36cm | 0.45~1.20m/s | 0~8% | 이미지 분석은 불안정하지만 센서값은 유지 |
+
+시설별 특성도 반영한다.
+
+| 시설 | 특성 | 효과 |
+| --- | --- | --- |
+| DR-001 | 안정형 | 수위와 막힘률 상승이 낮고 회복이 빠름 |
+| DR-002 | 막힘 증가형 | 막힘률이 더 빠르게 증가 |
+| DR-003 | 침수 취약형 | 수위가 더 빠르게 상승 |
+| DR-004 | 카메라 장애형 | 집중호우에서 판단불가 역할 |
+| DR-005 | 회복 지연형 | 복구 단계에서도 천천히 내려감 |
+
+## 2.3 상태별 이미지 준비 목록
+
+상태별 이미지가 있으면 Backend가 우선 사용한다. 이미지가 없으면 기존 `/mock_data/ai_image_samples/drain_N.jpg`로 fallback된다.
+
+이미지 위치:
+
+```text
+mock_data/ai_image_samples/demo/
+```
+
+파일 형식:
+
+```text
+jpg, jpeg, png, webp
+```
+
+권장 형식:
+
+```text
+1280x720 또는 16:9 비율 jpg
+```
+
+파일명 규칙:
+
+```text
+drain_{DB 숫자 id}_{risk_level}.jpg
+```
+
+현재 seed 기준으로 DB 숫자 id가 `DR-001 -> 1`, `DR-002 -> 2` 순서라면 아래 파일을 준비한다.
+
+| 시설 | 양호 | 주의 | 위험 | 판단불가 |
+| --- | --- | --- | --- | --- |
+| DR-001 | `drain_1_good.jpg` | `drain_1_caution.jpg` | `drain_1_danger.jpg` | `drain_1_unknown.jpg` |
+| DR-002 | `drain_2_good.jpg` | `drain_2_caution.jpg` | `drain_2_danger.jpg` | `drain_2_unknown.jpg` |
+| DR-003 | `drain_3_good.jpg` | `drain_3_caution.jpg` | `drain_3_danger.jpg` | `drain_3_unknown.jpg` |
+| DR-004 | `drain_4_good.jpg` | `drain_4_caution.jpg` | `drain_4_danger.jpg` | `drain_4_unknown.jpg` |
+| DR-005 | `drain_5_good.jpg` | `drain_5_caution.jpg` | `drain_5_danger.jpg` | `drain_5_unknown.jpg` |
+
+이미지 내용 추천:
+
+| 상태 | 이미지 형태 |
+| --- | --- |
+| good | 빗물받이가 잘 보이고 주변 이물질이 거의 없는 장면 |
+| caution | 낙엽, 작은 쓰레기, 얕은 물고임이 일부 보이는 장면 |
+| danger | 물고임, 쓰레기, 배수 불량이 강하게 보이는 장면 |
+| unknown | 빗방울, 흐림, 렌즈 오염, 야간 노이즈처럼 분석이 어려운 장면 |
+
+주의:
+
+- 파일명은 `risk_level` 기준으로 `good`, `caution`, `danger`, `unknown`을 사용한다.
+- `UNAVAILABLE` preset도 이미지 파일명은 `unknown`을 사용한다.
+- DB 숫자 id가 다르면 파일명의 숫자도 실제 `drains.id`에 맞춰야 한다.
+- VM에서는 이 폴더가 Git에 포함되거나 배포 workspace에 복사되어 있어야 한다.
+
+## 2.4 알림 UX 기준
+
+종 알림은 모든 변화에 뜨지 않는다. 관람객 화면이 산만해지지 않도록 아래 상태만 알림으로 올린다.
+
+| 상태 | 알림 여부 | 이유 |
+| --- | --- | --- |
+| danger | 표시 | 즉시 확인이 필요한 위험 상태 |
+| unknown | 표시 | 영상 분석이 불가능해 별도 확인이 필요한 상태 |
+| caution | 미표시 | 자동 시나리오에서 자주 발생하므로 목록/지도 색상으로 확인 |
+| good | 미표시 | 복구 상태는 요약과 목록에서 확인 |
+
+한 번에 여러 시설이 위험이 되어도 알림은 시설별 한 건으로 유지한다. 같은 시설의 알림은 새 상태로 갱신되고, 알림 패널 상단에서 읽지 않은 위험/판단불가 개수를 따로 보여준다.
 
 ## 3. 발표 전 전체 준비 체크리스트
 
@@ -272,6 +364,7 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 COMPOSE_DEMO_SIMULATOR_ENABLED=true
 COMPOSE_DEMO_SIMULATOR_MODE=direct
 COMPOSE_DEMO_SIMULATOR_AUTO_START=false
+COMPOSE_DEMO_SIMULATOR_RANDOMIZE=true
 COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS=30
 COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE=DR-003
 DEMO_CONTROL_TOKEN=<직접 정한 토큰>
