@@ -355,6 +355,20 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T db psql -
 
 `/demo-control`에서 접근 토큰 입력란에 `.env`의 `DEMO_CONTROL_TOKEN` 값을 넣고 `저장`을 누른다.
 
+404가 뜨면 먼저 어떤 404인지 구분한다.
+
+| 증상 | 원인 가능성 | 해결 |
+| --- | --- | --- |
+| `http://localhost:18080/demo-control` 화면 자체가 404 | frontend image가 새로 빌드되지 않았거나 Nginx가 이전 설정을 물고 있음 | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build nginx frontend` 실행 |
+| `/demo-control` 화면은 뜨지만 상태 조회가 404 | `COMPOSE_DEMO_SIMULATOR_ENABLED=false` 상태에서 `/api/demo/status`가 비활성화됨 | `.env`에서 `COMPOSE_DEMO_SIMULATOR_ENABLED=true`로 바꾸고 backend 재기동 |
+| 상태 조회가 403 | `DEMO_CONTROL_TOKEN`이 비어 있거나 화면에 입력한 token과 다름 | `.env`에 token을 넣고 `/demo-control`에 같은 값을 저장 |
+
+로컬에서 demo API를 켠 뒤 backend만 재기동하려면 다음 명령을 사용한다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build backend nginx frontend
+```
+
 ### 10.6 수동 preset 테스트
 
 1. `/demo-control`에서 대상 시설을 `DR-005`로 선택한다.
