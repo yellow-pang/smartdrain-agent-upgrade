@@ -1,31 +1,31 @@
-# PR 31 개발 서버 시연 자동화 모듈
+## PR 제목
+
+[feat] 개발 서버 시연 자동화 모듈 추가
 
 ## 작업 내용
 
-- 개발 서버 전용 demo simulator를 backend에 추가했다.
-- 발표 브랜치의 dev compose에는 simulator direct 모드 값을 직접 넣어 별도 환경변수 주입 없이 켤 수 있게 했다.
-- `direct` 모드에서 센서, YOLO, XGBoost, AnalysisJob 데이터를 직접 생성하고 기존 WebSocket 이벤트를 발행한다.
-- `async` 모드에서는 기존 Backend -> AI Service -> Backend callback 흐름을 사용할 수 있다.
-- 메인 대시보드 요약 캐시가 `DRAIN_STATUS_UPDATED` 이벤트에 맞춰 즉시 갱신되도록 보강했다.
-- 상세 센서 차트가 30초 단위 시연 데이터를 구분할 수 있도록 시간 라벨에 초를 포함했다.
-- DR-003 상태별 이미지가 있으면 `/api/mock-images/demo/drain_3_{state}.*`를 우선 사용하고, 없으면 기존 `drain_3.jpg`로 fallback한다.
-- 센서값과 분석값은 상태별 범위 안에서 랜덤 샘플링해 숫자가 매번 너무 똑같아 보이지 않도록 했다.
-- 실행 가이드와 이미지 생성 프롬프트를 `step-39` 문서에 정리했다.
+- 개발 서버 전용 demo simulator를 backend에 추가했습니다.
+- 발표 브랜치의 dev compose에는 simulator `direct` 모드 값을 직접 넣어 별도 환경변수 주입 없이 시연이 시작되도록 했습니다.
+- `direct` 모드에서 센서, YOLO, XGBoost, AnalysisJob 데이터를 직접 생성하고 기존 WebSocket 이벤트를 발행하도록 했습니다.
+- `async` 모드에서는 기존 Backend -> AI Service -> Backend callback 흐름을 사용할 수 있게 했습니다.
+- 메인 대시보드 요약 cache가 `DRAIN_STATUS_UPDATED` 이벤트에 맞춰 즉시 갱신되도록 보강했습니다.
+- 상세 센서 차트가 30초 단위 시연 데이터를 구분할 수 있도록 시간 라벨에 초 단위를 포함했습니다.
+- DR-003 상태별 이미지가 있으면 `/api/mock-images/demo/drain_3_{state}.*`를 우선 사용하고, 없으면 기존 `drain_3.jpg`로 fallback하도록 했습니다.
+- 센서값과 분석값은 상태별 범위 안에서 랜덤 샘플링해 발표 화면의 숫자가 자연스럽게 변하도록 했습니다.
+- 실행 가이드, 이미지 규칙, 이미지 생성 프롬프트를 `step-39` 문서에 정리했습니다.
 
-## 주요 파일
+## 주요 변경 파일
 
-| 파일 | 설명 |
-|---|---|
-| `backend/app/services/demo_simulator.py` | 시연 자동화 loop, 직접 결과 생성, WebSocket broadcast |
-| `backend/app/core/config.py` | demo simulator 설정 추가 |
-| `backend/app/main.py` | startup/shutdown 연결 |
-| `docker-compose.dev.yml` | 발표용 demo simulator 값 직접 설정 |
-| `.env.example` | compose demo env 예시 |
-| `backend/.env.example` | backend 단독 실행 env 예시 |
-| `frontend/components/realtime-drain-sync.tsx` | 대시보드 요약 cache 실시간 갱신 |
-| `frontend/lib/api/adapters.ts` | 센서 차트 시간 라벨 초 단위 포함 |
-| `frontend/app/drains/[id]/page.tsx` | 상세 실시간 센서 포인트 초 단위 포함 |
-| `frontend/docs/steps/step-39-dev-demo-automation-module.md` | Docker 실행 가이드, 이미지 규칙, 프롬프트 |
+| 구분 | 파일 |
+| --- | --- |
+| Backend simulator | `backend/app/services/demo_simulator.py` |
+| Backend 설정 | `backend/app/core/config.py`, `backend/app/main.py` |
+| Docker dev 설정 | `docker-compose.dev.yml` |
+| Env 예시 | `.env.example`, `backend/.env.example` |
+| Frontend 실시간 반영 | `frontend/components/realtime-drain-sync.tsx` |
+| Frontend 시간 라벨 | `frontend/lib/api/adapters.ts`, `frontend/app/drains/[id]/page.tsx` |
+| 작업 계획 | `frontend/docs/plans/plan-26-dev-demo-automation-module.md` |
+| 실행 가이드 | `frontend/docs/steps/step-39-dev-demo-automation-module.md` |
 
 ## 실행 방법
 
@@ -51,44 +51,22 @@ http://localhost:8080
 http://localhost:8080/drains/DR-003
 ```
 
-## 이미지 준비
+## 검증 결과
 
-DR-003 상세 시나리오 이미지는 아래 경로에 넣는다.
+- `python -m compileall backend` 통과
+- `npm.cmd run build` 통과
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet` 통과
 
-```text
-mock_data/ai_image_samples/demo/drain_3_good.jpg
-mock_data/ai_image_samples/demo/drain_3_caution.jpg
-mock_data/ai_image_samples/demo/drain_3_danger.jpg
-mock_data/ai_image_samples/demo/drain_3_unknown.jpg
-```
+## 리뷰 포인트
 
-이미지가 없으면 기존 이미지로 fallback된다.
+- 발표 브랜치에서 `docker-compose.dev.yml`의 `DEMO_SIMULATOR_ENABLED: "true"`를 직접 유지하는 방식이 적절한지 확인합니다.
+- 시연 종료 후 `DEMO_SIMULATOR_ENABLED: "false"`로 되돌리거나 demo block을 제거하는 운영 방식이 충분히 명확한지 확인합니다.
+- `direct` 모드가 발표 안정성을 위한 시연 데이터라는 점이 문서와 발표 설명에 충분히 드러나는지 확인합니다.
+- DR-003 상태별 이미지 파일명과 fallback 정책이 발표 자료 준비 흐름에 맞는지 확인합니다.
 
-```text
-/api/mock-images/drain_3.jpg
-```
+## 비고
 
-## 검증
-
-실행 완료:
-
-```text
-python -m compileall backend
-npm.cmd run build
-docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
-```
-
-검증 결과:
-
-- Backend Python 문법 검증 통과
-- Frontend Next.js production build 통과
-- Docker compose dev config 검증 통과
-
-## 남은 확인 사항
-
-- 실제 Docker 실행 후 메인/상세 화면에서 WebSocket 이벤트 반영을 눈으로 확인해야 한다.
-- `direct` 모드는 발표 안정성을 위한 시연 데이터이며 실제 YOLO 모델 판단은 아니다.
-- 실제 YOLO 흐름을 보여주려면 `docker-compose.dev.yml`의 `DEMO_SIMULATOR_MODE`를 `async`로 바꿔 별도 리허설한다.
-- 상태별 이미지는 사용자가 추가해야 한다.
-- 시연 반복 후 DB 이력이 많이 쌓이면 발표 전 DB volume 초기화 여부를 결정한다.
-- 발표가 끝나면 `docker-compose.dev.yml`의 demo block을 제거하거나 `DEMO_SIMULATOR_ENABLED: "false"`로 되돌린다.
+- `direct` 모드는 실제 YOLO 모델 판단이 아니라 발표 안정성을 위한 시연 데이터 생성 방식입니다.
+- 실제 YOLO 흐름을 보여주려면 `docker-compose.dev.yml`의 `DEMO_SIMULATOR_MODE`를 `async`로 바꿔 별도 리허설합니다.
+- 상태별 이미지는 사용자가 `mock_data/ai_image_samples/demo/` 아래에 추가해야 합니다.
+- 시연 반복 후 DB 이력이 많이 쌓이면 발표 전 DB volume 초기화 여부를 결정합니다.
