@@ -45,7 +45,10 @@
 | POST | `/api/demo/scenario/start` | 자동 날씨 시나리오 시작 |
 | POST | `/api/demo/scenario/pause` | 자동 날씨 시나리오 일시정지 |
 | POST | `/api/demo/scenario/resume` | 자동 날씨 시나리오 재개 |
+| POST | `/api/demo/scenario/stop` | 자동 날씨 시나리오 정지 |
 | POST | `/api/demo/scenario/next` | 다음 날씨 단계 즉시 적용 |
+| POST | `/api/demo/scenario/step` | 지정한 날씨 단계 즉시 적용 |
+| POST | `/api/demo/scenario/interval` | 자동 진행 간격을 런타임에 변경 |
 | POST | `/api/demo/scenario/recover` | 전체 시설 복구 단계 적용 |
 | POST | `/api/demo/scenario/reset` | 자동 시나리오 초기화 |
 
@@ -178,7 +181,7 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 | 5 | 공개 대시보드 접속 | `/`에서 지도, 목록, 요약, 이미지가 보인다. |
 | 6 | WebSocket 연결 확인 | 화면 새로고침 후 실시간 연결 상태가 끊기지 않는다. |
 | 7 | `/demo-control` 접속 | 발표자만 접근 가능하고 제어 UI가 보인다. |
-| 8 | 전체 복구 실행 | 5개 시설이 초기 상태로 돌아간다. |
+| 8 | 발표 초기화 실행 | 5개 시설이 발표용 초기 상태로 돌아간다. |
 | 9 | 수동 preset 1회 테스트 | 선택 시설 상태가 즉시 바뀐다. |
 | 10 | 자동 시나리오 1단계 테스트 | 시작, 일시정지, 다음 단계, 복구가 동작한다. |
 
@@ -200,7 +203,7 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 1. `/demo-control`에 접속한다.
 2. 접근 토큰 입력란에 `DEMO_CONTROL_TOKEN` 값을 입력하고 `저장`을 누른다.
-3. `초기 상태 복구` 버튼을 누른다.
+3. `발표 초기화` 버튼을 누른다.
 4. `/` 화면을 새로고침한다.
 5. 5개 시설의 상태가 발표용 초기 상태인지 확인한다.
 6. 자동 시나리오 상태가 `정지`인지 확인한다.
@@ -230,7 +233,7 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 11. `판단불가 적용`을 누른다.
 12. 이미지 분석 상태가 판단불가로 바뀌고, 센서값은 계속 표시되는지 확인한다.
 13. 상세 화면을 열어 센서 차트와 위험 이력이 누적되는지 보여준다.
-14. `수동 상태 해제` 또는 `초기 상태 복구`를 눌러 재시연 가능한 상태로 되돌린다.
+14. `수동 상태 해제` 또는 `발표 초기화`를 눌러 재시연 가능한 상태로 되돌린다.
 
 ### 4.4 발표 중 설명 포인트
 
@@ -257,11 +260,11 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 | 4 | Cloudflare Tunnel 확인 | 공개 도메인 접속 가능 |
 | 5 | 모바일 접속 테스트 | QR 도메인에서 `/` 대시보드 표시 |
 | 6 | `/demo-control` 접근 테스트 | 발표자만 접근 가능 |
-| 7 | 전체 복구 | 자동 시나리오 시작 전 안정 상태 |
+| 7 | 발표 초기화 | 자동 시나리오 시작 전 안정 상태 |
 
 ### 5.2 QR 공개 전
 
-1. `/demo-control`에서 `전체 복구`를 누른다.
+1. `/demo-control`에서 `발표 초기화`를 누른다.
 2. 자동 시나리오 상태가 `정지`인지 확인한다.
 3. 날씨 단계가 `CLEAR` 또는 `강우 전`인지 확인한다.
 4. 발표자 휴대폰으로 QR을 스캔한다.
@@ -295,13 +298,39 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 
 | 버튼 | 언제 누르는가 | 주의점 |
 | --- | --- | --- |
-| `초기 상태 복구` | 시나리오를 처음부터 다시 시작하고 싶을 때 | 관람객 화면도 초기 상태로 바뀐다. |
+| `발표 초기화` | 시나리오를 처음부터 다시 시작하고 싶을 때 | 관람객 화면도 초기 상태로 바뀐다. |
 | `시작` | QR 접속 확인 후 자동 시나리오를 시작할 때 | 시작 전 공개 화면이 정상인지 확인한다. |
 | `일시정지` | 특정 단계에서 설명을 길게 해야 할 때 | 수동 preset은 계속 사용할 수 있다. |
 | `재개` | 일시정지한 자동 시나리오를 이어갈 때 | 현재 단계부터 진행한다. |
+| `정지` | 자동 진행을 완전히 멈추고 수동 시연으로 전환할 때 | 현재 화면 상태는 유지된다. |
 | `다음 단계` | 발표 시간을 줄이거나 특정 장면을 바로 보여줄 때 | 너무 자주 누르면 관람객이 변화를 따라가기 어렵다. |
-| `전체 복구` | 발표 종료 또는 재시연 전 | 모든 override와 자동 상태를 정리한다. |
+| `단계 적용` | 리허설 중 특정 날씨 장면을 바로 보여줄 때 | 선택한 단계가 즉시 DB와 화면에 반영된다. |
+| `10초`, `15초`, `30초`, `60초` | 영상 촬영, 짧은 리허설, 실제 발표 속도를 맞출 때 | 컨테이너 재기동 전까지 유지되는 런타임 설정이다. |
+| `복구 단계 적용` | 발표 종료 또는 재시연 전 | 모든 override와 자동 상태를 정리한다. |
 | `수동 상태 해제` | 특정 시설을 자동 시나리오에 다시 합류시킬 때 | 현재 날씨 단계 기준 상태로 돌아간다. |
+
+### 6.1 리허설 빠른 모드 사용법
+
+영상 촬영이나 발표 리허설에서는 `.env`를 바꾸지 말고 `/demo-control`에서 간격 버튼을 사용한다.
+
+1. `/demo-control`에서 접근 토큰을 저장한다.
+2. `10초` 또는 `15초`를 누른다.
+3. `시작`을 눌러 자동 시나리오를 돌린다.
+4. 장면 전환이 너무 빠르면 `일시정지` 후 `30초` 또는 `60초`로 바꾼다.
+5. 실제 발표 직전에는 `30초`를 기본값으로 두고 `발표 초기화`를 누른다.
+
+### 6.2 특정 장면 강제 선택
+
+발표자가 바로 보여줄 장면을 골라야 하면 날씨 단계 선택 후 `단계 적용`을 누른다.
+
+| 단계 | 추천 사용 상황 |
+| --- | --- |
+| `CLEAR` | 발표 시작 전 정상 화면 |
+| `LIGHT_RAIN` | 값이 천천히 올라가는 설명 |
+| `HEAVY_RAIN` | 위험 알림이 생기는 장면 |
+| `CLOUDBURST` | 여러 시설이 위험/판단불가로 갈라지는 장면 |
+| `RAIN_WEAKENING` | 위험이 완화되는 장면 |
+| `RECOVERY` | 발표 종료와 복구 확인 |
 
 ## 7. 장애 대응 가이드
 
@@ -311,7 +340,7 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 2. `/api/drains` 응답이 최신인지 확인한다.
 3. WebSocket 연결이 끊겨 있으면 페이지를 다시 연다.
 4. `/demo-control`에서 같은 preset을 다시 누르지 말고 다른 상태로 한 번 바꿔 상태 변화 이벤트를 만든다.
-5. 그래도 안 되면 `전체 복구` 후 수동 시연으로 전환한다.
+5. 그래도 안 되면 `복구 단계 적용` 후 수동 시연으로 전환한다.
 
 ### 7.2 `/demo-control` 버튼이 실패할 때
 
@@ -334,14 +363,48 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 2. 관람객 QR 시연은 녹화본 또는 스크린샷으로 대체한다.
 3. 발표 후 VM, Tunnel, DNS, Access 정책을 순서대로 점검한다.
 
-## 8. 발표 종료 절차
+## 8. 운영/보안 마무리 절차
 
 1. `/demo-control`에서 자동 시나리오를 `일시정지` 또는 `정지`한다.
-2. `전체 복구`를 눌러 5개 시설을 초기 상태로 되돌린다.
+2. `복구 단계 적용`을 눌러 5개 시설을 복구 상태로 되돌린다.
 3. 관람객 공개 QR 접속을 닫거나 Cloudflare Access 정책을 원래대로 돌린다.
 4. 필요하면 `.env` 또는 Jenkins Secret File에서 demo 기능을 비활성화한다.
 5. 발표 중 생성된 데이터가 많으면 정리 대상인지 확인한다.
 6. 최종 화면 캡처나 로그가 필요하면 컨테이너 종료 전에 확보한다.
+
+### 8.1 Cloudflare Access 권장 정책
+
+관람객에게는 공개 대시보드만 열고, 제어/문서/스키마는 발표자만 접근하도록 분리한다.
+
+| 경로 | 권장 정책 |
+| --- | --- |
+| `/` | 공개 QR 허용 |
+| `/drains/*` | 공개 QR 허용 |
+| `/api/drains/*` | 공개 QR 허용 |
+| `/api/dashboard/*` | 공개 QR 허용 |
+| `/ws/drains/status` | 공개 QR 허용 |
+| `/demo-control` | 발표자 이메일만 허용 |
+| `/api/demo/*` | 발표자 이메일만 허용, `DEMO_CONTROL_TOKEN`도 유지 |
+| `/docs`, `/redoc`, `/openapi.json` | 발표자 또는 운영자만 허용 |
+
+Cloudflare Access를 걸어도 `DEMO_CONTROL_TOKEN`은 제거하지 않는다. Access는 외부 진입 보호이고, token은 API 자체 보호다.
+
+### 8.2 Jenkins Secret File 체크리스트
+
+발표 VM 배포용 Secret File에는 아래 값을 확인한다.
+
+```env
+COMPOSE_DEMO_SIMULATOR_ENABLED=true
+COMPOSE_DEMO_SIMULATOR_MODE=direct
+COMPOSE_DEMO_SIMULATOR_AUTO_START=false
+COMPOSE_DEMO_SIMULATOR_RANDOMIZE=true
+COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS=30
+COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE=DR-003
+DEMO_CONTROL_TOKEN=<긴-랜덤-토큰>
+SMARTDRAIN_YOLO_MODEL_PATH=./ai_service/model/best.pt
+```
+
+발표 후에는 `COMPOSE_DEMO_SIMULATOR_ENABLED=false`로 바꾸거나 demo env가 없는 Secret File로 되돌린 뒤 재배포한다. 재배포 후 `/api/demo/status`가 `404 Demo control is disabled`를 반환하면 비활성화가 완료된 것이다.
 
 ## 9. 검증 결과
 
@@ -465,7 +528,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build bac
 ### 10.6 수동 preset 테스트
 
 1. `/demo-control`에서 대상 시설을 `DR-005`로 선택한다.
-2. `초기 상태 복구`를 누른다.
+2. `발표 초기화`를 누른다.
 3. `/`에서 DR-005가 양호 상태인지 확인한다.
 4. `주의 적용`을 누른다.
 5. `/`에서 DR-005의 상태, 목록 순위, 지도 마커가 바뀌는지 확인한다.
@@ -473,18 +536,21 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build bac
 7. `/drains/DR-005`에서 센서 차트와 위험 이력이 추가되는지 확인한다.
 8. `판단불가 적용`을 누른다.
 9. 이미지 분석 상태가 판단불가로 바뀌고 센서값은 남는지 확인한다.
-10. `수동 상태 해제` 또는 `초기 상태 복구`로 원상 복구한다.
+10. `수동 상태 해제` 또는 `발표 초기화`로 원상 복구한다.
 
 ### 10.7 자동 시나리오 테스트
 
-1. `/demo-control`에서 `초기 상태 복구`를 누른다.
+1. `/demo-control`에서 `발표 초기화`를 누른다.
 2. `/`를 새로고침한다.
-3. `시작`을 누른다.
-4. 날씨 단계가 진행되고 5개 시설 상태가 바뀌는지 확인한다.
-5. `일시정지`를 누르고 화면 변화가 멈추는지 확인한다.
-6. `다음 단계`를 눌러 즉시 다음 날씨 단계가 적용되는지 확인한다.
-7. `재개`를 눌러 자동 진행이 이어지는지 확인한다.
-8. `전체 복구`를 눌러 대부분 양호 상태로 돌아오는지 확인한다.
+3. `10초`를 눌러 리허설 빠른 모드를 적용한다.
+4. `시작`을 누른다.
+5. 날씨 단계가 진행되고 5개 시설 상태가 바뀌는지 확인한다.
+6. `일시정지`를 누르고 화면 변화가 멈추는지 확인한다.
+7. `CLOUDBURST`를 선택하고 `단계 적용`을 눌러 즉시 집중호우 장면이 적용되는지 확인한다.
+8. `다음 단계`를 눌러 즉시 다음 날씨 단계가 적용되는지 확인한다.
+9. `30초`를 눌러 실제 발표 속도로 되돌린다.
+10. `재개`를 눌러 자동 진행이 이어지는지 확인한다.
+11. `복구 단계 적용`을 눌러 대부분 양호 상태로 돌아오는지 확인한다.
 
 ### 10.8 API 직접 테스트
 
@@ -495,6 +561,8 @@ $token = "<직접 정한 토큰>"
 $headers = @{ Authorization = "Bearer $token"; "X-Demo-Control-Token" = $token }
 Invoke-RestMethod -Headers $headers -Uri "http://localhost:18080/api/demo/status"
 Invoke-RestMethod -Method Post -Headers $headers -ContentType "application/json" -Body '{"preset":"DANGER"}' -Uri "http://localhost:18080/api/demo/drains/DR-005/preset"
+Invoke-RestMethod -Method Post -Headers $headers -ContentType "application/json" -Body '{"intervalSeconds":10}' -Uri "http://localhost:18080/api/demo/scenario/interval"
+Invoke-RestMethod -Method Post -Headers $headers -ContentType "application/json" -Body '{"weatherStep":"CLOUDBURST"}' -Uri "http://localhost:18080/api/demo/scenario/step"
 Invoke-RestMethod -Method Post -Headers $headers -Uri "http://localhost:18080/api/demo/scenario/next"
 Invoke-RestMethod -Method Post -Headers $headers -Uri "http://localhost:18080/api/demo/scenario/recover"
 ```
@@ -505,6 +573,8 @@ Invoke-RestMethod -Method Post -Headers $headers -Uri "http://localhost:18080/ap
 | --- | --- |
 | `/api/demo/status` | `success=true`, `data.enabled=true` |
 | preset 적용 | `manualOverrides`에 `DR-005` 포함 |
+| scenario interval | `intervalSeconds=10` |
+| scenario step | `weatherStep=CLOUDBURST` |
 | scenario next | `weatherStep`이 다음 단계로 변경 |
 | recover | `weatherStep=RECOVERY` |
 
@@ -516,7 +586,7 @@ Invoke-RestMethod -Method Post -Headers $headers -Uri "http://localhost:18080/ap
 docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 ```
 
-발표 서버에서는 `down`하지 않고 `/demo-control`에서 `전체 복구`만 실행한 뒤 공개 접근 정책을 원래대로 돌린다.
+발표 서버에서는 `down`하지 않고 `/demo-control`에서 `복구 단계 적용`만 실행한 뒤 공개 접근 정책을 원래대로 돌린다.
 
 ## 11. 구현 완료 후 추가 확인할 항목
 

@@ -29,6 +29,7 @@ DEMO_IMAGE_SOURCE_DIR = PROJECT_ROOT_DIR / "mock_data" / "ai_image_samples" / "d
 DEMO_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
 MANUAL_PRESETS = {"GOOD", "CAUTION", "DANGER", "UNAVAILABLE"}
 WEATHER_STEPS = ("CLEAR", "LIGHT_RAIN", "HEAVY_RAIN", "CLOUDBURST", "RAIN_WEAKENING", "RECOVERY")
+REHEARSAL_INTERVAL_SECONDS = (10, 15, 30, 60)
 
 
 @dataclass
@@ -38,6 +39,7 @@ class DemoControlState:
     weather_step_index: int = 0
     manual_overrides: set[str] | None = None
     scenario_task: asyncio.Task | None = None
+    interval_seconds: int | None = None
     last_action: str = "initialized"
     last_error: str | None = None
     updated_at: str | None = None
@@ -340,6 +342,31 @@ async def next_scenario_step(db: Session) -> dict[str, Any]:
         return _control_status()
 
 
+async def apply_scenario_step(db: Session, weather_step: str) -> dict[str, Any]:
+    normalized_step = weather_step.strip().upper()
+    if normalized_step not in WEATHER_STEPS:
+        raise ValueError(f"Unsupported weather step: {weather_step}")
+
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.weather_step_index = WEATHER_STEPS.index(normalized_step)
+
+    await _apply_weather_step(db, normalized_step)
+
+    async with _CONTROL_LOCK:
+        _mark_control_action(f"scenario-step:{normalized_step}")
+        return _control_status()
+
+
+async def set_scenario_interval(interval_seconds: int) -> dict[str, Any]:
+    if interval_seconds < 5 or interval_seconds > 300:
+        raise ValueError("Scenario interval must be between 5 and 300 seconds")
+
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.interval_seconds = interval_seconds
+        _mark_control_action(f"scenario-interval:{interval_seconds}")
+        return _control_status()
+
+
 async def _controlled_scenario_loop() -> None:
     try:
         while True:
@@ -347,6 +374,7 @@ async def _controlled_scenario_loop() -> None:
                 running = _CONTROL_STATE.running
                 paused = _CONTROL_STATE.paused
                 weather_step = WEATHER_STEPS[_CONTROL_STATE.weather_step_index]
+                interval_seconds = _scenario_interval_seconds()
 
             if not running:
                 await asyncio.sleep(1)
@@ -364,7 +392,7 @@ async def _controlled_scenario_loop() -> None:
                 async with _CONTROL_LOCK:
                     _CONTROL_STATE.last_error = str(exc)
 
-            await asyncio.sleep(settings.DEMO_SIMULATOR_INTERVAL_SECONDS)
+            await asyncio.sleep(interval_seconds)
             async with _CONTROL_LOCK:
                 _CONTROL_STATE.weather_step_index = (_CONTROL_STATE.weather_step_index + 1) % len(WEATHER_STEPS)
     except asyncio.CancelledError:
@@ -707,8 +735,14 @@ def _control_status() -> dict[str, Any]:
         "weatherSteps": list(WEATHER_STEPS),
         "manualOverrides": sorted(_CONTROL_STATE.manual_overrides or set()),
         "targetDrainCode": settings.DEMO_SIMULATOR_TARGET_DRAIN_CODE,
-        "intervalSeconds": settings.DEMO_SIMULATOR_INTERVAL_SECONDS,
+        "intervalSeconds": _scenario_interval_seconds(),
+        "defaultIntervalSeconds": settings.DEMO_SIMULATOR_INTERVAL_SECONDS,
+        "rehearsalIntervals": list(REHEARSAL_INTERVAL_SECONDS),
         "lastAction": _CONTROL_STATE.last_action,
         "lastError": _CONTROL_STATE.last_error,
         "updatedAt": _CONTROL_STATE.updated_at,
     }
+
+
+def _scenario_interval_seconds() -> int:
+    return _CONTROL_STATE.interval_seconds or settings.DEMO_SIMULATOR_INTERVAL_SECONDS

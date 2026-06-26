@@ -12,6 +12,7 @@ import {
     RotateCcw,
     Shield,
     Square,
+    Timer,
     Unlock,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
@@ -25,6 +26,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import {
+    applyDemoScenarioStep,
     applyDemoPreset,
     clearDemoOverride,
     getDemoStatus,
@@ -33,7 +35,9 @@ import {
     recoverDemoScenario,
     resetDemo,
     resumeDemoScenario,
+    setDemoScenarioInterval,
     startDemoScenario,
+    stopDemoScenario,
     type DemoPreset,
     type DemoStatus,
 } from "@/lib/api/demo";
@@ -75,6 +79,7 @@ export default function DemoControlPage() {
             : (window.sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? ""),
     );
     const [selectedDrainId, setSelectedDrainId] = useState("DR-005");
+    const [selectedWeatherStep, setSelectedWeatherStep] = useState("LIGHT_RAIN");
     const [lastMessage, setLastMessage] = useState<string | null>(null);
     const effectiveSelectedDrainId = drains.some((drain) => drain.id === selectedDrainId)
         ? selectedDrainId
@@ -246,7 +251,7 @@ export default function DemoControlPage() {
                                         "발표용 초기 상태를 적용했습니다.",
                                     )}
                                 >
-                                    <RotateCcw className="size-4" /> 초기 상태 복구
+                                    <RotateCcw className="size-4" /> 발표 초기화
                                 </Button>
                             </div>
 
@@ -282,11 +287,11 @@ export default function DemoControlPage() {
                                     <CloudRain className="size-4" />
                                     {status ? weatherLabel(status.weatherStep) : "상태 확인 중"}
                                 </div>
-                        {status && (
-                            <p className="mt-1 text-sm text-cyan-800/80 dark:text-cyan-100/70">
-                                {status.weatherStepIndex + 1} / {status.weatherSteps.length} 단계 · {status.intervalSeconds}초 간격 · {status.randomize ? "자연화 ON" : "고정값"}
-                            </p>
-                        )}
+                                {status && (
+                                    <p className="mt-1 text-sm text-cyan-800/80 dark:text-cyan-100/70">
+                                        {status.weatherStepIndex + 1} / {status.weatherSteps.length} 단계 · {status.intervalSeconds}초 간격 · {status.randomize ? "자연화 ON" : "고정값"}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="grid gap-2 sm:grid-cols-2">
@@ -327,6 +332,17 @@ export default function DemoControlPage() {
                                     variant="outline"
                                     disabled={isBusy}
                                     onClick={() => trigger(
+                                        () => stopDemoScenario(authOptions),
+                                        "자동 시나리오를 정지했습니다.",
+                                    )}
+                                >
+                                    <Square className="size-4" /> 정지
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={isBusy}
+                                    onClick={() => trigger(
                                         () => nextDemoScenarioStep(authOptions),
                                         "다음 날씨 단계로 이동했습니다.",
                                     )}
@@ -334,6 +350,51 @@ export default function DemoControlPage() {
                                     <FastForward className="size-4" /> 다음 단계
                                 </Button>
                             </div>
+
+                            <div className="grid gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                    <select
+                                        className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
+                                        value={selectedWeatherStep}
+                                        onChange={(event) => setSelectedWeatherStep(event.target.value)}
+                                    >
+                                        {(status?.weatherSteps.length ? status.weatherSteps : Object.keys(WEATHER_LABELS)).map((step) => (
+                                            <option key={step} value={step}>
+                                                {weatherLabel(step)} · {step}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={isBusy}
+                                        onClick={() => trigger(
+                                            () => applyDemoScenarioStep(selectedWeatherStep, authOptions),
+                                            `${weatherLabel(selectedWeatherStep)} 단계로 즉시 전환했습니다.`,
+                                        )}
+                                    >
+                                        단계 적용
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(status?.rehearsalIntervals.length ? status.rehearsalIntervals : [10, 15, 30, 60]).map((intervalSeconds) => (
+                                        <Button
+                                            key={intervalSeconds}
+                                            type="button"
+                                            size="sm"
+                                            variant={status?.intervalSeconds === intervalSeconds ? "default" : "outline"}
+                                            disabled={isBusy}
+                                            onClick={() => trigger(
+                                                () => setDemoScenarioInterval(intervalSeconds, authOptions),
+                                                `자동 시나리오 간격을 ${intervalSeconds}초로 변경했습니다.`,
+                                            )}
+                                        >
+                                            <Timer className="size-3.5" /> {intervalSeconds}초
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <Button
                                 type="button"
                                 variant="secondary"
@@ -344,7 +405,7 @@ export default function DemoControlPage() {
                                     "전체 시설을 복구 단계로 전환했습니다.",
                                 )}
                             >
-                                <CheckCircle2 className="size-4" /> 전체 복구
+                                <CheckCircle2 className="size-4" /> 복구 단계 적용
                             </Button>
                         </CardContent>
                     </Card>

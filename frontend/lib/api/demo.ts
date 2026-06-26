@@ -16,6 +16,8 @@ export type DemoStatus = {
     manualOverrides: string[];
     targetDrainCode: string;
     intervalSeconds: number;
+    defaultIntervalSeconds: number;
+    rehearsalIntervals: number[];
     lastAction: string;
     lastError: string | null;
     updatedAt: string | null;
@@ -135,10 +137,43 @@ export async function resumeDemoScenario(options?: DemoRequestOptions) {
     return parseDemoResponse(response.data);
 }
 
+export async function stopDemoScenario(options?: DemoRequestOptions) {
+    const response = await apiClient.post<unknown>(
+        "/api/demo/scenario/stop",
+        {},
+        { headers: demoHeaders(options) },
+    );
+    return parseDemoResponse(response.data);
+}
+
 export async function nextDemoScenarioStep(options?: DemoRequestOptions) {
     const response = await apiClient.post<unknown>(
         "/api/demo/scenario/next",
         {},
+        { headers: demoHeaders(options) },
+    );
+    return parseDemoResponse(response.data);
+}
+
+export async function applyDemoScenarioStep(
+    weatherStep: string,
+    options?: DemoRequestOptions,
+) {
+    const response = await apiClient.post<unknown>(
+        "/api/demo/scenario/step",
+        { weatherStep },
+        { headers: demoHeaders(options) },
+    );
+    return parseDemoResponse(response.data);
+}
+
+export async function setDemoScenarioInterval(
+    intervalSeconds: number,
+    options?: DemoRequestOptions,
+) {
+    const response = await apiClient.post<unknown>(
+        "/api/demo/scenario/interval",
+        { intervalSeconds },
         { headers: demoHeaders(options) },
     );
     return parseDemoResponse(response.data);
@@ -182,6 +217,9 @@ function isDemoStatus(value: unknown): value is DemoStatus {
         value.manualOverrides.every((item) => typeof item === "string") &&
         typeof value.targetDrainCode === "string" &&
         typeof value.intervalSeconds === "number" &&
+        typeof value.defaultIntervalSeconds === "number" &&
+        Array.isArray(value.rehearsalIntervals) &&
+        value.rehearsalIntervals.every((item) => typeof item === "number") &&
         typeof value.lastAction === "string" &&
         (value.lastError === null || typeof value.lastError === "string") &&
         (value.updatedAt === null || typeof value.updatedAt === "string")

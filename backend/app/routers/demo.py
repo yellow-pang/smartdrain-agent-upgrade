@@ -16,6 +16,14 @@ class DemoPresetRequest(BaseModel):
     preset: str
 
 
+class DemoScenarioStepRequest(BaseModel):
+    weatherStep: str
+
+
+class DemoScenarioIntervalRequest(BaseModel):
+    intervalSeconds: int
+
+
 def require_demo_access(
     authorization: str | None = Header(default=None),
     x_demo_control_token: str | None = Header(default=None),
@@ -102,6 +110,14 @@ async def resume_demo_scenario(_: None = Depends(require_demo_access)):
     )
 
 
+@router.post("/scenario/stop")
+async def stop_demo_scenario(_: None = Depends(require_demo_access)):
+    return api_response(
+        await demo_simulator.stop_controlled_scenario(),
+        message="Demo scenario stopped",
+    )
+
+
 @router.post("/scenario/next")
 async def next_demo_scenario_step(
     _: None = Depends(require_demo_access),
@@ -111,6 +127,33 @@ async def next_demo_scenario_step(
         await demo_simulator.next_scenario_step(db),
         message="Demo scenario advanced",
     )
+
+
+@router.post("/scenario/step")
+async def apply_demo_scenario_step(
+    payload: DemoScenarioStepRequest,
+    _: None = Depends(require_demo_access),
+    db: Session = Depends(get_db),
+):
+    try:
+        status = await demo_simulator.apply_scenario_step(db, payload.weatherStep)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return api_response(status, message="Demo scenario step applied")
+
+
+@router.post("/scenario/interval")
+async def set_demo_scenario_interval(
+    payload: DemoScenarioIntervalRequest,
+    _: None = Depends(require_demo_access),
+):
+    try:
+        status = await demo_simulator.set_scenario_interval(payload.intervalSeconds)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return api_response(status, message="Demo scenario interval updated")
 
 
 @router.post("/scenario/recover")
