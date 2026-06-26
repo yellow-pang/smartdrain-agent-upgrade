@@ -2,6 +2,12 @@ services:
   backend:
     volumes:
       - ./:/app
+    environment:
+      DEMO_SIMULATOR_ENABLED: ${COMPOSE_DEMO_SIMULATOR_ENABLED:-false}
+      DEMO_SIMULATOR_MODE: ${COMPOSE_DEMO_SIMULATOR_MODE:-direct}
+      DEMO_SIMULATOR_INTERVAL_SECONDS: ${COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS:-30}
+      DEMO_SIMULATOR_START_DELAY_SECONDS: ${COMPOSE_DEMO_SIMULATOR_START_DELAY_SECONDS:-10}
+      DEMO_SIMULATOR_TARGET_DRAIN_CODE: ${COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE:-DR-003}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/backend"]
 
   ai-service:
