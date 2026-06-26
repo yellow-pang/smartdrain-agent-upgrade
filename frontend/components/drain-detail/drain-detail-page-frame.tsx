@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
+import { MobileDetailQuickActions } from "@/components/drain-detail/mobile-scroll-top-button";
 import type { DrainFacility } from "@/lib/mock-data";
 
 export function DrainDetailPageFrame({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <AppHeader />
-            <main className="mx-auto max-w-[1600px] p-4 md:p-6">{children}</main>
+            <main className="mx-auto max-w-[1600px] p-4 pb-[calc(env(safe-area-inset-bottom)+5rem)] md:p-6 lg:pb-6">{children}</main>
+            <MobileDetailQuickActions />
         </div>
     );
 }
