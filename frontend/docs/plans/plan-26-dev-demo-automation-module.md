@@ -514,3 +514,17 @@ docs: 개발 서버 시연 자동화 계획 추가
 - backend demo simulator, AI 모드, 이미지 전략, frontend 반영 범위를 나눠 기록했다.
 - 구현 전 사용자 확인이 필요한 사항과 검증 계획을 문서화했다.
 ```
+
+## 18. 구현 후 결정 사항
+
+사용자 확인 후 발표 브랜치에서는 dev merge 시 별도 환경변수 주입 없이 시연이 바로 동작하도록 `docker-compose.dev.yml`에 demo simulator 값을 직접 넣는 방향으로 확정했다.
+
+```yaml
+DEMO_SIMULATOR_ENABLED: "true"
+DEMO_SIMULATOR_MODE: "direct"
+DEMO_SIMULATOR_INTERVAL_SECONDS: "30"
+DEMO_SIMULATOR_START_DELAY_SECONDS: "10"
+DEMO_SIMULATOR_TARGET_DRAIN_CODE: "DR-003"
+```
+
+이 값은 발표용 임시 설정이므로 발표 종료 후 `DEMO_SIMULATOR_ENABLED`를 `"false"`로 바꾸거나 demo block을 제거한다. 안전한 예시 파일인 `.env.example`, `backend/.env.example`은 기본 off 값을 유지한다.

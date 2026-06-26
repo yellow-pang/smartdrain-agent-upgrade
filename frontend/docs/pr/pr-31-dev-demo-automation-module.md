@@ -3,7 +3,7 @@
 ## 작업 내용
 
 - 개발 서버 전용 demo simulator를 backend에 추가했다.
-- simulator는 기본 off이며, dev compose 환경변수로만 켤 수 있다.
+- 발표 브랜치의 dev compose에는 simulator direct 모드 값을 직접 넣어 별도 환경변수 주입 없이 켤 수 있게 했다.
 - `direct` 모드에서 센서, YOLO, XGBoost, AnalysisJob 데이터를 직접 생성하고 기존 WebSocket 이벤트를 발행한다.
 - `async` 모드에서는 기존 Backend -> AI Service -> Backend callback 흐름을 사용할 수 있다.
 - 메인 대시보드 요약 캐시가 `DRAIN_STATUS_UPDATED` 이벤트에 맞춰 즉시 갱신되도록 보강했다.
@@ -19,7 +19,7 @@
 | `backend/app/services/demo_simulator.py` | 시연 자동화 loop, 직접 결과 생성, WebSocket broadcast |
 | `backend/app/core/config.py` | demo simulator 설정 추가 |
 | `backend/app/main.py` | startup/shutdown 연결 |
-| `docker-compose.dev.yml` | dev 환경변수 연결 |
+| `docker-compose.dev.yml` | 발표용 demo simulator 값 직접 설정 |
 | `.env.example` | compose demo env 예시 |
 | `backend/.env.example` | backend 단독 실행 env 예시 |
 | `frontend/components/realtime-drain-sync.tsx` | 대시보드 요약 cache 실시간 갱신 |
@@ -29,22 +29,19 @@
 
 ## 실행 방법
 
-기본 개발 서버와 seed:
+깨끗한 DB에서 처음 실행할 때:
 
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db migrate
 docker compose --profile seed run --rm seed
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-발표 본시연용 direct 모드:
+이미 서버가 떠 있는 상태에서 seed를 다시 넣었다면:
 
 ```powershell
-$env:COMPOSE_DEMO_SIMULATOR_ENABLED="true"
-$env:COMPOSE_DEMO_SIMULATOR_MODE="direct"
-$env:COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS="30"
-$env:COMPOSE_DEMO_SIMULATOR_START_DELAY_SECONDS="10"
-$env:COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE="DR-003"
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend frontend nginx
+docker compose --profile seed run --rm seed
+docker compose -f docker-compose.yml -f docker-compose.dev.yml restart backend
 ```
 
 확인 URL:
@@ -91,6 +88,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 
 - 실제 Docker 실행 후 메인/상세 화면에서 WebSocket 이벤트 반영을 눈으로 확인해야 한다.
 - `direct` 모드는 발표 안정성을 위한 시연 데이터이며 실제 YOLO 모델 판단은 아니다.
-- 실제 YOLO 흐름을 보여주려면 `COMPOSE_DEMO_SIMULATOR_MODE=async`로 별도 리허설한다.
+- 실제 YOLO 흐름을 보여주려면 `docker-compose.dev.yml`의 `DEMO_SIMULATOR_MODE`를 `async`로 바꿔 별도 리허설한다.
 - 상태별 이미지는 사용자가 추가해야 한다.
 - 시연 반복 후 DB 이력이 많이 쌓이면 발표 전 DB volume 초기화 여부를 결정한다.
+- 발표가 끝나면 `docker-compose.dev.yml`의 demo block을 제거하거나 `DEMO_SIMULATOR_ENABLED: "false"`로 되돌린다.

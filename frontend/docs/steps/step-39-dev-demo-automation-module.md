@@ -22,7 +22,7 @@
 | `backend/app/services/demo_simulator.py` | 개발 전용 시연 자동화 loop 추가 |
 | `backend/app/core/config.py` | demo simulator 환경변수 추가 |
 | `backend/app/main.py` | FastAPI startup/shutdown에서 simulator 시작/종료 |
-| `docker-compose.dev.yml` | dev compose에서 simulator 환경변수 주입 |
+| `docker-compose.dev.yml` | dev compose에서 발표용 simulator 값을 직접 주입 |
 | `.env.example` | compose demo 설정 예시 추가 |
 | `backend/.env.example` | backend 단독 실행용 demo 설정 예시 추가 |
 | `frontend/components/realtime-drain-sync.tsx` | WebSocket 상태 이벤트 수신 시 대시보드 요약 cache 즉시 갱신 |
@@ -31,23 +31,23 @@
 
 ## 3. 동작 방식
 
-### 3.1 기본값
+### 3.1 dev compose 발표 기본값
 
-simulator는 기본적으로 꺼져 있다.
+이번 시연 브랜치에서는 dev merge 후 별도 환경변수를 주입하지 않아도 바로 동작하도록 `docker-compose.dev.yml`에 발표용 값을 직접 넣어둔다.
 
-```env
-COMPOSE_DEMO_SIMULATOR_ENABLED=false
+```yaml
+DEMO_SIMULATOR_ENABLED: "true"
+DEMO_SIMULATOR_MODE: "direct"
+DEMO_SIMULATOR_INTERVAL_SECONDS: "30"
+DEMO_SIMULATOR_START_DELAY_SECONDS: "10"
+DEMO_SIMULATOR_TARGET_DRAIN_CODE: "DR-003"
 ```
 
-켜려면 compose 실행 시 환경변수를 지정한다.
+주의:
 
-```env
-COMPOSE_DEMO_SIMULATOR_ENABLED=true
-COMPOSE_DEMO_SIMULATOR_MODE=direct
-COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS=30
-COMPOSE_DEMO_SIMULATOR_START_DELAY_SECONDS=10
-COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE=DR-003
-```
+- 이 값은 발표용 임시 설정이다.
+- 시연이 끝나면 `DEMO_SIMULATOR_ENABLED`를 `"false"`로 바꾸거나 해당 block을 제거한다.
+- `.env.example`, `backend/.env.example`의 기본값은 안전하게 off 예시를 유지한다.
 
 ### 3.2 `direct` 모드
 
@@ -152,11 +152,13 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend fro
 
 ## 4. Docker 실행 순서
 
-### 4.1 기본 개발 서버 실행
+### 4.1 깨끗한 DB에서 처음 실행
 
-PowerShell에서 프로젝트 루트 기준으로 실행한다.
+5개 하수구 seed가 들어간 뒤 backend simulator가 시작되는 순서가 가장 깔끔하다.
 
 ```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db migrate
+docker compose --profile seed run --rm seed
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
@@ -166,58 +168,50 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
 
-### 4.2 seed 데이터 준비
+### 4.2 이미 개발 서버가 떠 있는 상태에서 seed를 다시 넣은 경우
 
-5개 하수구가 있어야 simulator가 동작한다.
+backend가 seed보다 먼저 떠 있었다면 overview 초기 적용이 지나갔을 수 있으므로 backend를 한 번 재시작한다.
 
 ```powershell
 docker compose --profile seed run --rm seed
+docker compose -f docker-compose.yml -f docker-compose.dev.yml restart backend
 ```
 
-### 4.3 simulator 켜고 실행
+### 4.3 simulator 실행
 
-기본 추천값:
+현재 dev compose에는 발표용 `direct` 모드 값이 이미 들어 있으므로 별도 `$env:COMPOSE_DEMO_...` 설정이 필요 없다.
 
 ```powershell
-$env:COMPOSE_DEMO_SIMULATOR_ENABLED="true"
-$env:COMPOSE_DEMO_SIMULATOR_MODE="direct"
-$env:COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS="30"
-$env:COMPOSE_DEMO_SIMULATOR_START_DELAY_SECONDS="10"
-$env:COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE="DR-003"
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend frontend nginx
 ```
 
-영상 캡처용으로 빠르게 보고 싶을 때만 interval을 줄인다.
+영상 캡처용으로 빠르게 보고 싶을 때만 `docker-compose.dev.yml`의 interval을 임시로 줄인다.
 
-```powershell
-$env:COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS="10"
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend frontend nginx
+```yaml
+DEMO_SIMULATOR_INTERVAL_SECONDS: "10"
 ```
 
 리허설 후 기본 30초로 되돌리는 것을 권장한다.
 
-```powershell
-$env:COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS="30"
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend frontend nginx
+```yaml
+DEMO_SIMULATOR_INTERVAL_SECONDS: "30"
 ```
 
 ### 4.4 simulator 끄기
 
+시연이 끝났거나 일반 개발 모드로 되돌릴 때는 `docker-compose.dev.yml`에서 값을 바꾼다.
+
+```yaml
+DEMO_SIMULATOR_ENABLED: "false"
+```
+
+그 뒤 backend를 다시 띄운다.
+
 ```powershell
-$env:COMPOSE_DEMO_SIMULATOR_ENABLED="false"
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend
 ```
 
-또는 현재 PowerShell 세션의 env를 제거한다.
-
-```powershell
-Remove-Item Env:COMPOSE_DEMO_SIMULATOR_ENABLED -ErrorAction SilentlyContinue
-Remove-Item Env:COMPOSE_DEMO_SIMULATOR_MODE -ErrorAction SilentlyContinue
-Remove-Item Env:COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS -ErrorAction SilentlyContinue
-Remove-Item Env:COMPOSE_DEMO_SIMULATOR_START_DELAY_SECONDS -ErrorAction SilentlyContinue
-Remove-Item Env:COMPOSE_DEMO_SIMULATOR_TARGET_DRAIN_CODE -ErrorAction SilentlyContinue
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend
-```
+발표 브랜치가 끝나면 compose의 발표용 block 자체를 제거하는 것이 가장 안전하다.
 
 ## 5. 화면 확인 순서
 
@@ -357,12 +351,17 @@ DB를 지우지 않고 발표만 진행할 경우에는 위험 이력/분석 이
 
 ### 9.3 실제 YOLO 결과를 보고 싶을 때
 
-`direct` 대신 `async` 모드로 실행한다.
+`direct` 대신 `async` 모드로 바꾼다.
+
+```yaml
+DEMO_SIMULATOR_ENABLED: "true"
+DEMO_SIMULATOR_MODE: "async"
+DEMO_SIMULATOR_INTERVAL_SECONDS: "30"
+```
+
+적용 후 다시 띄운다.
 
 ```powershell
-$env:COMPOSE_DEMO_SIMULATOR_ENABLED="true"
-$env:COMPOSE_DEMO_SIMULATOR_MODE="async"
-$env:COMPOSE_DEMO_SIMULATOR_INTERVAL_SECONDS="30"
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend ai-service frontend nginx
 ```
 
@@ -374,14 +373,14 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend ai-
 ## 10. 발표 영상 캡처 추천 흐름
 
 ```text
-1. simulator direct 모드 30초로 실행
+1. dev compose의 simulator direct 모드 30초 설정 확인
 2. http://localhost:8080 접속
 3. overview 상태가 5개 하수구에 들어오는 장면 캡처
 4. DR-003 선택
 5. 상세 화면으로 이동
 6. DR-003 상태 변화가 2~3회 누적되는 장면 캡처
-7. 필요하면 interval 10초로 줄여 good/caution/danger/unknown 전체 흐름을 빠르게 캡처
-8. 캡처 후 interval 30초로 되돌림
+7. 필요하면 compose interval을 10초로 줄여 good/caution/danger/unknown 전체 흐름을 빠르게 캡처
+8. 캡처 후 compose interval을 30초로 되돌림
 ```
 
 ## 10.1 DR-003 이미지 생성 프롬프트
@@ -425,4 +424,5 @@ Create an UNKNOWN condition version for a CCTV or image acquisition failure case
 - DR-003이 순차적으로 good, caution, danger, unknown 상태를 보여준다.
 - 메인 대시보드 목록, 지도, 요약 카드가 WebSocket 이벤트에 맞춰 갱신된다.
 - 상세 화면에서 센서 차트와 위험/분석 이력이 누적된다.
-- Docker dev 환경에서 사용자가 명령어만으로 켜고 끌 수 있다.
+- Docker dev 환경에서 별도 환경변수 주입 없이 발표 시연을 시작할 수 있다.
+- 발표 종료 후 `docker-compose.dev.yml`의 demo block을 제거하거나 `DEMO_SIMULATOR_ENABLED`를 `"false"`로 되돌린다.
