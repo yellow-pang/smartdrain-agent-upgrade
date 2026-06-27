@@ -47,6 +47,11 @@ import type {
     YoloResultUpdatedEventDto,
 } from "@/lib/api/types";
 
+type DetailLoadError = {
+    drainId: string;
+    message: string;
+};
+
 const SensorTrendChart = dynamic<SensorTrendChartProps>(
     () =>
         import("@/components/sensor-trend-chart").then(
@@ -64,20 +69,26 @@ export default function DrainDetailPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = use(params);
-    const [detailData, setDetailData] = useState<DrainDetailData | null>();
-    const [loadError, setLoadError] = useState<string | null>(null);
+    const drainId = id.trim();
+    const [detailData, setDetailData] = useState<DrainDetailData>();
+    const [notFoundDrainId, setNotFoundDrainId] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<DetailLoadError | null>(null);
     const { data: drains } = useDrainsQuery();
-    const sharedDrain = drains?.find((drain) => drain.id === id);
-    const statusEvent = useDrainStore((state) => state.statusEventsByDrainId[id]);
-    const yoloEvent = useDrainStore((state) => state.yoloEventsByDrainId[id]);
-    const xgboostEvent = useDrainStore((state) => state.xgboostEventsByDrainId[id]);
+    const sharedDrain = drains?.find((drain) => drain.id === drainId);
+    const statusEvent = useDrainStore((state) => state.statusEventsByDrainId[drainId]);
+    const yoloEvent = useDrainStore((state) => state.yoloEventsByDrainId[drainId]);
+    const xgboostEvent = useDrainStore((state) => state.xgboostEventsByDrainId[drainId]);
     const socketStatus = useDrainStore((state) => state.socketStatus);
     const hasConnectedRef = useRef(false);
+    const currentDrainIdRef = useRef(drainId);
     const detailRequestIdRef = useRef(0);
+
+    useEffect(() => {
+        currentDrainIdRef.current = drainId;
+    }, [drainId]);
 
     const applyRealtimeEvent = useCallback(
         (event: DrainStatusUpdatedEventDto) => {
-            detailRequestIdRef.current += 1;
             setDetailData((current) => {
                 if (
                     !current ||
@@ -130,7 +141,6 @@ export default function DrainDetailPage({
     );
 
     const applyYoloEvent = useCallback((event: YoloResultUpdatedEventDto) => {
-        detailRequestIdRef.current += 1;
         setDetailData((current) => {
             if (
                 !current ||
@@ -173,7 +183,6 @@ export default function DrainDetailPage({
 
     const applyXgboostEvent = useCallback(
         (event: XgboostResultUpdatedEventDto) => {
-            detailRequestIdRef.current += 1;
             setDetailData((current) => {
                 if (
                     !current ||
@@ -227,21 +236,35 @@ export default function DrainDetailPage({
         let mounted = true;
         const requestId = ++detailRequestIdRef.current;
 
-        void loadDrainDetailData(id)
+        if (!drainId) {
+            return () => {
+                mounted = false;
+            };
+        }
+
+        void loadDrainDetailData(drainId)
             .then((data) => {
                 if (!mounted || requestId !== detailRequestIdRef.current) return;
                 setLoadError(null);
-                setDetailData(data);
+                if (data) {
+                    setNotFoundDrainId(null);
+                    setDetailData(data);
+                    return;
+                }
+                setNotFoundDrainId(drainId);
             })
             .catch(() => {
                 if (!mounted || requestId !== detailRequestIdRef.current) return;
-                setLoadError("상세 데이터를 불러오지 못했습니다.");
+                setLoadError({
+                    drainId,
+                    message: "상세 데이터를 불러오지 못했습니다.",
+                });
             });
 
         return () => {
             mounted = false;
         };
-    }, [id]);
+    }, [drainId]);
 
     useEffect(() => {
         if (!statusEvent) return;
@@ -269,16 +292,17 @@ export default function DrainDetailPage({
 
     useEffect(() => {
         if (socketStatus !== "connected") return;
+        if (!drainId) return;
+
         if (!hasConnectedRef.current) {
             hasConnectedRef.current = true;
             return;
         }
 
         let mounted = true;
-        const requestId = ++detailRequestIdRef.current;
-        void loadDrainDetailData(id)
+        void loadDrainDetailData(drainId)
             .then((data) => {
-                if (!mounted || requestId !== detailRequestIdRef.current) return;
+                if (!mounted || currentDrainIdRef.current !== drainId) return;
                 if (data) setDetailData(data);
             })
             .catch(() => undefined);
@@ -286,22 +310,33 @@ export default function DrainDetailPage({
         return () => {
             mounted = false;
         };
-    }, [id, socketStatus]);
+    }, [drainId, socketStatus]);
 
-    const drain = sharedDrain ?? detailData?.drain;
+    const currentDetailData =
+        detailData?.drain.id === drainId ? detailData : undefined;
+    const activeLoadError =
+        loadError?.drainId === drainId ? loadError.message : null;
+    const drain = currentDetailData?.drain ?? sharedDrain;
     const meta = drain ? STATUS_META[drain.status] : undefined;
     const sensorSummary = useMemo(() => {
-        if (!detailData) return undefined;
-        return getSensorSummary(detailData.sensorHistory, detailData.detail.sensorSummary);
-    }, [detailData]);
+        if (!currentDetailData) return undefined;
+        return getSensorSummary(
+            currentDetailData.sensorHistory,
+            currentDetailData.detail.sensorSummary,
+        );
+    }, [currentDetailData]);
 
-    if (detailData === null) notFound();
-
-    if (loadError) {
-        return <DrainDetailErrorPage message={loadError} />;
+    if (!drainId) {
+        return <DrainDetailErrorPage message="배수 시설 ID가 올바르지 않습니다." />;
     }
 
-    if (!detailData || !drain || !meta || !sensorSummary) {
+    if (notFoundDrainId === drainId) notFound();
+
+    if (activeLoadError) {
+        return <DrainDetailErrorPage message={activeLoadError} />;
+    }
+
+    if (!currentDetailData || !drain || !meta || !sensorSummary) {
         return <DrainDetailLoadingPage />;
     }
 
@@ -310,12 +345,12 @@ export default function DrainDetailPage({
             <DrainDetailPageHeader drain={drain} />
 
                 <AnalysisSummaryCard
-                    drain={detailData.drain}
-                    obstructionPercent={getObstructionPercent(detailData)}
-                    finalDecision={getLatestXgboostResult(detailData)?.finalDecision}
+                    drain={currentDetailData.drain}
+                    obstructionPercent={getObstructionPercent(currentDetailData)}
+                    finalDecision={getLatestXgboostResult(currentDetailData)?.finalDecision}
                     evaluatedAt={
-                        getLatestXgboostResult(detailData)?.evaluatedAt ??
-                        getLatestXgboostResult(detailData)?.predictedAt
+                        getLatestXgboostResult(currentDetailData)?.evaluatedAt ??
+                        getLatestXgboostResult(currentDetailData)?.predictedAt
                     }
                 />
 
@@ -323,34 +358,34 @@ export default function DrainDetailPage({
                     {/* Left column */}
                     <div className="flex flex-col gap-4 xl:col-span-4">
                         <CctvSnapshotCard
-                            snapshots={getSnapshots(detailData)}
+                            snapshots={getSnapshots(currentDetailData)}
                             locationName={drain.road}
                         />
                         <LocationMapCard
                             drain={drain}
-                            source={detailData.source}
+                            source={currentDetailData.source}
                         />
                     </div>
 
                     {/* Middle column */}
                     <div className="flex flex-col gap-4 xl:col-span-5">
                         <SensorTrendChart
-                            points={detailData.sensorHistory}
+                            points={currentDetailData.sensorHistory}
                             summary={sensorSummary}
                         />
                         <AiAnalysisTabs
-                            summary={<CurrentRiskCard drain={detailData.drain} compact />}
-                            yoloResult={getLatestYoloResult(detailData)}
-                            xgboostResult={getLatestXgboostResult(detailData)}
-                            yoloResults={detailData.analysisHistory?.yoloResults ?? []}
-                            xgboostResults={detailData.analysisHistory?.xgboostResults ?? []}
+                            summary={<CurrentRiskCard drain={currentDetailData.drain} compact />}
+                            yoloResult={getLatestYoloResult(currentDetailData)}
+                            xgboostResult={getLatestXgboostResult(currentDetailData)}
+                            yoloResults={currentDetailData.analysisHistory?.yoloResults ?? []}
+                            xgboostResults={currentDetailData.analysisHistory?.xgboostResults ?? []}
                         />
                     </div>
 
                     {/* Right column */}
                     <div className="flex flex-col gap-4 xl:col-span-3">
                         <FacilityInfoCard drain={drain} />
-                        <RiskHistoryCard riskHistory={detailData.riskHistory} />
+                        <RiskHistoryCard riskHistory={currentDetailData.riskHistory} />
                     </div>
             </div>
         </DrainDetailPageFrame>
