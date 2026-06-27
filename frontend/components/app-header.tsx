@@ -13,17 +13,19 @@ import { useDrainStore } from "@/store/drain-store";
 
 export function AppHeader() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [alertTab, setAlertTab] = useState<"unread" | "read">("unread");
   const [comingSoonTarget, setComingSoonTarget] = useState<
     "menu" | "user" | null
   >(null);
   const urgentAlerts = useDrainStore((state) => state.urgentAlerts);
-  const markUrgentAlertRead = useDrainStore(
-    (state) => state.markUrgentAlertRead,
+  const readUrgentAlerts = useDrainStore((state) => state.readUrgentAlerts);
+  const dismissUrgentAlert = useDrainStore(
+    (state) => state.dismissUrgentAlert,
   );
-  const markAllUrgentAlertsRead = useDrainStore(
-    (state) => state.markAllUrgentAlertsRead,
+  const clearUrgentAlerts = useDrainStore(
+    (state) => state.clearUrgentAlerts,
   );
-  const unreadCount = urgentAlerts.filter((alert) => !alert.read).length;
+  const unreadCount = urgentAlerts.length;
   const unreadDangerCount = urgentAlerts.filter(
     (alert) => !alert.read && alert.riskLevel === "danger",
   ).length;
@@ -38,6 +40,16 @@ export function AppHeader() {
       ),
     [urgentAlerts],
   );
+  const sortedReadUrgentAlerts = useMemo(
+    () =>
+      [...readUrgentAlerts].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      ),
+    [readUrgentAlerts],
+  );
+  const displayedAlerts =
+    alertTab === "unread" ? sortedUrgentAlerts : sortedReadUrgentAlerts;
   const closeComingSoon = useCallback(() => setComingSoonTarget(null), []);
 
   return (
@@ -112,37 +124,51 @@ export function AppHeader() {
                   <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
                     시설별 한 건으로 최신 위험·판단불가 상태를 갱신합니다.
                   </p>
-                  {urgentAlerts.length > 0 && (
+                  {(urgentAlerts.length > 0 || readUrgentAlerts.length > 0) && (
                     <p className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                      최신순 · 총 {urgentAlerts.length}건
+                      최신순 · 새 알림 {urgentAlerts.length}건 · 읽은 알림 {readUrgentAlerts.length}건
                     </p>
                   )}
                 </div>
-                {unreadCount > 0 && (
+                {alertTab === "unread" && unreadCount > 0 && (
                   <button
                     type="button"
                     className="shrink-0 whitespace-nowrap text-xs font-semibold leading-5 text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300"
-                    onClick={markAllUrgentAlertsRead}
+                    onClick={clearUrgentAlerts}
                   >
                     모두 읽음
                   </button>
                 )}
               </div>
-              {urgentAlerts.length > 0 && (
+              <div className="grid grid-cols-2 gap-1 border-b border-slate-100 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950/40">
+                <AlertTabButton
+                  active={alertTab === "unread"}
+                  label={`새 알림 ${urgentAlerts.length}`}
+                  onClick={() => setAlertTab("unread")}
+                />
+                <AlertTabButton
+                  active={alertTab === "read"}
+                  label={`읽은 알림 ${readUrgentAlerts.length}`}
+                  onClick={() => setAlertTab("read")}
+                />
+              </div>
+              {alertTab === "unread" && urgentAlerts.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
                   <AlertSummary label="읽지 않은 위험" count={unreadDangerCount} tone="danger" />
                   <AlertSummary label="판단불가" count={unreadUnknownCount} tone="unknown" />
                 </div>
               )}
-              {urgentAlerts.length > 0 ? (
+              {displayedAlerts.length > 0 ? (
                 <ul className="dashboard-scrollbar max-h-[min(70vh,34rem)] overflow-y-auto p-2">
-                  {sortedUrgentAlerts.map((alert) => (
+                  {displayedAlerts.map((alert) => (
                     <li key={alert.drainId}>
                       <Link
                         href={getDrainDetailHref(alert.drainId)}
                         className="block rounded-lg px-3 py-3 hover:bg-red-50 dark:hover:bg-red-950/30"
                         onClick={() => {
-                          markUrgentAlertRead(alert.drainId);
+                          if (alertTab === "unread") {
+                            dismissUrgentAlert(alert.drainId);
+                          }
                           setIsAlertOpen(false);
                         }}
                       >
@@ -164,7 +190,7 @@ export function AppHeader() {
                               {formatDateTimeForDisplay(alert.updatedAt)}
                             </p>
                           </div>
-                          {!alert.read && (
+                          {alertTab === "unread" && (
                             <span className="mt-1 size-2 shrink-0 rounded-full bg-red-500" aria-label="읽지 않음" />
                           )}
                         </div>
@@ -174,7 +200,9 @@ export function AppHeader() {
                 </ul>
               ) : (
                 <p className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                  새 긴급 알림이 없습니다.
+                  {alertTab === "unread"
+                    ? "새 긴급 알림이 없습니다."
+                    : "최근 읽은 알림이 없습니다."}
                 </p>
               )}
             </section>
@@ -205,6 +233,30 @@ export function AppHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function AlertTabButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+        active
+          ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-100"
+          : "text-slate-500 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/70"
+      }`}
+      onClick={onClick}
+    >
+      {label}
+    </button>
   );
 }
 
