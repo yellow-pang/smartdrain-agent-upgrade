@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AlertTriangle, Bell, Droplet, Menu, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ComingSoonPopover } from "@/components/coming-soon-popover";
@@ -30,6 +30,14 @@ export function AppHeader() {
   const unreadUnknownCount = urgentAlerts.filter(
     (alert) => !alert.read && alert.riskLevel === "unknown",
   ).length;
+  const sortedUrgentAlerts = useMemo(
+    () =>
+      [...urgentAlerts].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      ),
+    [urgentAlerts],
+  );
   const closeComingSoon = useCallback(() => setComingSoonTarget(null), []);
 
   return (
@@ -93,22 +101,27 @@ export function AppHeader() {
           </Button>
           {isAlertOpen && (
             <section
-              className="fixed left-3 right-3 top-16 z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[22rem] dark:border-slate-700 dark:bg-slate-900"
+              className="fixed left-3 right-3 top-16 z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[28rem] lg:w-[31rem] dark:border-slate-700 dark:bg-slate-900"
               aria-label="긴급 알림 목록"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-                <div>
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                <div className="min-w-0">
                   <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                     긴급 알림
                   </h2>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
                     시설별 한 건으로 최신 위험·판단불가 상태를 갱신합니다.
                   </p>
+                  {urgentAlerts.length > 0 && (
+                    <p className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                      최신순 · 총 {urgentAlerts.length}건
+                    </p>
+                  )}
                 </div>
                 {unreadCount > 0 && (
                   <button
                     type="button"
-                    className="text-xs font-semibold text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300"
+                    className="shrink-0 whitespace-nowrap text-xs font-semibold leading-5 text-cyan-700 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300"
                     onClick={markAllUrgentAlertsRead}
                   >
                     모두 읽음
@@ -122,8 +135,8 @@ export function AppHeader() {
                 </div>
               )}
               {urgentAlerts.length > 0 ? (
-                <ul className="dashboard-scrollbar max-h-80 overflow-y-auto p-2">
-                  {urgentAlerts.map((alert) => (
+                <ul className="dashboard-scrollbar max-h-[min(70vh,34rem)] overflow-y-auto p-2">
+                  {sortedUrgentAlerts.map((alert) => (
                     <li key={alert.drainId}>
                       <Link
                         href={getDrainDetailHref(alert.drainId)}
@@ -136,15 +149,15 @@ export function AppHeader() {
                         <div className="flex items-start gap-2">
                           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                                 {alert.facilityName ?? alert.drainId}
                               </p>
-                              <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_META[alert.riskLevel].badgeClass}`}>
+                              <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_META[alert.riskLevel].badgeClass}`}>
                                 {STATUS_META[alert.riskLevel].label}
                               </span>
                             </div>
-                            <p className="mt-0.5 break-words text-xs text-slate-600 dark:text-slate-300">
+                            <p className="mt-0.5 line-clamp-2 break-words text-xs leading-5 text-slate-600 dark:text-slate-300">
                               {alert.message}
                             </p>
                             <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">

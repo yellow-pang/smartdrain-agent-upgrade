@@ -86,9 +86,12 @@ export const useDrainStore = create<DrainStore>((set) => ({
 
             if (existingAlert) {
                 return {
-                    urgentAlerts: state.urgentAlerts.map((item) =>
-                        item.drainId === alert.drainId ? { ...item, ...alert } : item,
-                    ),
+                    urgentAlerts: [
+                        alert,
+                        ...state.urgentAlerts.filter(
+                            (item) => item.drainId !== alert.drainId,
+                        ),
+                    ].slice(0, URGENT_ALERT_POLICY.maxVisibleAlerts),
                 };
             }
 
