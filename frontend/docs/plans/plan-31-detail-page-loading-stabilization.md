@@ -87,6 +87,10 @@ queryFn: () => loadDrainDetailData(drainId)
 | `lib/query/drain-queries.ts` | 필요 시 `useDrainDetailQuery`에 `enabled` 옵션과 빈 id 방어 추가 |
 | `docs/steps/step-XX-detail-page-loading-stabilization.md` | 구현 후 실제 변경 내용과 검증 결과 기록 |
 | `docs/pr/pr-XX-detail-page-loading-stabilization.md` | 필요 시 PR 요약 작성 |
+| `components/dashboard/dashboard-summary-section.tsx` | 대시보드 상단의 `API 응답 기준` 문구 제거 |
+| `components/drain-detail/*` | 상세 화면의 API 데이터 배지, 판단 문구, AI 이력 문구 개선 |
+| `components/cctv-snapshot-card.tsx`, `components/drain-summary-panel.tsx` | CCTV 이미지를 컬러 표시로 통일하고 최근 캡처 시간 표시 정리 |
+| `components/app-header.tsx`, `app/globals.css` | 상단 제목 메인 이동 링크와 화면 텍스트 드래그 선택 방지 |
 
 현재 계획상 `/frontend` 밖의 파일 수정은 필요하지 않다.
 
@@ -113,6 +117,9 @@ queryFn: () => loadDrainDetailData(drainId)
 | 실패 케이스 | 잘못된 id 접근 | 무한 로딩 대신 not found 또는 오류 화면 표시 |
 | 시나리오 중 상세 이동 | 시나리오 실행 중 `/`에서 `/drains/DR-004` 이동 | 새로고침 없이 상세 화면 표시, 이후 실시간 상태 갱신 반영 |
 | 시나리오 중 상세 새로고침 | 시나리오 실행 중 상세 페이지 새로고침 | 상세 API 응답 기준으로 화면 복구 후 실시간 이벤트 계속 반영 |
+| 운영 문구 | 메인/상세 화면 확인 | `API 응답 기준`, `API 데이터`처럼 실시간 갱신과 어긋나는 문구가 보이지 않음 |
+| CCTV UX | 상세/대시보드 패널 이미지 확인 | 카드 이미지와 확대 이미지가 모두 컬러로 표시됨 |
+| 판단 문구 | 위험 목록, 상세 요약, AI XGBoost, 이력 확인 | `normal`, `dispatch_required` 같은 내부 코드 대신 관리자용 한국어 문구 표시 |
 
 ## 8. 남은 리스크
 
@@ -149,4 +156,5 @@ fix: 배수 시설 상세 페이지 로딩 상태 안정화
 - 상세 페이지 진입 시 drainId 기준으로 상세 데이터를 안정적으로 요청하도록 정리한다.
 - API 실패와 빈 응답에서 로딩 화면이 무한 유지되지 않도록 오류 상태를 보강한다.
 - 메인 이동, 직접 접근, 새로고침, 시나리오 실행 중 상세 이동 시 상세 화면 표시 흐름을 검증한다.
+- 메인/상세 화면의 실시간 데이터 문구, CCTV 색상, 판단 문구, 네비게이션 UX를 함께 개선한다.
 ```

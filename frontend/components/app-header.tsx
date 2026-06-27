@@ -56,7 +56,11 @@ export function AppHeader() {
             />
           )}
         </div>
-        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2 sm:gap-2.5"
+          aria-label="메인 대시보드로 이동"
+        >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-cyan-600 text-white sm:size-8">
             <Droplet className="size-4 sm:size-5" fill="currentColor" />
           </span>
@@ -66,7 +70,7 @@ export function AppHeader() {
               지능형 도시 침수 관리 대시보드
             </span>
           </h1>
-        </div>
+        </Link>
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
