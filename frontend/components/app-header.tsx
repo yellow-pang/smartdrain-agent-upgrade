@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { AlertTriangle, Bell, Droplet, Menu, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,6 +13,7 @@ import { STATUS_META } from "@/lib/risk";
 import { useDrainStore } from "@/store/drain-store";
 
 export function AppHeader() {
+  const router = useRouter();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [alertTab, setAlertTab] = useState<"unread" | "read">("unread");
   const [comingSoonTarget, setComingSoonTarget] = useState<
@@ -51,6 +53,16 @@ export function AppHeader() {
   const displayedAlerts =
     alertTab === "unread" ? sortedUrgentAlerts : sortedReadUrgentAlerts;
   const closeComingSoon = useCallback(() => setComingSoonTarget(null), []);
+  const handleAlertSelect = useCallback(
+    (drainId: string) => {
+      if (alertTab === "unread") {
+        dismissUrgentAlert(drainId);
+      }
+      setIsAlertOpen(false);
+      router.push(getDrainDetailHref(drainId));
+    },
+    [alertTab, dismissUrgentAlert, router],
+  );
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-3 sm:h-16 sm:px-4 md:px-6 dark:border-slate-800 dark:bg-slate-950/95">
@@ -162,15 +174,10 @@ export function AppHeader() {
                 <ul className="dashboard-scrollbar max-h-[min(70vh,34rem)] overflow-y-auto p-2">
                   {displayedAlerts.map((alert) => (
                     <li key={alert.drainId}>
-                      <Link
-                        href={getDrainDetailHref(alert.drainId)}
-                        className="block rounded-lg px-3 py-3 hover:bg-red-50 dark:hover:bg-red-950/30"
-                        onClick={() => {
-                          if (alertTab === "unread") {
-                            dismissUrgentAlert(alert.drainId);
-                          }
-                          setIsAlertOpen(false);
-                        }}
+                      <button
+                        type="button"
+                        className="block w-full rounded-lg px-3 py-3 text-left hover:bg-red-50 dark:hover:bg-red-950/30"
+                        onClick={() => handleAlertSelect(alert.drainId)}
                       >
                         <div className="flex items-start gap-2">
                           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
@@ -194,7 +201,7 @@ export function AppHeader() {
                             <span className="mt-1 size-2 shrink-0 rounded-full bg-red-500" aria-label="읽지 않음" />
                           )}
                         </div>
-                      </Link>
+                      </button>
                     </li>
                   ))}
                 </ul>
