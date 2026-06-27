@@ -8,49 +8,49 @@
 
 ## 1.1 구현 요약
 
-| 영역 | 구현 내용 |
-| --- | --- |
-| Backend config | `DEMO_SIMULATOR_AUTO_START`, `DEMO_CONTROL_TOKEN` 설정 추가 |
-| Backend router | `/api/demo/status`, `/api/demo/drains/{drainId}/preset`, `/api/demo/scenario/*` API 추가 |
-| Backend simulator | 수동 preset, 자동 날씨 단계, manual override, reset/recover 제어 함수 추가 |
-| Backend 자연화 | 자동 날씨 시나리오에서 수위, 유속, 막힘률을 상태별 범위와 시설별 특성에 맞춰 부드럽게 변동 |
-| Frontend API | `frontend/lib/api/demo.ts` 추가 |
-| Frontend route | `frontend/app/demo-control/page.tsx` 추가 |
-| Compose/env | backend container에 demo 제어 환경변수 전달 |
-| 문서 | plan-30 추천 구성을 확정값 중심으로 갱신 |
+| 영역              | 구현 내용                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------ |
+| Backend config    | `DEMO_SIMULATOR_AUTO_START`, `DEMO_CONTROL_TOKEN` 설정 추가                                |
+| Backend router    | `/api/demo/status`, `/api/demo/drains/{drainId}/preset`, `/api/demo/scenario/*` API 추가   |
+| Backend simulator | 수동 preset, 자동 날씨 단계, manual override, reset/recover 제어 함수 추가                 |
+| Backend 자연화    | 자동 날씨 시나리오에서 수위, 유속, 막힘률을 상태별 범위와 시설별 특성에 맞춰 부드럽게 변동 |
+| Frontend API      | `frontend/lib/api/demo.ts` 추가                                                            |
+| Frontend route    | `frontend/app/demo-control/page.tsx` 추가                                                  |
+| Compose/env       | backend container에 demo 제어 환경변수 전달                                                |
+| 문서              | plan-30 추천 구성을 확정값 중심으로 갱신                                                   |
 
 ## 2. 확정 추천 방향
 
-| 항목 | 기준 |
-| --- | --- |
-| 본시연 방식 | direct preset 기반 시연을 기본으로 한다. |
-| 발표자 제어 화면 | `/demo-control` 한 곳에서 수동 시연과 자동 시나리오를 제어한다. |
-| 관람객 공개 화면 | QR 코드는 `/` 공개 대시보드로 연결한다. |
-| 수동 시연 대상 | 기본값은 DR-005로 두되, 발표 흐름상 더 설명하기 쉬운 시설로 변경 가능하게 한다. |
-| 자동 시나리오 | 5개 시설이 날씨 단계에 따라 서로 다르게 변한다. |
-| 자동 시작 | 서버 시작 시 자동 실행하지 않는다. 발표자가 직접 시작한다. |
-| 접근 보호 | `/demo-control`과 `/api/demo/*`는 발표자만 접근 가능하게 보호한다. |
-| 알림 | `danger`와 `unknown`을 종 알림에 올리고, 시설별 최신 상태로 병합한다. |
+| 항목             | 기준                                                                            |
+| ---------------- | ------------------------------------------------------------------------------- |
+| 본시연 방식      | direct preset 기반 시연을 기본으로 한다.                                        |
+| 발표자 제어 화면 | `/demo-control` 한 곳에서 수동 시연과 자동 시나리오를 제어한다.                 |
+| 관람객 공개 화면 | QR 코드는 `/` 공개 대시보드로 연결한다.                                         |
+| 수동 시연 대상   | 기본값은 DR-005로 두되, 발표 흐름상 더 설명하기 쉬운 시설로 변경 가능하게 한다. |
+| 자동 시나리오    | 5개 시설이 날씨 단계에 따라 서로 다르게 변한다.                                 |
+| 자동 시작        | 서버 시작 시 자동 실행하지 않는다. 발표자가 직접 시작한다.                      |
+| 접근 보호        | `/demo-control`과 `/api/demo/*`는 발표자만 접근 가능하게 보호한다.              |
+| 알림             | `danger`와 `unknown`을 종 알림에 올리고, 시설별 최신 상태로 병합한다.           |
 
 ## 2.1 실제 API와 환경변수
 
 ### Demo API
 
-| Method | Endpoint | 용도 |
-| --- | --- | --- |
-| GET | `/api/demo/status` | 현재 demo 제어 상태 조회 |
-| POST | `/api/demo/drains/{drainId}/preset` | 선택 시설에 `GOOD`, `CAUTION`, `DANGER`, `UNAVAILABLE` 적용 |
-| DELETE | `/api/demo/drains/{drainId}/override` | 선택 시설의 수동 override 해제 |
-| POST | `/api/demo/reset` | 발표용 overview 초기 상태 적용 |
-| POST | `/api/demo/scenario/start` | 자동 날씨 시나리오 시작 |
-| POST | `/api/demo/scenario/pause` | 자동 날씨 시나리오 일시정지 |
-| POST | `/api/demo/scenario/resume` | 자동 날씨 시나리오 재개 |
-| POST | `/api/demo/scenario/stop` | 자동 날씨 시나리오 정지 |
-| POST | `/api/demo/scenario/next` | 다음 날씨 단계 즉시 적용 |
-| POST | `/api/demo/scenario/step` | 지정한 날씨 단계 즉시 적용 |
-| POST | `/api/demo/scenario/interval` | 자동 진행 간격을 런타임에 변경 |
-| POST | `/api/demo/scenario/recover` | 전체 시설 복구 단계 적용 |
-| POST | `/api/demo/scenario/reset` | 자동 시나리오 초기화 |
+| Method | Endpoint                              | 용도                                                        |
+| ------ | ------------------------------------- | ----------------------------------------------------------- |
+| GET    | `/api/demo/status`                    | 현재 demo 제어 상태 조회                                    |
+| POST   | `/api/demo/drains/{drainId}/preset`   | 선택 시설에 `GOOD`, `CAUTION`, `DANGER`, `UNAVAILABLE` 적용 |
+| DELETE | `/api/demo/drains/{drainId}/override` | 선택 시설의 수동 override 해제                              |
+| POST   | `/api/demo/reset`                     | 발표용 overview 초기 상태 적용                              |
+| POST   | `/api/demo/scenario/start`            | 자동 날씨 시나리오 시작                                     |
+| POST   | `/api/demo/scenario/pause`            | 자동 날씨 시나리오 일시정지                                 |
+| POST   | `/api/demo/scenario/resume`           | 자동 날씨 시나리오 재개                                     |
+| POST   | `/api/demo/scenario/stop`             | 자동 날씨 시나리오 정지                                     |
+| POST   | `/api/demo/scenario/next`             | 다음 날씨 단계 즉시 적용                                    |
+| POST   | `/api/demo/scenario/step`             | 지정한 날씨 단계 즉시 적용                                  |
+| POST   | `/api/demo/scenario/interval`         | 자동 진행 간격을 런타임에 변경                              |
+| POST   | `/api/demo/scenario/recover`          | 전체 시설 복구 단계 적용                                    |
+| POST   | `/api/demo/scenario/reset`            | 자동 시나리오 초기화                                        |
 
 ### 인증 헤더
 
@@ -84,22 +84,22 @@ Jenkins Secret File을 쓰는 VM 배포에서는 `DEMO_CONTROL_TOKEN`도 Secret 
 
 자동 날씨 시나리오는 완전 랜덤이 아니라 현재 상태와 목표 상태 사이를 부드럽게 이동한다.
 
-| 상태 | 수위 | 유속 | 막힘률 | 설명 |
-| --- | ---: | ---: | ---: | --- |
-| 양호 | 4~12cm | 0.18~0.50m/s | 4~18% | 안정적인 배수 상태 |
-| 주의 | 16~30cm | 0.55~1.15m/s | 26~50% | 수위와 막힘이 올라가는 상태 |
-| 위험 | 34~60cm | 1.05~1.90m/s | 58~92% | 현장 확인이 필요한 상태 |
-| 판단불가 | 20~36cm | 0.45~1.20m/s | 0~8% | 이미지 분석은 불안정하지만 센서값은 유지 |
+| 상태     |    수위 |         유속 | 막힘률 | 설명                                     |
+| -------- | ------: | -----------: | -----: | ---------------------------------------- |
+| 양호     |  4~12cm | 0.18~0.50m/s |  4~18% | 안정적인 배수 상태                       |
+| 주의     | 16~30cm | 0.55~1.15m/s | 26~50% | 수위와 막힘이 올라가는 상태              |
+| 위험     | 34~60cm | 1.05~1.90m/s | 58~92% | 현장 확인이 필요한 상태                  |
+| 판단불가 | 20~36cm | 0.45~1.20m/s |   0~8% | 이미지 분석은 불안정하지만 센서값은 유지 |
 
 시설별 특성도 반영한다.
 
-| 시설 | 특성 | 효과 |
-| --- | --- | --- |
-| DR-001 | 안정형 | 수위와 막힘률 상승이 낮고 회복이 빠름 |
-| DR-002 | 막힘 증가형 | 막힘률이 더 빠르게 증가 |
-| DR-003 | 침수 취약형 | 수위가 더 빠르게 상승 |
-| DR-004 | 카메라 장애형 | 집중호우에서 판단불가 역할 |
-| DR-005 | 회복 지연형 | 복구 단계에서도 천천히 내려감 |
+| 시설   | 특성          | 효과                                  |
+| ------ | ------------- | ------------------------------------- |
+| DR-001 | 안정형        | 수위와 막힘률 상승이 낮고 회복이 빠름 |
+| DR-002 | 막힘 증가형   | 막힘률이 더 빠르게 증가               |
+| DR-003 | 침수 취약형   | 수위가 더 빠르게 상승                 |
+| DR-004 | 카메라 장애형 | 집중호우에서 판단불가 역할            |
+| DR-005 | 회복 지연형   | 복구 단계에서도 천천히 내려감         |
 
 ## 2.3 상태별 이미지 준비 목록
 
@@ -131,8 +131,8 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 현재 seed 기준으로 DB 숫자 id가 `DR-001 -> 1`, `DR-002 -> 2` 순서라면 아래 파일을 준비한다.
 
-| 시설 | 양호 | 주의 | 위험 | 판단불가 |
-| --- | --- | --- | --- | --- |
+| 시설   | 양호               | 주의                  | 위험                 | 판단불가              |
+| ------ | ------------------ | --------------------- | -------------------- | --------------------- |
 | DR-001 | `drain_1_good.jpg` | `drain_1_caution.jpg` | `drain_1_danger.jpg` | `drain_1_unknown.jpg` |
 | DR-002 | `drain_2_good.jpg` | `drain_2_caution.jpg` | `drain_2_danger.jpg` | `drain_2_unknown.jpg` |
 | DR-003 | `drain_3_good.jpg` | `drain_3_caution.jpg` | `drain_3_danger.jpg` | `drain_3_unknown.jpg` |
@@ -141,11 +141,11 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 이미지 내용 추천:
 
-| 상태 | 이미지 형태 |
-| --- | --- |
-| good | 빗물받이가 잘 보이고 주변 이물질이 거의 없는 장면 |
-| caution | 낙엽, 작은 쓰레기, 얕은 물고임이 일부 보이는 장면 |
-| danger | 물고임, 쓰레기, 배수 불량이 강하게 보이는 장면 |
+| 상태    | 이미지 형태                                                 |
+| ------- | ----------------------------------------------------------- |
+| good    | 빗물받이가 잘 보이고 주변 이물질이 거의 없는 장면           |
+| caution | 낙엽, 작은 쓰레기, 얕은 물고임이 일부 보이는 장면           |
+| danger  | 물고임, 쓰레기, 배수 불량이 강하게 보이는 장면              |
 | unknown | 빗방울, 흐림, 렌즈 오염, 야간 노이즈처럼 분석이 어려운 장면 |
 
 주의:
@@ -159,12 +159,12 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 종 알림은 모든 변화에 뜨지 않는다. 관람객 화면이 산만해지지 않도록 아래 상태만 알림으로 올린다.
 
-| 상태 | 알림 여부 | 이유 |
-| --- | --- | --- |
-| danger | 표시 | 즉시 확인이 필요한 위험 상태 |
-| unknown | 표시 | 영상 분석이 불가능해 별도 확인이 필요한 상태 |
-| caution | 미표시 | 자동 시나리오에서 자주 발생하므로 목록/지도 색상으로 확인 |
-| good | 미표시 | 복구 상태는 요약과 목록에서 확인 |
+| 상태    | 알림 여부 | 이유                                                      |
+| ------- | --------- | --------------------------------------------------------- |
+| danger  | 표시      | 즉시 확인이 필요한 위험 상태                              |
+| unknown | 표시      | 영상 분석이 불가능해 별도 확인이 필요한 상태              |
+| caution | 미표시    | 자동 시나리오에서 자주 발생하므로 목록/지도 색상으로 확인 |
+| good    | 미표시    | 복구 상태는 요약과 목록에서 확인                          |
 
 한 번에 여러 시설이 위험이 되어도 알림은 시설별 한 건으로 유지한다. 같은 시설의 알림은 새 상태로 갱신되고, 알림 패널 상단에서 읽지 않은 위험/판단불가 개수를 따로 보여준다.
 
@@ -172,18 +172,18 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 발표 전에는 기능이 되는지보다 “같은 순서로 다시 해도 같은 화면이 나오는지”를 먼저 확인한다.
 
-| 순서 | 확인 항목 | 기대 상태 |
-| ---: | --- | --- |
-| 1 | Git 브랜치와 배포 대상 확인 | 발표용 브랜치 또는 dev 배포 브랜치가 맞다. |
-| 2 | `.env` 또는 Jenkins Secret File 확인 | demo 기능이 켜져 있고, `DEMO_CONTROL_TOKEN`과 모델 경로가 맞다. |
-| 3 | Docker Compose 기동 | `db`, `backend`, `ai-service`, `frontend`, `nginx`가 healthy다. |
-| 4 | seed 데이터 확인 | DR-001부터 DR-005까지 존재한다. |
-| 5 | 공개 대시보드 접속 | `/`에서 지도, 목록, 요약, 이미지가 보인다. |
-| 6 | WebSocket 연결 확인 | 화면 새로고침 후 실시간 연결 상태가 끊기지 않는다. |
-| 7 | `/demo-control` 접속 | 발표자만 접근 가능하고 제어 UI가 보인다. |
-| 8 | 발표 초기화 실행 | 5개 시설이 발표용 초기 상태로 돌아간다. |
-| 9 | 수동 preset 1회 테스트 | 선택 시설 상태가 즉시 바뀐다. |
-| 10 | 자동 시나리오 1단계 테스트 | 시작, 일시정지, 다음 단계, 복구가 동작한다. |
+| 순서 | 확인 항목                            | 기대 상태                                                       |
+| ---: | ------------------------------------ | --------------------------------------------------------------- |
+|    1 | Git 브랜치와 배포 대상 확인          | 발표용 브랜치 또는 dev 배포 브랜치가 맞다.                      |
+|    2 | `.env` 또는 Jenkins Secret File 확인 | demo 기능이 켜져 있고, `DEMO_CONTROL_TOKEN`과 모델 경로가 맞다. |
+|    3 | Docker Compose 기동                  | `db`, `backend`, `ai-service`, `frontend`, `nginx`가 healthy다. |
+|    4 | seed 데이터 확인                     | DR-001부터 DR-005까지 존재한다.                                 |
+|    5 | 공개 대시보드 접속                   | `/`에서 지도, 목록, 요약, 이미지가 보인다.                      |
+|    6 | WebSocket 연결 확인                  | 화면 새로고침 후 실시간 연결 상태가 끊기지 않는다.              |
+|    7 | `/demo-control` 접속                 | 발표자만 접근 가능하고 제어 UI가 보인다.                        |
+|    8 | 발표 초기화 실행                     | 5개 시설이 발표용 초기 상태로 돌아간다.                         |
+|    9 | 수동 preset 1회 테스트               | 선택 시설 상태가 즉시 바뀐다.                                   |
+|   10 | 자동 시나리오 1단계 테스트           | 시작, 일시정지, 다음 단계, 복구가 동작한다.                     |
 
 ## 4. 로컬 발표자 수동 시연 가이드
 
@@ -191,10 +191,10 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 발표 노트북에서는 브라우저 창을 2개 또는 탭 3개로 준비한다.
 
-| 화면 | 용도 |
-| --- | --- |
-| `/` | 메인 대시보드 변화 확인 |
-| `/demo-control` | 발표자가 버튼을 누르는 제어 화면 |
+| 화면             | 용도                                      |
+| ---------------- | ----------------------------------------- |
+| `/`              | 메인 대시보드 변화 확인                   |
+| `/demo-control`  | 발표자가 버튼을 누르는 제어 화면          |
 | `/drains/DR-005` | 필요 시 상세 센서, 이미지, 분석 이력 확인 |
 
 추천 배치는 발표 화면에는 `/` 또는 상세 화면을 띄우고, 발표자 노트북 보조 화면에 `/demo-control`을 둔다. 관객에게 제어 화면을 보여줘야 할 때는 버튼 누르기 직전에만 짧게 보여준다.
@@ -210,13 +210,13 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 초기 상태 예시는 다음 구성이 가장 설명하기 좋다.
 
-| 시설 | 초기 상태 | 발표 설명 |
-| --- | --- | --- |
-| DR-001 | 양호 | 정상 기준 시설 |
-| DR-002 | 주의 | 일부 막힘이 있는 시설 |
-| DR-003 | 위험 | 우선 대응이 필요한 시설 |
-| DR-004 | 판단불가 | 영상 품질 문제 예시 |
-| DR-005 | 양호 | 수동 시연 대상 |
+| 시설   | 초기 상태 | 발표 설명               |
+| ------ | --------- | ----------------------- |
+| DR-001 | 양호      | 정상 기준 시설          |
+| DR-002 | 주의      | 일부 막힘이 있는 시설   |
+| DR-003 | 위험      | 우선 대응이 필요한 시설 |
+| DR-004 | 판단불가  | 영상 품질 문제 예시     |
+| DR-005 | 양호      | 수동 시연 대상          |
 
 ### 4.3 수동 시연 진행 순서
 
@@ -237,11 +237,11 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 ### 4.4 발표 중 설명 포인트
 
-| 상태 | 화면에서 보여줄 포인트 |
-| --- | --- |
-| 양호 | 수위와 막힘률이 낮고, 지도 마커와 상태 뱃지가 초록색이다. |
-| 주의 | 수위나 막힘률이 올라가며 위험 목록에서 우선순위가 올라간다. |
-| 위험 | 지도, 목록, 요약 카드가 모두 위험 상태를 강하게 표시한다. |
+| 상태     | 화면에서 보여줄 포인트                                       |
+| -------- | ------------------------------------------------------------ |
+| 양호     | 수위와 막힘률이 낮고, 지도 마커와 상태 뱃지가 초록색이다.    |
+| 주의     | 수위나 막힘률이 올라가며 위험 목록에서 우선순위가 올라간다.  |
+| 위험     | 지도, 목록, 요약 카드가 모두 위험 상태를 강하게 표시한다.    |
 | 판단불가 | 영상 분석은 실패할 수 있지만 센서값은 별도로 확인할 수 있다. |
 
 발표 멘트는 “AI가 항상 답을 내는 것”보다 “이미지와 센서가 서로 보완하고, 판단불가도 관리자가 알아야 할 상태로 표시한다”에 맞추는 편이 좋다.
@@ -252,15 +252,15 @@ drain_{DB 숫자 id}_{risk_level}.jpg
 
 관람객용 시연은 발표 전에 VM에서 미리 켜 둔다.
 
-| 순서 | 작업 | 기대 결과 |
-| ---: | --- | --- |
-| 1 | VM 접속 | 배포 디렉터리 접근 가능 |
-| 2 | `.env` 또는 Jenkins Secret File 확인 | demo 기능과 모델 경로가 맞음 |
-| 3 | Docker Compose 배포 | 전체 컨테이너 healthy |
-| 4 | Cloudflare Tunnel 확인 | 공개 도메인 접속 가능 |
-| 5 | 모바일 접속 테스트 | QR 도메인에서 `/` 대시보드 표시 |
-| 6 | `/demo-control` 접근 테스트 | 발표자만 접근 가능 |
-| 7 | 발표 초기화 | 자동 시나리오 시작 전 안정 상태 |
+| 순서 | 작업                                 | 기대 결과                       |
+| ---: | ------------------------------------ | ------------------------------- |
+|    1 | VM 접속                              | 배포 디렉터리 접근 가능         |
+|    2 | `.env` 또는 Jenkins Secret File 확인 | demo 기능과 모델 경로가 맞음    |
+|    3 | Docker Compose 배포                  | 전체 컨테이너 healthy           |
+|    4 | Cloudflare Tunnel 확인               | 공개 도메인 접속 가능           |
+|    5 | 모바일 접속 테스트                   | QR 도메인에서 `/` 대시보드 표시 |
+|    6 | `/demo-control` 접근 테스트          | 발표자만 접근 가능              |
+|    7 | 발표 초기화                          | 자동 시나리오 시작 전 안정 상태 |
 
 ### 5.2 QR 공개 전
 
@@ -283,31 +283,31 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 
 ### 5.4 단계별 진행
 
-| 단계 | 발표자 조작 | 관람객에게 볼 것 |
-| --- | --- | --- |
-| CLEAR | QR 접속 대기 | 5개 시설의 초기 상태 |
-| LIGHT_RAIN | 시작 | 일부 시설이 주의로 바뀜 |
-| HEAVY_RAIN | 자동 진행 또는 다음 단계 | 위험 시설 발생, 목록 순위 변화 |
-| CLOUDBURST | 자동 진행 또는 다음 단계 | 판단불가와 위험 상태 동시 표시 |
-| RAIN_WEAKENING | 자동 진행 | 위험이 주의로 완화되는 시설 |
-| RECOVERY | 자동 진행 또는 복구 | 대부분 양호로 돌아오는 흐름 |
+| 단계           | 발표자 조작              | 관람객에게 볼 것               |
+| -------------- | ------------------------ | ------------------------------ |
+| CLEAR          | QR 접속 대기             | 5개 시설의 초기 상태           |
+| LIGHT_RAIN     | 시작                     | 일부 시설이 주의로 바뀜        |
+| HEAVY_RAIN     | 자동 진행 또는 다음 단계 | 위험 시설 발생, 목록 순위 변화 |
+| CLOUDBURST     | 자동 진행 또는 다음 단계 | 판단불가와 위험 상태 동시 표시 |
+| RAIN_WEAKENING | 자동 진행                | 위험이 주의로 완화되는 시설    |
+| RECOVERY       | 자동 진행 또는 복구      | 대부분 양호로 돌아오는 흐름    |
 
 발표 시간이 부족하면 `다음 단계` 버튼으로 바로 넘긴다. 설명이 더 필요하면 `일시정지`를 누르고 현재 화면을 기준으로 설명한다.
 
 ## 6. `/demo-control` 버튼 사용 기준
 
-| 버튼 | 언제 누르는가 | 주의점 |
-| --- | --- | --- |
-| `발표 초기화` | 시나리오를 처음부터 다시 시작하고 싶을 때 | 관람객 화면도 초기 상태로 바뀐다. |
-| `시작` | QR 접속 확인 후 자동 시나리오를 시작할 때 | 시작 전 공개 화면이 정상인지 확인한다. |
-| `일시정지` | 특정 단계에서 설명을 길게 해야 할 때 | 수동 preset은 계속 사용할 수 있다. |
-| `재개` | 일시정지한 자동 시나리오를 이어갈 때 | 현재 단계부터 진행한다. |
-| `정지` | 자동 진행을 완전히 멈추고 수동 시연으로 전환할 때 | 현재 화면 상태는 유지된다. |
-| `다음 단계` | 발표 시간을 줄이거나 특정 장면을 바로 보여줄 때 | 너무 자주 누르면 관람객이 변화를 따라가기 어렵다. |
-| `단계 적용` | 리허설 중 특정 날씨 장면을 바로 보여줄 때 | 선택한 단계가 즉시 DB와 화면에 반영된다. |
-| `10초`, `15초`, `30초`, `60초` | 영상 촬영, 짧은 리허설, 실제 발표 속도를 맞출 때 | 컨테이너 재기동 전까지 유지되는 런타임 설정이다. |
-| `복구 단계 적용` | 발표 종료 또는 재시연 전 | 모든 override와 자동 상태를 정리한다. |
-| `수동 상태 해제` | 특정 시설을 자동 시나리오에 다시 합류시킬 때 | 현재 날씨 단계 기준 상태로 돌아간다. |
+| 버튼                           | 언제 누르는가                                     | 주의점                                            |
+| ------------------------------ | ------------------------------------------------- | ------------------------------------------------- |
+| `발표 초기화`                  | 시나리오를 처음부터 다시 시작하고 싶을 때         | 관람객 화면도 초기 상태로 바뀐다.                 |
+| `시작`                         | QR 접속 확인 후 자동 시나리오를 시작할 때         | 시작 전 공개 화면이 정상인지 확인한다.            |
+| `일시정지`                     | 특정 단계에서 설명을 길게 해야 할 때              | 수동 preset은 계속 사용할 수 있다.                |
+| `재개`                         | 일시정지한 자동 시나리오를 이어갈 때              | 현재 단계부터 진행한다.                           |
+| `정지`                         | 자동 진행을 완전히 멈추고 수동 시연으로 전환할 때 | 현재 화면 상태는 유지된다.                        |
+| `다음 단계`                    | 발표 시간을 줄이거나 특정 장면을 바로 보여줄 때   | 너무 자주 누르면 관람객이 변화를 따라가기 어렵다. |
+| `단계 적용`                    | 리허설 중 특정 날씨 장면을 바로 보여줄 때         | 선택한 단계가 즉시 DB와 화면에 반영된다.          |
+| `10초`, `15초`, `30초`, `60초` | 영상 촬영, 짧은 리허설, 실제 발표 속도를 맞출 때  | 컨테이너 재기동 전까지 유지되는 런타임 설정이다.  |
+| `복구 단계 적용`               | 발표 종료 또는 재시연 전                          | 모든 override와 자동 상태를 정리한다.             |
+| `수동 상태 해제`               | 특정 시설을 자동 시나리오에 다시 합류시킬 때      | 현재 날씨 단계 기준 상태로 돌아간다.              |
 
 ### 6.1 리허설 빠른 모드 사용법
 
@@ -323,14 +323,14 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 
 발표자가 바로 보여줄 장면을 골라야 하면 날씨 단계 선택 후 `단계 적용`을 누른다.
 
-| 단계 | 추천 사용 상황 |
-| --- | --- |
-| `CLEAR` | 발표 시작 전 정상 화면 |
-| `LIGHT_RAIN` | 값이 천천히 올라가는 설명 |
-| `HEAVY_RAIN` | 위험 알림이 생기는 장면 |
-| `CLOUDBURST` | 여러 시설이 위험/판단불가로 갈라지는 장면 |
-| `RAIN_WEAKENING` | 위험이 완화되는 장면 |
-| `RECOVERY` | 발표 종료와 복구 확인 |
+| 단계             | 추천 사용 상황                            |
+| ---------------- | ----------------------------------------- |
+| `CLEAR`          | 발표 시작 전 정상 화면                    |
+| `LIGHT_RAIN`     | 값이 천천히 올라가는 설명                 |
+| `HEAVY_RAIN`     | 위험 알림이 생기는 장면                   |
+| `CLOUDBURST`     | 여러 시설이 위험/판단불가로 갈라지는 장면 |
+| `RAIN_WEAKENING` | 위험이 완화되는 장면                      |
+| `RECOVERY`       | 발표 종료와 복구 확인                     |
 
 ## 7. 장애 대응 가이드
 
@@ -404,16 +404,16 @@ command:
 
 관람객에게는 공개 대시보드만 열고, 제어/문서/스키마는 발표자만 접근하도록 분리한다.
 
-| 경로 | 권장 정책 |
-| --- | --- |
-| `/` | 공개 QR 허용 |
-| `/drains/*` | 공개 QR 허용 |
-| `/api/drains/*` | 공개 QR 허용 |
-| `/api/dashboard/*` | 공개 QR 허용 |
-| `/ws/drains/status` | 공개 QR 허용 |
-| `/demo-control` | 발표자 이메일만 허용 |
-| `/api/demo/*` | 발표자 이메일만 허용, `DEMO_CONTROL_TOKEN`도 유지 |
-| `/docs`, `/redoc`, `/openapi.json` | 발표자 또는 운영자만 허용 |
+| 경로                               | 권장 정책                                         |
+| ---------------------------------- | ------------------------------------------------- |
+| `/`                                | 공개 QR 허용                                      |
+| `/drains/*`                        | 공개 QR 허용                                      |
+| `/api/drains/*`                    | 공개 QR 허용                                      |
+| `/api/dashboard/*`                 | 공개 QR 허용                                      |
+| `/ws/drains/status`                | 공개 QR 허용                                      |
+| `/demo-control`                    | 발표자 이메일만 허용                              |
+| `/api/demo/*`                      | 발표자 이메일만 허용, `DEMO_CONTROL_TOKEN`도 유지 |
+| `/docs`, `/redoc`, `/openapi.json` | 발표자 또는 운영자만 허용                         |
 
 Cloudflare Access를 걸어도 `DEMO_CONTROL_TOKEN`은 제거하지 않는다. Access는 외부 진입 보호이고, token은 API 자체 보호다.
 
@@ -436,12 +436,12 @@ SMARTDRAIN_YOLO_MODEL_PATH=./ai_service/model/best.pt
 
 ## 9. 검증 결과
 
-| 검증 | 결과 |
-| --- | --- |
-| Backend Python AST parse | 통과 |
-| `npm.cmd --prefix frontend run lint` | 통과. 기존 `fallback-image.tsx`의 `<img>` 경고 1건 유지 |
-| `npm.cmd --prefix frontend run build` | 통과. `/demo-control` static route 생성 확인 |
-| `docker compose --env-file .env.jenkins -p smartdrain-dev config` | backend 환경에 demo env가 렌더링되는 것 확인 |
+| 검증                                                              | 결과                                                    |
+| ----------------------------------------------------------------- | ------------------------------------------------------- |
+| Backend Python AST parse                                          | 통과                                                    |
+| `npm.cmd --prefix frontend run lint`                              | 통과. 기존 `fallback-image.tsx`의 `<img>` 경고 1건 유지 |
+| `npm.cmd --prefix frontend run build`                             | 통과. `/demo-control` static route 생성 확인            |
+| `docker compose --env-file .env.jenkins -p smartdrain-dev config` | backend 환경에 demo env가 렌더링되는 것 확인            |
 
 ## 10. 사용자가 직접 실행할 테스트 방식
 
@@ -474,10 +474,10 @@ npm.cmd --prefix frontend run build
 
 기대 결과:
 
-| 명령 | 기대 결과 |
-| --- | --- |
-| `lint` | error 없음. 기존 `fallback-image.tsx`의 `<img>` warning은 남을 수 있음 |
-| `build` | `/demo-control` route가 생성됨 |
+| 명령    | 기대 결과                                                              |
+| ------- | ---------------------------------------------------------------------- |
+| `lint`  | error 없음. 기존 `fallback-image.tsx`의 `<img>` warning은 남을 수 있음 |
+| `build` | `/demo-control` route가 생성됨                                         |
 
 Backend 문법 확인:
 
@@ -540,21 +540,21 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T db psql -
 
 브라우저에서 아래 화면을 연다.
 
-| URL | 확인 내용 |
-| --- | --- |
-| `http://localhost:18080/` | 공개 대시보드 |
-| `http://localhost:18080/demo-control` | 시연 제어 화면 |
+| URL                                    | 확인 내용                |
+| -------------------------------------- | ------------------------ |
+| `http://localhost:18080/`              | 공개 대시보드            |
+| `http://localhost:18080/demo-control`  | 시연 제어 화면           |
 | `http://localhost:18080/drains/DR-005` | 수동 시연 대상 상세 화면 |
 
 `/demo-control`에서 접근 토큰 입력란에 `.env`의 `DEMO_CONTROL_TOKEN` 값을 넣고 `저장`을 누른다.
 
 404가 뜨면 먼저 어떤 404인지 구분한다.
 
-| 증상 | 원인 가능성 | 해결 |
-| --- | --- | --- |
-| `http://localhost:18080/demo-control` 화면 자체가 404 | frontend image가 새로 빌드되지 않았거나 Nginx가 이전 설정을 물고 있음 | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build nginx frontend` 실행 |
-| `/demo-control` 화면은 뜨지만 상태 조회가 404 | `COMPOSE_DEMO_SIMULATOR_ENABLED=false` 상태에서 `/api/demo/status`가 비활성화됨 | `.env`에서 `COMPOSE_DEMO_SIMULATOR_ENABLED=true`로 바꾸고 backend 재기동 |
-| 상태 조회가 403 | `DEMO_CONTROL_TOKEN`이 비어 있거나 화면에 입력한 token과 다름 | `.env`에 token을 넣고 `/demo-control`에 같은 값을 저장 |
+| 증상                                                  | 원인 가능성                                                                     | 해결                                                                                               |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `http://localhost:18080/demo-control` 화면 자체가 404 | frontend image가 새로 빌드되지 않았거나 Nginx가 이전 설정을 물고 있음           | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build nginx frontend` 실행 |
+| `/demo-control` 화면은 뜨지만 상태 조회가 404         | `COMPOSE_DEMO_SIMULATOR_ENABLED=false` 상태에서 `/api/demo/status`가 비활성화됨 | `.env`에서 `COMPOSE_DEMO_SIMULATOR_ENABLED=true`로 바꾸고 backend 재기동                           |
+| 상태 조회가 403                                       | `DEMO_CONTROL_TOKEN`이 비어 있거나 화면에 입력한 token과 다름                   | `.env`에 token을 넣고 `/demo-control`에 같은 값을 저장                                             |
 
 로컬에서 demo API를 켠 뒤 backend만 재기동하려면 다음 명령을 사용한다.
 
@@ -606,14 +606,14 @@ Invoke-RestMethod -Method Post -Headers $headers -Uri "http://localhost:18080/ap
 
 기대 결과:
 
-| 호출 | 기대 결과 |
-| --- | --- |
+| 호출               | 기대 결과                           |
+| ------------------ | ----------------------------------- |
 | `/api/demo/status` | `success=true`, `data.enabled=true` |
-| preset 적용 | `manualOverrides`에 `DR-005` 포함 |
-| scenario interval | `intervalSeconds=10` |
-| scenario step | `weatherStep=CLOUDBURST` |
-| scenario next | `weatherStep`이 다음 단계로 변경 |
-| recover | `weatherStep=RECOVERY` |
+| preset 적용        | `manualOverrides`에 `DR-005` 포함   |
+| scenario interval  | `intervalSeconds=10`                |
+| scenario step      | `weatherStep=CLOUDBURST`            |
+| scenario next      | `weatherStep`이 다음 단계로 변경    |
+| recover            | `weatherStep=RECOVERY`              |
 
 ### 10.9 종료
 
@@ -629,14 +629,14 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 실제 VM 리허설 뒤 아래 정보를 기록한다.
 
-| 항목 | 기록할 내용 |
-| --- | --- |
-| 실제 URL | 로컬, VM, Cloudflare 공개 주소 |
-| 실제 버튼명 | UI에 표시된 버튼명과 API 동작 |
-| 실제 env | 발표용 `.env` 예시와 Jenkins Secret File 항목 |
-| 실제 API | `/api/demo/*` 요청/응답 예시 |
-| 실제 검증 결과 | lint, build, Docker health, 모바일 확인 결과 |
-| 실제 장애 대응 결과 | 리허설 중 발생한 문제와 해결 방법 |
+| 항목                | 기록할 내용                                   |
+| ------------------- | --------------------------------------------- |
+| 실제 URL            | 로컬, VM, Cloudflare 공개 주소                |
+| 실제 버튼명         | UI에 표시된 버튼명과 API 동작                 |
+| 실제 env            | 발표용 `.env` 예시와 Jenkins Secret File 항목 |
+| 실제 API            | `/api/demo/*` 요청/응답 예시                  |
+| 실제 검증 결과      | lint, build, Docker health, 모바일 확인 결과  |
+| 실제 장애 대응 결과 | 리허설 중 발생한 문제와 해결 방법             |
 
 ## 12. 제안 커밋 메시지
 

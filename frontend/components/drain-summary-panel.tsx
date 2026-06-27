@@ -24,6 +24,7 @@ import { FallbackImage } from "@/components/fallback-image";
 import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
 import { getDrainDetailHref } from "@/lib/drain-route";
+import { formatFinalDecisionLabel } from "@/lib/final-decision-label";
 
 export function DrainSummaryPanel({
   drain,
@@ -84,9 +85,9 @@ export function DrainSummaryPanel({
             </p>
             <p
               className={cn("mt-1 line-clamp-3 text-sm font-bold leading-5", meta.text)}
-              title={drain.judgement}
+              title={formatFinalDecisionLabel(drain.judgement)}
             >
-              {drain.judgement}
+              {formatFinalDecisionLabel(drain.judgement)}
             </p>
           </div>
         </div>
@@ -147,7 +148,7 @@ export function DrainSummaryPanel({
               src={imageUrl}
               fallbackSrc={PLACEHOLDER_IMAGES.facility}
               alt={`${drain.road} 빗물받이 CCTV 스냅샷`}
-              className="size-full object-cover grayscale"
+              className="size-full object-cover"
             />
             <button
               type="button"
