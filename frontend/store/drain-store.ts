@@ -9,6 +9,7 @@ import { URGENT_ALERT_POLICY } from "@/lib/urgent-alert-policy";
 export type UrgentDrainAlert = {
     drainId: string;
     facilityName?: string;
+    riskLevel: DrainStatusUpdatedEventDto["payload"]["riskLevel"];
     message: string;
     updatedAt: string;
     read: boolean;
@@ -74,7 +75,8 @@ export const useDrainStore = create<DrainStore>((set) => ({
             const alert: UrgentDrainAlert = {
                 drainId: event.payload.drainId,
                 facilityName,
-                message: event.payload.finalDecision ?? "즉시 현장 확인이 필요합니다.",
+                riskLevel: event.payload.riskLevel,
+                message: createUrgentAlertMessage(event),
                 updatedAt: event.payload.updatedAt,
                 read: false,
             };
@@ -111,3 +113,19 @@ export const useDrainStore = create<DrainStore>((set) => ({
             })),
         })),
 }));
+
+function createUrgentAlertMessage(event: DrainStatusUpdatedEventDto) {
+    const { drainId, riskLevel, waterLevelCm, obstructionRatio } = event.payload;
+    if (riskLevel === "unknown") {
+        return `${drainId}의 영상 분석 상태를 확인할 수 없습니다. 센서값을 함께 확인하세요.`;
+    }
+
+    const details = [
+        typeof waterLevelCm === "number" ? `수위 ${waterLevelCm.toFixed(1)}cm` : null,
+        typeof obstructionRatio === "number" ? `막힘률 ${Math.round(obstructionRatio * 100)}%` : null,
+    ].filter(Boolean);
+
+    return details.length > 0
+        ? `${drainId}이 위험 상태입니다. ${details.join(", ")}`
+        : `${drainId}이 위험 상태입니다. 즉시 현장 확인이 필요합니다.`;
+}

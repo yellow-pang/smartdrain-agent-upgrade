@@ -4,9 +4,10 @@ import asyncio
 import json
 import logging
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -26,6 +27,22 @@ LOGGER = logging.getLogger(__name__)
 PROJECT_ROOT_DIR = Path(__file__).resolve().parents[3]
 DEMO_IMAGE_SOURCE_DIR = PROJECT_ROOT_DIR / "mock_data" / "ai_image_samples" / "demo"
 DEMO_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
+MANUAL_PRESETS = {"GOOD", "CAUTION", "DANGER", "UNAVAILABLE"}
+WEATHER_STEPS = ("CLEAR", "LIGHT_RAIN", "HEAVY_RAIN", "CLOUDBURST", "RAIN_WEAKENING", "RECOVERY")
+REHEARSAL_INTERVAL_SECONDS = (10, 15, 30, 60)
+
+
+@dataclass
+class DemoControlState:
+    running: bool = False
+    paused: bool = True
+    weather_step_index: int = 0
+    manual_overrides: set[str] | None = None
+    scenario_task: asyncio.Task | None = None
+    interval_seconds: int | None = None
+    last_action: str = "initialized"
+    last_error: str | None = None
+    updated_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -44,9 +61,9 @@ class DemoScenario:
 OVERVIEW_SCENARIOS: tuple[DemoScenario, ...] = (
     DemoScenario("DR-001", "good", 0.16, 24, 1.15, 0.14, 0.94, "clear", "normal"),
     DemoScenario("DR-002", "caution", 0.58, 55, 0.45, 0.58, 0.91, "partially_blocked", "field_check"),
-    DemoScenario("DR-003", "good", 0.18, 26, 1.08, 0.16, 0.93, "clear", "normal"),
-    DemoScenario("DR-004", "danger", 0.91, 82, 0.12, 0.86, 0.94, "blocked", "dispatch_required"),
-    DemoScenario("DR-005", "unknown", 0.0, 12, 0.05, 0.0, 0.30, "unknown", "monitoring"),
+    DemoScenario("DR-003", "danger", 0.91, 82, 0.12, 0.86, 0.94, "blocked", "dispatch_required"),
+    DemoScenario("DR-004", "unknown", 0.0, 31, 1.20, 0.0, 0.30, "unknown", "monitoring"),
+    DemoScenario("DR-005", "good", 0.18, 7, 0.30, 0.08, 0.93, "clear", "normal"),
 )
 
 STORY_SCENARIOS: tuple[DemoScenario, ...] = (
@@ -71,11 +88,84 @@ ANALYSIS_RANGES = {
     "danger": ((0.86, 0.96), (0.80, 0.92), (0.90, 0.96)),
     "unknown": ((0.0, 0.08), (0.0, 0.08), (0.25, 0.38)),
 }
+SCENARIO_SENSOR_RANGES = {
+    "good": ((4.0, 12.0), (0.18, 0.50), (0.04, 0.18), (0.90, 0.98), (0.08, 0.22)),
+    "caution": ((16.0, 30.0), (0.55, 1.15), (0.26, 0.50), (0.84, 0.94), (0.48, 0.68)),
+    "danger": ((34.0, 60.0), (1.05, 1.90), (0.58, 0.92), (0.88, 0.97), (0.84, 0.96)),
+    "unknown": ((20.0, 36.0), (0.45, 1.20), (0.0, 0.08), (0.22, 0.38), (0.0, 0.08)),
+}
+FACILITY_BEHAVIOR = {
+    "DR-001": {"water": 0.70, "flow": 0.85, "obstruction": 0.75, "recovery": 1.20},
+    "DR-002": {"water": 1.05, "flow": 0.90, "obstruction": 1.35, "recovery": 0.95},
+    "DR-003": {"water": 1.35, "flow": 1.10, "obstruction": 1.05, "recovery": 0.90},
+    "DR-004": {"water": 1.00, "flow": 1.00, "obstruction": 0.90, "recovery": 1.00},
+    "DR-005": {"water": 1.10, "flow": 0.85, "obstruction": 1.05, "recovery": 0.55},
+}
+SMOOTHING_RATIO = 0.58
+
+PRESET_SCENARIOS: dict[str, DemoScenario] = {
+    "GOOD": DemoScenario("", "good", 0.16, 7, 0.30, 0.08, 0.94, "clear", "normal"),
+    "CAUTION": DemoScenario("", "caution", 0.58, 23, 0.80, 0.38, 0.91, "partially_blocked", "field_check"),
+    "DANGER": DemoScenario("", "danger", 0.92, 46, 1.60, 0.78, 0.94, "blocked", "dispatch_required"),
+    "UNAVAILABLE": DemoScenario("", "unknown", 0.0, 31, 1.20, 0.0, 0.30, "unknown", "monitoring"),
+}
+
+WEATHER_SCENARIOS: dict[str, dict[str, str]] = {
+    "CLEAR": {
+        "DR-001": "GOOD",
+        "DR-002": "GOOD",
+        "DR-003": "GOOD",
+        "DR-004": "GOOD",
+        "DR-005": "GOOD",
+    },
+    "LIGHT_RAIN": {
+        "DR-001": "GOOD",
+        "DR-002": "GOOD",
+        "DR-003": "CAUTION",
+        "DR-004": "GOOD",
+        "DR-005": "GOOD",
+    },
+    "HEAVY_RAIN": {
+        "DR-001": "GOOD",
+        "DR-002": "CAUTION",
+        "DR-003": "DANGER",
+        "DR-004": "CAUTION",
+        "DR-005": "CAUTION",
+    },
+    "CLOUDBURST": {
+        "DR-001": "CAUTION",
+        "DR-002": "DANGER",
+        "DR-003": "DANGER",
+        "DR-004": "UNAVAILABLE",
+        "DR-005": "CAUTION",
+    },
+    "RAIN_WEAKENING": {
+        "DR-001": "GOOD",
+        "DR-002": "CAUTION",
+        "DR-003": "CAUTION",
+        "DR-004": "CAUTION",
+        "DR-005": "CAUTION",
+    },
+    "RECOVERY": {
+        "DR-001": "GOOD",
+        "DR-002": "GOOD",
+        "DR-003": "GOOD",
+        "DR-004": "GOOD",
+        "DR-005": "GOOD",
+    },
+}
+
+_CONTROL_STATE = DemoControlState(manual_overrides=set())
+_CONTROL_LOCK = asyncio.Lock()
 
 
 def start_demo_simulator(app) -> None:
     if not settings.DEMO_SIMULATOR_ENABLED:
         LOGGER.info("Demo simulator is disabled")
+        return
+
+    if not settings.DEMO_SIMULATOR_AUTO_START:
+        LOGGER.info("Demo simulator control is enabled; auto start is disabled")
         return
 
     mode = settings.DEMO_SIMULATOR_MODE.strip().lower()
@@ -84,6 +174,9 @@ def start_demo_simulator(app) -> None:
         mode = "direct"
 
     app.state.demo_simulator_task = asyncio.create_task(_demo_loop(mode))
+    _CONTROL_STATE.running = True
+    _CONTROL_STATE.paused = False
+    _CONTROL_STATE.scenario_task = app.state.demo_simulator_task
     LOGGER.info(
         "Demo simulator started: mode=%s interval=%ss start_delay=%ss target=%s",
         mode,
@@ -95,6 +188,16 @@ def start_demo_simulator(app) -> None:
 
 async def stop_demo_simulator(app) -> None:
     task = getattr(app.state, "demo_simulator_task", None)
+    controlled_task = _CONTROL_STATE.scenario_task
+    if controlled_task is not None and controlled_task is not task:
+        controlled_task.cancel()
+        try:
+            await controlled_task
+        except asyncio.CancelledError:
+            LOGGER.info("Demo control scenario stopped")
+    _CONTROL_STATE.running = False
+    _CONTROL_STATE.paused = True
+    _CONTROL_STATE.scenario_task = None
     if task is None:
         return
 
@@ -112,7 +215,10 @@ async def _demo_loop(mode: str) -> None:
     step = 0
     while True:
         await asyncio.sleep(settings.DEMO_SIMULATOR_INTERVAL_SECONDS)
-        scenario = STORY_SCENARIOS[step % len(STORY_SCENARIOS)]
+        scenario = _retarget_scenario(
+            STORY_SCENARIOS[step % len(STORY_SCENARIOS)],
+            settings.DEMO_SIMULATOR_TARGET_DRAIN_CODE,
+        )
         await _apply_scenario(mode, scenario)
         step += 1
 
@@ -121,6 +227,193 @@ async def _run_overview(mode: str) -> None:
     for scenario in OVERVIEW_SCENARIOS:
         await _apply_scenario(mode, scenario)
         await asyncio.sleep(0.2)
+
+
+async def get_demo_status() -> dict[str, Any]:
+    async with _CONTROL_LOCK:
+        return _control_status()
+
+
+async def apply_manual_preset(db: Session, drain_code: str, preset: str) -> dict[str, Any]:
+    normalized_preset = preset.strip().upper()
+    if normalized_preset not in MANUAL_PRESETS:
+        raise ValueError(f"Unsupported demo preset: {preset}")
+
+    scenario = _scenario_from_preset(drain_code, normalized_preset)
+    drain = _get_drain_by_code(db, scenario.drain_code)
+    if drain is None:
+        raise LookupError(f"Drain not found: {scenario.drain_code}")
+
+    await _apply_direct_scenario(db, drain, scenario)
+    async with _CONTROL_LOCK:
+        assert _CONTROL_STATE.manual_overrides is not None
+        _CONTROL_STATE.manual_overrides.add(scenario.drain_code)
+        _mark_control_action(f"manual:{scenario.drain_code}:{normalized_preset}")
+        return _control_status()
+
+
+async def clear_manual_override(drain_code: str) -> dict[str, Any]:
+    async with _CONTROL_LOCK:
+        assert _CONTROL_STATE.manual_overrides is not None
+        _CONTROL_STATE.manual_overrides.discard(drain_code.strip())
+        _mark_control_action(f"override-cleared:{drain_code.strip()}")
+        return _control_status()
+
+
+async def reset_demo(db: Session) -> dict[str, Any]:
+    await stop_controlled_scenario()
+    for scenario in OVERVIEW_SCENARIOS:
+        drain = _get_drain_by_code(db, scenario.drain_code)
+        if drain is not None:
+            await _apply_direct_scenario(db, drain, scenario)
+
+    async with _CONTROL_LOCK:
+        assert _CONTROL_STATE.manual_overrides is not None
+        _CONTROL_STATE.manual_overrides.clear()
+        _CONTROL_STATE.weather_step_index = 0
+        _mark_control_action("reset")
+        return _control_status()
+
+
+async def recover_demo(db: Session) -> dict[str, Any]:
+    await stop_controlled_scenario()
+    await _apply_weather_step(db, "RECOVERY")
+    async with _CONTROL_LOCK:
+        assert _CONTROL_STATE.manual_overrides is not None
+        _CONTROL_STATE.manual_overrides.clear()
+        _CONTROL_STATE.weather_step_index = WEATHER_STEPS.index("RECOVERY")
+        _mark_control_action("recover")
+        return _control_status()
+
+
+async def start_controlled_scenario() -> dict[str, Any]:
+    async with _CONTROL_LOCK:
+        if _CONTROL_STATE.scenario_task is None or _CONTROL_STATE.scenario_task.done():
+            _CONTROL_STATE.scenario_task = asyncio.create_task(_controlled_scenario_loop())
+        _CONTROL_STATE.running = True
+        _CONTROL_STATE.paused = False
+        _mark_control_action("scenario-start")
+        return _control_status()
+
+
+async def pause_controlled_scenario() -> dict[str, Any]:
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.paused = True
+        _mark_control_action("scenario-pause")
+        return _control_status()
+
+
+async def resume_controlled_scenario() -> dict[str, Any]:
+    async with _CONTROL_LOCK:
+        if _CONTROL_STATE.scenario_task is None or _CONTROL_STATE.scenario_task.done():
+            _CONTROL_STATE.scenario_task = asyncio.create_task(_controlled_scenario_loop())
+        _CONTROL_STATE.running = True
+        _CONTROL_STATE.paused = False
+        _mark_control_action("scenario-resume")
+        return _control_status()
+
+
+async def stop_controlled_scenario() -> dict[str, Any]:
+    task = _CONTROL_STATE.scenario_task
+    if task is not None:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.running = False
+        _CONTROL_STATE.paused = True
+        _CONTROL_STATE.scenario_task = None
+        _mark_control_action("scenario-stop")
+        return _control_status()
+
+
+async def next_scenario_step(db: Session) -> dict[str, Any]:
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.weather_step_index = (_CONTROL_STATE.weather_step_index + 1) % len(WEATHER_STEPS)
+        weather_step = WEATHER_STEPS[_CONTROL_STATE.weather_step_index]
+
+    await _apply_weather_step(db, weather_step)
+
+    async with _CONTROL_LOCK:
+        _mark_control_action(f"scenario-next:{weather_step}")
+        return _control_status()
+
+
+async def apply_scenario_step(db: Session, weather_step: str) -> dict[str, Any]:
+    normalized_step = weather_step.strip().upper()
+    if normalized_step not in WEATHER_STEPS:
+        raise ValueError(f"Unsupported weather step: {weather_step}")
+
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.weather_step_index = WEATHER_STEPS.index(normalized_step)
+
+    await _apply_weather_step(db, normalized_step)
+
+    async with _CONTROL_LOCK:
+        _mark_control_action(f"scenario-step:{normalized_step}")
+        return _control_status()
+
+
+async def set_scenario_interval(interval_seconds: int) -> dict[str, Any]:
+    if interval_seconds < 5 or interval_seconds > 300:
+        raise ValueError("Scenario interval must be between 5 and 300 seconds")
+
+    async with _CONTROL_LOCK:
+        _CONTROL_STATE.interval_seconds = interval_seconds
+        _mark_control_action(f"scenario-interval:{interval_seconds}")
+        return _control_status()
+
+
+async def _controlled_scenario_loop() -> None:
+    try:
+        while True:
+            async with _CONTROL_LOCK:
+                running = _CONTROL_STATE.running
+                paused = _CONTROL_STATE.paused
+                weather_step = WEATHER_STEPS[_CONTROL_STATE.weather_step_index]
+                interval_seconds = _scenario_interval_seconds()
+
+            if not running:
+                await asyncio.sleep(1)
+                continue
+
+            if paused:
+                await asyncio.sleep(1)
+                continue
+
+            try:
+                with SessionLocal() as db:
+                    await _apply_weather_step(db, weather_step)
+            except Exception as exc:
+                LOGGER.exception("Demo scenario step failed: weather_step=%s", weather_step)
+                async with _CONTROL_LOCK:
+                    _CONTROL_STATE.last_error = str(exc)
+
+            await asyncio.sleep(interval_seconds)
+            async with _CONTROL_LOCK:
+                _CONTROL_STATE.weather_step_index = (_CONTROL_STATE.weather_step_index + 1) % len(WEATHER_STEPS)
+    except asyncio.CancelledError:
+        raise
+
+
+async def _apply_weather_step(db: Session, weather_step: str) -> None:
+    scenarios = WEATHER_SCENARIOS.get(weather_step, WEATHER_SCENARIOS["CLEAR"])
+    manual_overrides = set(_CONTROL_STATE.manual_overrides or set())
+    for drain_code, preset in scenarios.items():
+        if drain_code in manual_overrides:
+            continue
+        drain = _get_drain_by_code(db, drain_code)
+        if drain is None:
+            LOGGER.warning("Demo scenario skipped missing drain: %s", drain_code)
+            continue
+        scenario = _scenario_from_preset(drain_code, preset)
+        if settings.DEMO_SIMULATOR_RANDOMIZE:
+            scenario = _naturalize_weather_scenario(db, drain, scenario)
+        await _apply_direct_scenario(db, drain, scenario)
+        await asyncio.sleep(0.05)
 
 
 async def _apply_scenario(mode: str, scenario: DemoScenario) -> None:
@@ -247,8 +540,85 @@ def _sample_scenario(scenario: DemoScenario) -> DemoScenario:
     )
 
 
+def _scenario_from_preset(drain_code: str, preset: str) -> DemoScenario:
+    scenario = PRESET_SCENARIOS[preset]
+    return replace(scenario, drain_code=drain_code.strip())
+
+
+def _naturalize_weather_scenario(db: Session, drain: Drain, scenario: DemoScenario) -> DemoScenario:
+    ranges = SCENARIO_SENSOR_RANGES.get(scenario.risk_level)
+    if ranges is None:
+        return scenario
+
+    water_range, flow_range, obstruction_range, confidence_range, risk_range = ranges
+    behavior = FACILITY_BEHAVIOR.get(drain.drain_code, {})
+    recovery_factor = float(behavior.get("recovery", 1.0))
+    latest_sensor = _latest_sensor_data(db, drain.id)
+    latest_yolo = _latest_yolo_result(db, drain.id)
+
+    sampled_water = _sample_scaled_value(water_range, float(behavior.get("water", 1.0)), max_value=95.0)
+    sampled_flow = _sample_scaled_value(flow_range, float(behavior.get("flow", 1.0)), max_value=2.5)
+    sampled_obstruction = _sample_scaled_value(
+        obstruction_range,
+        float(behavior.get("obstruction", 1.0)),
+        max_value=0.98,
+    )
+
+    if latest_sensor is not None:
+        sampled_water = _smooth_value(latest_sensor.water_level_cm, sampled_water, recovery_factor)
+        sampled_flow = _smooth_value(latest_sensor.flow_velocity_mps, sampled_flow, recovery_factor)
+
+    if latest_yolo is not None:
+        sampled_obstruction = _smooth_value(
+            latest_yolo.obstruction_ratio,
+            sampled_obstruction,
+            recovery_factor,
+        )
+
+    return replace(
+        scenario,
+        water_level_cm=round(sampled_water, 1),
+        flow_velocity_mps=round(sampled_flow, 2),
+        obstruction_ratio=round(sampled_obstruction, 4),
+        confidence_score=_sample_float(*confidence_range, digits=4),
+        risk_score=_sample_float(*risk_range, digits=4),
+    )
+
+
+def _retarget_scenario(scenario: DemoScenario, drain_code: str) -> DemoScenario:
+    target_drain_code = drain_code.strip()
+    if not target_drain_code or target_drain_code == scenario.drain_code:
+        return scenario
+
+    return DemoScenario(
+        drain_code=target_drain_code,
+        risk_level=scenario.risk_level,
+        risk_score=scenario.risk_score,
+        water_level_cm=scenario.water_level_cm,
+        flow_velocity_mps=scenario.flow_velocity_mps,
+        obstruction_ratio=scenario.obstruction_ratio,
+        confidence_score=scenario.confidence_score,
+        yolo_status=scenario.yolo_status,
+        final_decision=scenario.final_decision,
+    )
+
+
 def _sample_float(minimum: float, maximum: float, digits: int) -> float:
     return round(random.uniform(minimum, maximum), digits)
+
+
+def _sample_scaled_value(value_range: tuple[float, float], factor: float, max_value: float) -> float:
+    minimum, maximum = value_range
+    value = random.uniform(minimum, maximum) * factor
+    return min(max_value, max(0.0, value))
+
+
+def _smooth_value(current: float, target: float, recovery_factor: float) -> float:
+    if target < current:
+        ratio = min(0.85, SMOOTHING_RATIO * recovery_factor)
+    else:
+        ratio = SMOOTHING_RATIO
+    return current + ((target - current) * ratio)
 
 
 async def _broadcast_events(
@@ -303,6 +673,24 @@ def _get_drain_by_code(db: Session, drain_code: str) -> Drain | None:
     return db.query(Drain).filter(Drain.drain_code == drain_code).first()
 
 
+def _latest_sensor_data(db: Session, drain_id: int) -> SensorData | None:
+    return (
+        db.query(SensorData)
+        .filter(SensorData.drain_id == drain_id)
+        .order_by(SensorData.measured_at.desc(), SensorData.id.desc())
+        .first()
+    )
+
+
+def _latest_yolo_result(db: Session, drain_id: int) -> YoloResult | None:
+    return (
+        db.query(YoloResult)
+        .filter(YoloResult.drain_id == drain_id)
+        .order_by(YoloResult.captured_at.desc(), YoloResult.id.desc())
+        .first()
+    )
+
+
 def _has_active_job(db: Session, drain_id: int) -> bool:
     return (
         db.query(AnalysisJob)
@@ -326,3 +714,35 @@ def _mock_image_url(drain_id: int, risk_level: str) -> str:
 def _create_demo_request_id(drain_id: int, value: datetime) -> str:
     timestamp = value.strftime("%Y%m%d%H%M%S%f")
     return f"REQ_DEMO_{timestamp}_{drain_id}"
+
+
+def _mark_control_action(action: str) -> None:
+    _CONTROL_STATE.last_action = action
+    _CONTROL_STATE.last_error = None
+    _CONTROL_STATE.updated_at = datetime.now(timezone.utc).isoformat()
+
+
+def _control_status() -> dict[str, Any]:
+    return {
+        "enabled": settings.DEMO_SIMULATOR_ENABLED,
+        "mode": settings.DEMO_SIMULATOR_MODE,
+        "autoStart": settings.DEMO_SIMULATOR_AUTO_START,
+        "randomize": settings.DEMO_SIMULATOR_RANDOMIZE,
+        "running": _CONTROL_STATE.running,
+        "paused": _CONTROL_STATE.paused,
+        "weatherStep": WEATHER_STEPS[_CONTROL_STATE.weather_step_index],
+        "weatherStepIndex": _CONTROL_STATE.weather_step_index,
+        "weatherSteps": list(WEATHER_STEPS),
+        "manualOverrides": sorted(_CONTROL_STATE.manual_overrides or set()),
+        "targetDrainCode": settings.DEMO_SIMULATOR_TARGET_DRAIN_CODE,
+        "intervalSeconds": _scenario_interval_seconds(),
+        "defaultIntervalSeconds": settings.DEMO_SIMULATOR_INTERVAL_SECONDS,
+        "rehearsalIntervals": list(REHEARSAL_INTERVAL_SECONDS),
+        "lastAction": _CONTROL_STATE.last_action,
+        "lastError": _CONTROL_STATE.last_error,
+        "updatedAt": _CONTROL_STATE.updated_at,
+    }
+
+
+def _scenario_interval_seconds() -> int:
+    return _CONTROL_STATE.interval_seconds or settings.DEMO_SIMULATOR_INTERVAL_SECONDS
