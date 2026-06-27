@@ -363,6 +363,34 @@ QR 공개 직후에는 바로 자동 시나리오를 시작하지 않는다. 관
 2. 관람객 QR 시연은 녹화본 또는 스크린샷으로 대체한다.
 3. 발표 후 VM, Tunnel, DNS, Access 정책을 순서대로 점검한다.
 
+### 7.5 `ai-service`가 Restarting 상태일 때
+
+`docker inspect`에서 `OOMKilled=false`, `ExitCode=0`, 실행 시간이 1초 미만이면 메모리 부족이나 앱 crash보다 컨테이너의 foreground command가 바로 끝난 상황을 먼저 의심한다.
+
+이번 demo compose에서는 `ai-service`가 시작 전에 `/app/ai_service/model/best.pt` 파일을 검사한다. 검사 후 `uvicorn ai_service.http.app:app --host 0.0.0.0 --port 9000`이 foreground로 실행되어야 한다. 기본 compose에 `command`가 없으면 entrypoint의 `exec "$@"`가 빈 인자로 끝나 `ExitCode=0` 재시작 루프가 발생할 수 있다.
+
+확인 순서:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml config
+docker compose -f docker-compose.yml -f docker-compose.dev.yml ps ai-service
+docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=80 ai-service
+```
+
+`config` 출력에서 `ai-service` 아래에 아래 command가 보여야 한다.
+
+```yaml
+command:
+  - uvicorn
+  - ai_service.http.app:app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "9000"
+```
+
+모델 파일이 없거나 비어 있으면 `ERROR: YOLO model file is missing...` 메시지와 함께 `ExitCode=1`로 종료되는 것이 정상이다. 이 경우 `.env`의 `SMARTDRAIN_YOLO_MODEL_PATH`가 실제 VM의 `best.pt` 파일을 가리키는지 확인한다.
+
 ## 8. 운영/보안 마무리 절차
 
 1. `/demo-control`에서 자동 시나리오를 `일시정지` 또는 `정지`한다.
@@ -482,6 +510,15 @@ ai-service  healthy
 frontend    healthy
 nginx       healthy
 ```
+
+`ai-service`만 `Restarting`이면 아래를 먼저 확인한다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.dev.yml config
+docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=80 ai-service
+```
+
+`config`에 `ai-service.command`가 `uvicorn ai_service.http.app:app ...`으로 렌더링되어야 한다. 이 command가 보이는데도 실패하면 `SMARTDRAIN_YOLO_MODEL_PATH`와 `/app/ai_service/model/best.pt` bind mount 상태를 확인한다.
 
 ### 10.4 Seed 데이터 확인
 

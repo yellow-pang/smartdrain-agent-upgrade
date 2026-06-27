@@ -14,6 +14,7 @@
   - 복구 단계 적용
 - 자동 날씨 시나리오가 시설별 특성과 상태별 범위 안에서 자연스럽게 수위, 유속, 막힘률을 생성하도록 보강했습니다.
 - 상태별 demo 이미지가 있으면 `mock_data/ai_image_samples/demo/` 파일을 우선 사용하고, 없으면 기존 mock image로 fallback하도록 했습니다.
+- `ai-service`가 model 파일 검사 후 종료되지 않도록 기본 compose에도 `uvicorn` foreground command를 명시했습니다.
 - Nginx에 `/demo-control` 라우팅을 추가해 dev VM의 `18080` 경로에서 제어 화면이 열리도록 했습니다.
 - 위험 알림 UX를 보강했습니다.
   - 위험과 판단불가를 긴급 알림 대상으로 분리
@@ -81,6 +82,7 @@ http://localhost:18080/demo-control
 - 자동 날씨 시나리오 자연화 범위가 발표 화면에서 과하지 않고 자연스럽게 보이는지 확인합니다.
 - 여러 시설이 동시에 위험/판단불가가 되었을 때 알림 패널의 count와 목록 표시가 이해하기 쉬운지 확인합니다.
 - Cloudflare Access와 `DEMO_CONTROL_TOKEN`을 함께 쓰는 운영 가이드가 충분한지 확인합니다.
+- VM에서 `ai-service`가 `Restarting` 루프 없이 `healthy` 상태로 유지되는지 확인합니다.
 - 발표 후 `COMPOSE_DEMO_SIMULATOR_ENABLED=false`로 되돌리는 절차가 명확한지 확인합니다.
 
 ## 비고
