@@ -5,6 +5,7 @@ import { Brain, Eye, Images, ShieldCheck, type LucideIcon } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import type { XgboostResultDto, YoloResultDto } from "@/lib/api/types";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
+import { formatFinalDecisionLabel } from "@/lib/final-decision-label";
 import { STATUS_META } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -105,10 +106,10 @@ function XgboostAnalysisPanel({ result }: { result?: XgboostResultDto }) {
             />
             <AnalysisInfoRow
                 fixedHeight
-                label="최종 판단 문구"
-                value={result.finalDecision ?? "-"}
+                label="관리자 조치 판단"
+                value={formatFinalDecisionLabel(result.finalDecision)}
                 valueClassName="line-clamp-2 leading-5"
-                valueTitle={result.finalDecision ?? "-"}
+                valueTitle={formatFinalDecisionLabel(result.finalDecision)}
             />
         </dl>
     );
@@ -122,7 +123,7 @@ function AnalysisHistoryPanel({
     xgboostResults: XgboostResultDto[];
 }) {
     if (yoloResults.length === 0 && xgboostResults.length === 0) {
-        return <EmptyAnalysisState label="분석 이력 API 응답이 없습니다." />;
+        return <EmptyAnalysisState label="분석 이력이 없습니다." />;
     }
 
     return (
@@ -139,7 +140,7 @@ function AnalysisHistoryPanel({
                 title="XGBoost 판단 이력"
                 items={xgboostResults.map((item) => ({
                     key: `xgboost-${item.id ?? item.evaluatedAt}`,
-                    title: `${STATUS_META[item.riskLevel].label} / ${item.finalDecision ?? "최종 판단 문구 없음"}`,
+                    title: `${STATUS_META[item.riskLevel].label} / ${formatFinalDecisionLabel(item.finalDecision)}`,
                     meta: formatDateTimeForDisplay(item.evaluatedAt ?? item.createdAt),
                 }))}
             />

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { formatDateTimeForDisplay } from "@/lib/date-format";
 import { MobileDrainInlineSummary } from "@/components/dashboard/mobile-drain-inline-summary";
+import { formatFinalDecisionLabel } from "@/lib/final-decision-label";
 
 const SORT_OPTIONS = [
   { value: "risk", label: "위험도순" },
@@ -164,10 +165,10 @@ const DrainRiskListItem = memo(function DrainRiskListItem({
               </span>
               <StatusBadge status={drain.status} className="ml-auto shrink-0" />
             </div>
-            <p className="mt-1 line-clamp-2 text-[11px] text-slate-500 dark:text-slate-400 md:text-xs" title={drain.judgement}>
+            <p className="mt-1 line-clamp-2 text-[11px] text-slate-500 dark:text-slate-400 md:text-xs" title={formatFinalDecisionLabel(drain.judgement)}>
               판정 결과{" "}
               <span className={cn("font-semibold", meta.text)}>
-                {drain.judgement}
+                {formatFinalDecisionLabel(drain.judgement)}
               </span>
             </p>
           </div>
