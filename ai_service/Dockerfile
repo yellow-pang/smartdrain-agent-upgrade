@@ -23,6 +23,7 @@ COPY ai_service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ai_service/ ./ai_service/
+COPY mock_data/ai_image_samples/ ./mock_data/ai_image_samples/
 
 RUN useradd --create-home appuser \
     && chown -R appuser:appuser /app
