@@ -9,7 +9,7 @@
 | `legacy-mvp/` | 기존 팀 프로젝트 MVP 단계에서 작성된 기획, 요구사항, 설계, PoC, 발표 준비 문서 |
 | `legacy-mvp/image/` | MVP 문서에서 사용한 와이어프레임과 아키텍처 참고 이미지 |
 | `reference/` | 현재 구현에서도 계속 참조할 API 계약, Backend-AI 연동, AI 모델 artifact 기준 문서 |
-| `verification/` | 구현 현황, 통합 테스트, E2E 전략, 배포/운영 런북 등 검증과 운영 기준 문서 |
+| `verification/` | 구현 현황, 통합 테스트, E2E 전략, 배포 사전 분석, 배포/운영 런북 등 검증과 운영 기준 문서 |
 | `plans/` | 앞으로 작성할 작업 계획 문서 |
 | `steps/` | 앞으로 작성할 작업 완료 기록 |
 | `pr/` | 앞으로 작성할 PR 요약 문서 |
@@ -19,6 +19,7 @@
 - 새 작업 계획은 `docs/plans/`에 작성합니다.
 - 작업 완료 기록은 `docs/steps/`에 작성합니다.
 - PR 설명이나 리뷰용 요약은 `docs/pr/`에 작성합니다.
+- 환경 이전의 사전 분석과 검증 결과는 `docs/verification/`에 작성하고, 구현 계획 및 완료 기록과 구분합니다.
 - 기존 MVP 문서는 현재 구현과 다를 수 있으므로, 최신 기준이 필요한 경우 `reference/`와 `verification/` 문서를 우선 확인합니다.
 - 과거 문서를 현재 기준으로 직접 덮어쓰기보다, 변경 이유와 현재 기준은 별도 문서나 README에 남깁니다.
 
@@ -35,3 +36,4 @@
 | [구현 현황과 검증 결과](verification/14_구현현황_및_검증결과.md) | 현재 구현 기준과 확인된 검증 범위 |
 | [테스트 전략 및 E2E 검증](verification/16_테스트_전략_및_E2E_검증.md) | 자동/수동 테스트 기준 |
 | [배포 운영 런북](verification/17_배포_운영_런북.md) | Compose·Nginx·Jenkins 운영 절차 |
+| [Mac mini·OrbStack 이전 사전 분석](verification/18_mac-mini-orbstack-migration-analysis.md) | 현재 HEAD의 실행 차단 요소, AI 이미지·ARM 위험, 새 DB·네트워크 재현 조건 |
