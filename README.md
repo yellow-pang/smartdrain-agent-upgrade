@@ -247,7 +247,7 @@ Backend callback 및 PostgreSQL 저장
 | AI | Ultralytics YOLO, OpenCV, XGBoost, scikit-learn |
 | 실시간 통신 | WebSocket |
 | Infra | Docker Compose, Nginx |
-| CI/CD | Jenkins |
+| CI/CD | GitHub Actions CI·ARM 게시 workflow (운영 활성화 검증 중), 기존 VM Jenkins |
 
 ---
 
@@ -393,6 +393,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 
 현재 저장소에는 브라우저 기반 전체 E2E 테스트가 별도로 구성되어 있지 않습니다. API smoke test, Docker Compose health check, 수동 통합 테스트를 함께 사용합니다.
 
+GitHub Actions는 dev/main 대상 PR에서 Compose 설정, Frontend lint/build, 임시 PostgreSQL의 Backend migration/API, 모델을 mock하는 AI 테스트를 검사합니다. main push의 ARM 이미지 게시 workflow는 CI 성공 후 동작하도록 구성했습니다. Mac 자동배포는 별도 비공개 receiver와 최초 배포 검증 후 활성화하며, 아직 운영 전환 완료 상태가 아닙니다. 진행 상태는 [CI/CD 실행 기록](docs/steps/step-04-github-actions-cicd.md), 설정과 재실행 기준은 [배포 운영 런북](docs/verification/17_배포_운영_런북.md)을 참고하세요.
+
 ---
 
 ## 환경변수
@@ -400,6 +402,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 | 변수 | 설명 | 기본값 |
 | --- | --- | --- |
 | `SMARTDRAIN_YOLO_MODEL_PATH` | 호스트의 YOLO 모델 절대 경로 | `./ai_service/model/best.pt` |
+| `SMARTDRAIN_BACKEND_IMAGE` | Backend·migration·seed 공통 배포 image reference | project별 로컬 이미지 |
+| `SMARTDRAIN_AI_IMAGE` / `SMARTDRAIN_FRONTEND_IMAGE` | AI·Frontend 배포 image reference | project별 로컬 이미지 |
 | `COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY` | Kakao Maps JavaScript 키 | 빈 값 |
 | `COMPOSE_FRONTEND_API_BASE_URL` | Frontend API base URL | 빈 값, same-origin |
 | `COMPOSE_DATABASE_URL` | Backend PostgreSQL 연결 문자열 | 로컬 기본값 |
@@ -425,7 +429,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 | 비동기 AI callback | 완료 |
 | WebSocket 실시간 반영 | 완료 |
 | Docker·Nginx 환경 | 완료 |
-| Jenkins 검증·배포 pipeline | 완료 |
+| 기존 VM Jenkins pipeline | 레거시 유지 |
+| GitHub Actions CI·ARM 이미지 게시 | 구현, 원격 실행 검증 대기 |
+| Mac 자동배포 receiver·runner | 구성·인수 검증 대기 |
 | AI 에이전트 기능 | 고도화 예정 |
 | 실제 CCTV·IoT 연동 | 고도화 예정 |
 | 운영 사용자 인증·권한 | 고도화 예정 |
@@ -472,5 +478,4 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 **SmartDrain의 핵심 성과는 이미지 분석, 센서 데이터, 비동기 AI 처리, DB 저장과 실시간 대시보드를 하나의 추적 가능한 흐름으로 연결한 것입니다. 현재 저장소는 이 MVP를 개인 고도화 프로젝트로 확장하는 작업 공간입니다.**
 
 </div>
-
 

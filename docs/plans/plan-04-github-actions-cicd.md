@@ -1,6 +1,8 @@
 # SmartDrain GitHub Actions CI/CD 구현 계획
 
-> 상태: **구현 전 계획 검토용**. 이 문서 작성으로 workflow, runner, GHCR, 운영 컨테이너 또는 GitHub 설정을 변경하지 않았다. Phase / Task / Gate를 실행 기준으로 사용하며 특정 실행 framework를 요구하지 않는다.
+> 상태: **승인된 구현 계획**. Phase / Task / Gate를 실행 기준으로 사용하며 특정 실행 framework를 요구하지 않는다. 계획 작성과 실제 구현·운영 적용 상태는 구분한다.
+
+> 2026-09-27 사용자 승인으로 구현을 시작했다. 실제 진행·검증·미완료 항목은 [Step 04](../steps/step-04-github-actions-cicd.md)를 따른다. 아래 조사 사실과 수치는 계획 작성 시점 기준이다.
 
 ## 1. 목적과 완료 기준
 
@@ -105,6 +107,8 @@ pnpm 실행 버전을 현재 정상 빌드 버전으로 명시하는 것은 빌�
 4. 확인한 run의 지정 artifact에서 manifest를 읽고 SHA/digest/package 이름을 검증한다. 전달된 digest·URL을 그대로 믿거나 `source`/`eval`하지 않는다.
 5. source SHA가 배포 시점의 origin/main과 다르면 오래된 요청으로 건너뛰고 기록한다. 최신 main의 publish 실패가 이전 요청의 강제 배포로 이어지지 않는다.
 6. Mac job은 신뢰된 비공개 repo의 script만 실행한다. 공개 main에서는 같은 SHA의 Compose/nginx 설정만 고정 경로로 가져온다. Compose의 privileged, socket, host mount, port 변경도 운영 권한 변경으로 검토한다.
+
+실패 job만 재실행해도 성공한 AI image를 불필요하게 다시 빌드하지 않도록 artifact 이름은 `digest-<service>-<run_id>`, `release-manifest-<run_id>`로 유지한다. manifest는 같은 run/SHA의 성공 image만 모으고 `build_attempts`, `manifest_attempt`를 기록한다. receiver는 `build_attempts ≤ manifest_attempt ≤ source_run_attempt`와 source run의 최신 attempt 성공을 확인한다. 다른 SHA·다른 run 결과 혼합은 거부한다.
 
 dispatch 권한은 **운영 repo 하나의 Actions write**로 제한한 fine-grained token을 기본안으로 한다. receiver의 source artifact 조회에는 source repo의 Actions read 권한을 별도로 확인한다. `GITHUB_TOKEN`이 다른 repo 권한을 자동 상속한다고 가정하지 않는다. [Workflow dispatch API](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event)
 
@@ -331,7 +335,7 @@ Mac에는 현재+후보+직전 이미지와 pull 중 임시 공간이 필요하�
 | GitHub 권한 | main 보호, release environment, 제한 token, GHCR 접근 | 비밀값 입력·보관과 설정 변경 범위 확정 |
 | 첫 적용 | 보존 자료·backup·검증 후 main의 통제된 첫 배포 | 현재 컨테이너 교체/DB migration, E2E 데이터 추가 포함 |
 
-현재 요청은 **브랜치 checkout과 계획 문서 작성까지**다. 구현 승인을 받으면 위 제안 범위를 구체적인 작업 기준으로 사용하며 이미 승인한 같은 내용을 반복 요청하지 않는다. 새 비용·권한 확대·schema/서비스 계약 변경이 필요할 때만 원인과 대안을 먼저 보고한다.
+계획 작성 당시 요청은 브랜치 checkout과 계획 문서 작성까지였고, 2026-09-27 구현 승인을 받았다. 위 제안 범위를 구체적인 작업 기준으로 사용하며 이미 승인한 같은 내용을 반복 요청하지 않는다. 새 비용·권한 확대·schema/서비스 계약 변경이 필요할 때만 원인과 대안을 먼저 보고한다. Git push/PR/merge는 루트 AGENTS의 명시 요청 규칙도 확인한다.
 
 ### 16.2 실행 기록과 복구
 

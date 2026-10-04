@@ -297,7 +297,7 @@ CI/CD 변경 시 다음을 확인합니다.
 - rollback 가능성
 - 실패 처리
 
-현재 CI/CD 관련 파일은 루트 `Jenkinsfile`, `.jenkins/scripts/`, `jenkins/`입니다. GitHub Actions 설정은 현재 저장소에서 확인되지 않습니다.
+현재 GitHub Actions 설정은 `.github/workflows/ci.yml`, `.github/workflows/release.yml`입니다. 기존 VM용 `Jenkinsfile`, `.jenkins/scripts/`, `jenkins/`는 레거시로 유지합니다. Actions의 실제 활성화·실행 상태는 `docs/steps/step-04-github-actions-cicd.md`를 확인합니다.
 
 실제 배포 실행은 사용자가 명시적으로 요청한 범위 안에서만 진행합니다.
 

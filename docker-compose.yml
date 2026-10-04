@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: ${COMPOSE_PROJECT_NAME:-smartdrain}-backend
+    image: ${SMARTDRAIN_BACKEND_IMAGE:-${COMPOSE_PROJECT_NAME:-smartdrain}-backend}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -29,7 +29,7 @@ services:
     restart: "no"
 
   backend:
-    image: ${COMPOSE_PROJECT_NAME:-smartdrain}-backend
+    image: ${SMARTDRAIN_BACKEND_IMAGE:-${COMPOSE_PROJECT_NAME:-smartdrain}-backend}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -67,6 +67,7 @@ services:
     restart: unless-stopped
 
   ai-service:
+    image: ${SMARTDRAIN_AI_IMAGE:-${COMPOSE_PROJECT_NAME:-smartdrain}-ai-service}
     build:
       context: .
       dockerfile: ai_service/Dockerfile
@@ -100,6 +101,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: ${SMARTDRAIN_FRONTEND_IMAGE:-${COMPOSE_PROJECT_NAME:-smartdrain}-frontend}
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -135,7 +137,7 @@ services:
 
   seed:
     profiles: ["seed"]
-    image: ${COMPOSE_PROJECT_NAME:-smartdrain}-backend
+    image: ${SMARTDRAIN_BACKEND_IMAGE:-${COMPOSE_PROJECT_NAME:-smartdrain}-backend}
     build:
       context: .
       dockerfile: backend/Dockerfile
