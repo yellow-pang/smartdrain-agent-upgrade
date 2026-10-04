@@ -6,6 +6,7 @@ import type {
     DrainAnalysisHistoryResponse,
     DrainDetailDto,
     DrainListItemDto,
+    RealtimeSimulatorStatusDto,
     RiskHistoryDto,
     SensorHistoryDto,
     XgboostResultDto,
@@ -168,6 +169,23 @@ export function isDrainAnalysisHistoryResponse(
         value.yoloResults.every(isYoloResultDto) &&
         Array.isArray(value.xgboostResults) &&
         value.xgboostResults.every(isXgboostResultDto)
+    );
+}
+
+export function isRealtimeSimulatorStatusDto(
+    value: unknown,
+): value is RealtimeSimulatorStatusDto {
+    if (!isRecord(value)) return false;
+
+    return (
+        typeof value.running === "boolean" &&
+        isFiniteNumber(value.intervalSeconds) &&
+        isNullableString(value.startedAt) &&
+        isNullableString(value.lastTickAt) &&
+        isFiniteNumber(value.lastRunDrainCount) &&
+        isFiniteNumber(value.totalRunCount) &&
+        isNullableString(value.lastError) &&
+        value.triggerType === "scheduled"
     );
 }
 

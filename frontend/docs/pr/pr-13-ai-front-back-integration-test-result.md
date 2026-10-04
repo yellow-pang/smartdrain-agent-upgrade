@@ -51,12 +51,12 @@ DRAIN_STATUS_UPDATED
 | `docs/plans/plan-08-ai-front-back-integration-test.md`   | AI 포함 통합 테스트 계획 작성                                       |
 | `docs/test/ai-front-back-integration/test-data.json`     | async-run, AI 직접 호출, callback, 기대 WebSocket payload 예시 추가 |
 | `docs/steps/step-10-ai-front-back-integration-result.md` | 실제 자동/수동 테스트 결과와 수동 확인 절차 기록                    |
-| `docs/images/통합테스트_수동테스트결과화면.jpg`          | WebSocket 수동 확인 결과 이미지 추가                                |
+| `frontend/docs/images/통합테스트_수동테스트결과화면.jpg`          | WebSocket 수동 확인 결과 이미지 추가                                |
 | `docs/pr/pr-13-ai-front-back-integration-test-result.md` | PR 리뷰용 요약 문서 추가                                            |
 
 ## 스크린샷 / 테스트 결과
 
-- WebSocket 수동 확인 이미지는 `docs/images/통합테스트_수동테스트결과화면.jpg`를 참고한다.
+- WebSocket 수동 확인 이미지는 `frontend/docs/images/통합테스트_수동테스트결과화면.jpg`를 참고한다.
 - DevTools `Network > WS > /ws/drains/status > Messages`에서 `YOLO_RESULT_UPDATED`, `XGBOOST_RESULT_UPDATED`, `DRAIN_STATUS_UPDATED` 수신을 확인했다.
 - 한 번의 Swagger 실행에서 3개 이벤트가 오는 것은 정상이다.
 - 같은 3개 이벤트 묶음이 여러 번 보이면, 이전 자동 테스트나 반복 실행으로 실제 분석 이력이 여러 번 생성된 것인지 `analysis/history`에서 확인한다.
@@ -67,3 +67,4 @@ DRAIN_STATUS_UPDATED
 - `ai-server://mock/{id}` 이미지는 브라우저에서 실제 이미지로 렌더링되지 않을 수 있으며, 현재는 fallback 표시를 정상으로 본다.
 - 통합 테스트를 반복하면 DB에 YOLO/XGBoost 이력이 누적되므로, 재현 테스트 전에는 seed 상태와 실행 시각을 함께 기록해야 한다.
 - Playwright 같은 브라우저 E2E 자동화는 아직 없어서, 화면 반영 최종 확인은 DevTools와 브라우저 수동 확인에 의존한다.
+

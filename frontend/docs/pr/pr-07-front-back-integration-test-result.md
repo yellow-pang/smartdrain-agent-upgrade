@@ -5,7 +5,7 @@
 ## 작업 내용
 
 - SmartDrain MVP 프론트엔드-백엔드 REST API 연동 테스트 결과 문서를 추가했습니다.
-    - `docs/12_프론트엔드_백엔드_API연동_테스트_문서.md`에 테스트 목적, 범위, 환경, 진행 순서, 테스트 결과, 발견 이슈, 남은 리스크를 정리했습니다.
+    - `docs/verification/12_프론트엔드_백엔드_API연동_테스트_문서.md`에 테스트 목적, 범위, 환경, 진행 순서, 테스트 결과, 발견 이슈, 남은 리스크를 정리했습니다.
     - `frontend/docs/API연동back-front통합테스트정리.md`에도 동일한 테스트 완료 문서를 추가해 프론트엔드 문서 폴더 안에서도 결과를 확인할 수 있게 했습니다.
 - 통합 테스트 가이드라인을 실제 진행 흐름에 맞게 보강했습니다.
     - Python 3.12 기준 실행 방법을 유지하면서 Anaconda/Miniconda 환경 생성 예시를 추가했습니다.
@@ -21,7 +21,7 @@
 
 ## 주요 변경 파일
 
-- `docs/12_프론트엔드_백엔드_API연동_테스트_문서.md`
+- `docs/verification/12_프론트엔드_백엔드_API연동_테스트_문서.md`
     - 프론트엔드-백엔드 API 연동 테스트 완료 문서
     - 테스트 환경, 테스트 데이터 생성 순서, REST API 조회 결과, 화면 연동 확인 결과 정리
     - WebSocket, error, empty, loading 상태 등 후속 확인 필요 항목 기록
@@ -48,7 +48,7 @@
 | 구분 | 테스트 항목 | 결과 | 비고 |
 |---|---|---|---|
 | DB | DB 실행 결과 | 통과 | 테스트 진행 가능 상태 확인 |
-| Migration | `alembic upgrade head` | 통과 | 마이그레이션 적용 후 테스트 진행 |
+| Migration | `cd backend` 후 `python -m alembic upgrade head` | 통과 | 마이그레이션 적용 후 테스트 진행 |
 | Backend | FastAPI 서버 실행 | 통과 | `http://localhost:8000` 기준 |
 | Frontend | Next.js 서버 실행 | 통과 | `http://localhost:3000` 기준 |
 | Create API | `POST /api/drains` | 통과 | Swagger 기준 테스트 데이터 생성 |
@@ -73,3 +73,5 @@
 - WebSocket 연동 테스트는 현재 프론트엔드 수신 기능이 없어 이번 범위에서 제외했습니다.
 - API 실패, 존재하지 않는 drain 접근, empty/loading/error 상태는 후속 테스트에서 추가 확인이 필요합니다.
 - 테스트 자동화는 아직 포함되지 않았으며, 이후 Playwright 또는 API 테스트 자동화를 별도 작업으로 검토할 수 있습니다.
+
+

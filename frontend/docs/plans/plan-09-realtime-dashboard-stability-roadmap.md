@@ -18,7 +18,7 @@
 | --- | --- |
 | `AGENTS.md` | 중간 이상 작업은 plan 작성 후 사용자 승인, 상태 관리 방식/폴더 구조/API 연동 변경은 사전 확인이 필요하다. |
 | `docs/convention/documentation-convention.md` | plan에는 작업 범위, 변경 내용, 사용자 확인 항목, 추천 방향을 기록한다. |
-| 루트 `docs/08_기술스택선정근거.md` | 목표 아키텍처는 TanStack Query(서버 상태)와 Zustand(전역/WS 상태)를 사용한다고 정의한다. |
+| 루트 `docs/legacy-mvp/08_기술스택선정근거.md` | 목표 아키텍처는 TanStack Query(서버 상태)와 Zustand(전역/WS 상태)를 사용한다고 정의한다. |
 | `frontend/package.json` | 계획 작성 시 TanStack Query와 Zustand가 없었고, 사용자 승인 후 이번 브랜치에서 Zustand를 설치한다. TanStack Query는 후속 판단으로 둔다. |
 | `docs/contract/backend-contract-doc.md` | 단일 WS endpoint에서 `DRAIN_STATUS_UPDATED`, `YOLO_RESULT_UPDATED`, `XGBOOST_RESULT_UPDATED` 세 이벤트를 사용한다. |
 | `lib/websocket/drain-status-socket.ts` | cleanup과 3초 재연결은 있으나 재연결 후 REST 재동기화, backoff, 단일 상태원은 없다. |
@@ -248,3 +248,4 @@ docs: 10개 시설 실시간 대시보드 안정화 로드맵 추가
 - 재연결 REST 동기화와 이벤트별 최신성 병합 규칙을 정의한다.
 - 이번 브랜치와 후속 UI, 데모, E2E 작업의 승인 항목을 문서화한다.
 ```
+

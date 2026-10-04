@@ -67,10 +67,9 @@ function DashboardSummaryBar({ summary }: { summary: DashboardSummaryDto }) {
                         대시보드 현황
                     </p>
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-slate-400">
-                        API 응답 기준
                         {summary.latestUpdatedAt
-                            ? ` · 최신 업데이트 ${formatDateTimeForDisplay(summary.latestUpdatedAt)}`
-                            : ""}
+                            ? `최신 업데이트 ${formatDateTimeForDisplay(summary.latestUpdatedAt)}`
+                            : "최신 업데이트 대기 중"}
                     </p>
                 </div>
                 <dl className="grid w-full grid-cols-2 gap-2 sm:grid-cols-6 lg:flex-1">
@@ -138,7 +137,7 @@ function DashboardSummaryErrorState({ onRetry }: { onRetry: () => void }) {
                             대시보드 현황을 불러오지 못했습니다.
                         </p>
                         <p className="mt-0.5 text-xs text-red-600/80 dark:text-red-300/80">
-                            실제 API 요약 데이터가 도착하면 현황 숫자가 표시됩니다.
+                            현황 데이터가 도착하면 숫자가 표시됩니다.
                         </p>
                     </div>
                 </div>

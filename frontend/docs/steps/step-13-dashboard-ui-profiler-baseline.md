@@ -197,7 +197,7 @@ UI 개선 전 기준선(Baseline) 렌더링 지표를 기록한다.
 1. A/B/C별 commit 수와 최대 commit duration
 2. `DashboardPage`, `DrainRiskList`, 선택 전/후 item의 렌더 횟수
 3. 비선택 item이 렌더된 경우 해당 원인(정렬, 데이터 참조 변경, 부모 props 변경)
-4. `after-A.png`, `after-B.png`, `after-C.png`를 `docs/images/`에 저장하고 본 문서에 링크
+4. `after-A.png`, `after-B.png`, `after-C.png`를 `frontend/docs/images/`에 저장하고 본 문서에 링크
 
 현재 판정: 전/후 비교 문서의 코드 근거와 재측정 기준은 정리했으며, 단계 4의 수치 확정은 사용자 Profiler 캡처가 추가될 때 완료한다.
 
@@ -306,3 +306,5 @@ flowchart LR
 2. 360~430px 모바일, 태블릿, 데스크톱에서 모달·다크 테마·상세 화면의 실제 레이아웃을 확인한다.
 3. 테스트 WebSocket으로 같은 시설의 `danger` 이벤트를 두 번 보내 알림이 한 건으로 갱신되는지 확인한다.
 4. 30개 이상의 좌표 데이터를 준비해 클러스터 표시와 클릭 동작을 확인한다.
+
+

@@ -49,8 +49,8 @@ mock 이벤트는 이번 구현 범위에서 제외한다. 백엔드가 실제 W
 | `backend/app/routers/sensor_data.py` | `POST /api/sensor-data`는 WebSocket broadcast 없음 | 센서 즉시 반영은 백엔드 추가 구현 필요 |
 | `backend/app/schemas/api_response.py` | 이벤트 payload 생성 함수는 `drain_status_event_payload` | 프론트 타입은 이 payload와 맞춤 |
 | `backend/README.md` | WebSocket 이벤트 타입은 `DRAIN_STATUS_UPDATED` | 기존 프론트 타입 유지/보강 |
-| `docs/11_API명세서.md` | MVP WebSocket 기준은 `/ws/drains/status`, `DRAIN_STATUS_UPDATED` | 루트 통합 명세 기준과 백엔드 구현이 일치 |
-| `docs/06_시스템아키텍처.md` | XGBoost 판단 결과 저장 또는 위험도 변경 시 이벤트 발행 | MVP에서는 최종 위험도 이벤트 중심으로 해석 |
+| `docs/reference/11_API명세서.md` | MVP WebSocket 기준은 `/ws/drains/status`, `DRAIN_STATUS_UPDATED` | 루트 통합 명세 기준과 백엔드 구현이 일치 |
+| `docs/legacy-mvp/06_시스템아키텍처.md` | XGBoost 판단 결과 저장 또는 위험도 변경 시 이벤트 발행 | MVP에서는 최종 위험도 이벤트 중심으로 해석 |
 
 현재 백엔드 이벤트 예시는 다음 구조다.
 
@@ -268,9 +268,9 @@ MVP 안정화를 기준으로 추천하는 방향은 다음과 같다.
 
 ## 14. 상세 화면 레퍼런스 기준 데이터 확인
 
-`docs/image/02_detail_layout_reference.png` 기준으로 상세 화면을 맞출 때 필요한 데이터는 대부분 현재 상세 REST API와 이력 API에 포함되어 있다. 따라서 화면 구성을 맞추기 위해 무조건 새 API를 요청할 상황은 아니다.
+`docs/legacy-mvp/image/02_detail_layout_reference.png` 기준으로 상세 화면을 맞출 때 필요한 데이터는 대부분 현재 상세 REST API와 이력 API에 포함되어 있다. 따라서 화면 구성을 맞추기 위해 무조건 새 API를 요청할 상황은 아니다.
 
-루트 문서 확인 결과 `docs/01_프로젝트정의서.md`, `docs/03_요구사항정의서.md`, `docs/04_MVP범위.md`, `docs/05_와이어프레임.md`, `docs/10_역할분담_일정_발표목차.md`에는 상세 화면에서 YOLO 분석 결과와 XGBoost 판단 결과를 확인해야 한다는 내용이 있다. 다만 1차 MVP 화면에서는 이를 원천 데이터 카드로 직접 노출하지 않고, 최종 표시값에 녹여서 보여준다.
+루트 문서 확인 결과 `docs/legacy-mvp/01_프로젝트정의서.md`, `docs/legacy-mvp/03_요구사항정의서.md`, `docs/legacy-mvp/04_MVP범위.md`, `docs/legacy-mvp/05_와이어프레임.md`, `docs/legacy-mvp/10_역할분담_일정_발표목차.md`에는 상세 화면에서 YOLO 분석 결과와 XGBoost 판단 결과를 확인해야 한다는 내용이 있다. 다만 1차 MVP 화면에서는 이를 원천 데이터 카드로 직접 노출하지 않고, 최종 표시값에 녹여서 보여준다.
 
 즉, 1차 구현에서는 `yoloStatus`, `confidenceScore`, `yoloResultId`, `xgboostId` 같은 세부 분석 데이터는 화면에 직접 표시하지 않는다. 레퍼런스 첫 화면 기준으로는 `막힘 정도`, `상태`, `위험 점수`, `최종 판단`, `최근 업데이트`처럼 관리자 판단에 필요한 값만 표시하는 방향이 적절하다.
 
@@ -331,3 +331,4 @@ docs: MVP 기준 실시간 대시보드 안정화 계획 정리
 - 필요 데이터 확정은 후순위로 두고 WebSocket 연결과 최종 상태 갱신을 1차 범위로 둔다.
 - Sensor, YOLO, Failed 단계별 이벤트 부재를 백엔드 확인 필요 항목으로 기록한다.
 ```
+

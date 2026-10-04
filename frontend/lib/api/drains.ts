@@ -5,6 +5,7 @@ import {
     isDrainAnalysisHistoryResponse,
     isDrainDetailDto,
     isDrainListItemDto,
+    isRealtimeSimulatorStatusDto,
     isRiskHistoryDto,
     isSensorHistoryDto,
     parseApiListResponse,
@@ -16,6 +17,7 @@ import type {
     DrainAnalysisHistoryResponse,
     DrainDetailDto,
     DrainListItemDto,
+    RealtimeSimulatorStatusDto,
     RiskHistoryDto,
     SensorHistoryDto,
 } from "@/lib/api/types";
@@ -106,5 +108,34 @@ export async function getDrainAnalysisHistory(
         isDrainAnalysisHistoryResponse,
         "분석 이력 응답 형식이 올바르지 않습니다.",
         { allowNullData: true },
+    );
+}
+
+export async function getRealtimeSimulatorStatus() {
+    const response = await apiClient.get<unknown>("/api/realtime-simulator/status");
+    return parseApiResponse<RealtimeSimulatorStatusDto>(
+        response.data,
+        isRealtimeSimulatorStatusDto,
+        "자동 시뮬레이터 상태 응답 형식이 올바르지 않습니다.",
+    );
+}
+
+export async function startRealtimeSimulator(intervalSeconds = 20) {
+    const response = await apiClient.post<unknown>("/api/realtime-simulator/start", {
+        intervalSeconds,
+    });
+    return parseApiResponse<RealtimeSimulatorStatusDto>(
+        response.data,
+        isRealtimeSimulatorStatusDto,
+        "자동 시뮬레이터 시작 응답 형식이 올바르지 않습니다.",
+    );
+}
+
+export async function stopRealtimeSimulator() {
+    const response = await apiClient.post<unknown>("/api/realtime-simulator/stop");
+    return parseApiResponse<RealtimeSimulatorStatusDto>(
+        response.data,
+        isRealtimeSimulatorStatusDto,
+        "자동 시뮬레이터 중지 응답 형식이 올바르지 않습니다.",
     );
 }

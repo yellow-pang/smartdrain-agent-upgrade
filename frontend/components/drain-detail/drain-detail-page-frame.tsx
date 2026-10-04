@@ -25,9 +25,6 @@ export function DrainDetailPageHeader({ drain }: { drain: DrainFacility }) {
                 <span className="min-w-0 break-words text-sm font-medium text-slate-500 dark:text-slate-400">
                     {drain.id} · {drain.road}
                 </span>
-                <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    API 데이터
-                </span>
             </div>
         </>
     );

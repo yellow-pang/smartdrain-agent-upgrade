@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SmartDrain 프로젝트의 구현 근거와 다음 우선순위를 비개발 독자용으로 요약한 현황 보고서">
+  <title>SmartDrain | 프로젝트 현황 보고서</title>
+  <style>
+    :root {
+      --navy: #102a43;
+      --ink: #243b53;
+      --muted: #526b83;
+      --line: #d9e2ec;
+      --canvas: #f4f7fb;
+      --card: #ffffff;
+      --teal: #087b78;
+      --blue: #1769b0;
+      --soft-teal: #e5f7f6;
+      --soft-blue: #eaf3ff;
+      --shadow: 0 12px 28px rgba(16, 42, 67, .08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+    a { color: inherit; }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow { margin: 0 0 9px; color: var(--teal); font-size: .79rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .section { padding: 80px 0; scroll-margin-top: 72px; }
+    .section-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; margin-bottom: 30px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { color: var(--navy); line-height: 1.18; }
+    h1 { margin-bottom: 18px; font-size: clamp(2.35rem, 5vw, 4.65rem); letter-spacing: -.055em; }
+    h2 { margin-bottom: 0; font-size: clamp(1.8rem, 3.3vw, 2.7rem); letter-spacing: -.04em; }
+    h3 { margin-bottom: 8px; font-size: 1.08rem; }
+    .lead { max-width: 680px; margin-bottom: 0; color: var(--muted); font-size: 1.08rem; }
+    .card { padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+
+    .masthead { padding: 22px 0; background: #fff; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; gap: 12px; align-items: center; color: var(--navy); font-weight: 850; letter-spacing: -.02em; }
+    .brand-mark { display: grid; width: 33px; height: 33px; place-items: center; border-radius: 10px; color: #fff; background: linear-gradient(145deg, var(--teal), var(--blue)); font-weight: 900; }
+    .topline { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+    .as-of { color: var(--muted); font-size: .88rem; }
+    .nav { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(12px); }
+    .nav ul { display: flex; gap: 2px; overflow-x: auto; padding: 0; margin: 0; list-style: none; }
+    .nav a { display: block; padding: 14px 13px; color: var(--muted); font-size: .86rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .nav a:hover { color: var(--teal); }
+    .nav a:focus-visible { color: var(--teal); outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+
+    .hero { padding: 82px 0 68px; background: radial-gradient(circle at 88% 7%, #dff8f6 0, transparent 26%), linear-gradient(135deg, #fff 0%, #f2f7fc 100%); }
+    .hero-grid { display: grid; grid-template-columns: 1.14fr .86fr; gap: 46px; align-items: center; }
+    .phase-callout { display: inline-flex; gap: 8px; align-items: center; margin-bottom: 18px; padding: 7px 11px; border: 1px solid #b9e7e4; border-radius: 999px; color: #087b78; background: var(--soft-teal); font-size: .85rem; font-weight: 800; }
+    .phase-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+    .hero-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .metric { min-height: 230px; display: grid; place-items: center; padding: 22px; text-align: center; }
+    .ring { --value: 50; --ring-color: var(--teal); position: relative; display: grid; width: 138px; height: 138px; place-items: center; border-radius: 50%; background: conic-gradient(var(--ring-color) calc(var(--value) * 1%), #e8eef4 0); }
+    .ring::before { position: absolute; width: 108px; height: 108px; border-radius: 50%; background: #fff; content: ""; }
+    .ring strong, .ring span { position: relative; z-index: 1; }
+    .ring strong { color: var(--navy); font-size: 2.1rem; letter-spacing: -.08em; }
+    .metric p { margin: 13px 0 0; color: var(--navy); font-size: .92rem; font-weight: 800; }
+    .metric small { display: block; color: var(--muted); font-size: .78rem; }
+    .facts { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 28px; }
+    .facts span { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: #fff; font-size: .8rem; }
+
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .flow-step { position: relative; min-height: 175px; padding: 22px 18px; border-radius: 14px; background: #fff; border: 1px solid var(--line); }
+    .flow-step:not(:last-child)::after { position: absolute; top: 50%; right: -18px; z-index: 1; color: var(--blue); font-size: 1.25rem; font-weight: 900; content: "→"; }
+    .flow-number { display: grid; width: 31px; height: 31px; margin-bottom: 20px; place-items: center; border-radius: 50%; color: var(--teal); background: var(--soft-teal); font-size: .8rem; font-weight: 900; }
+    .flow-step p { margin: 0; color: var(--muted); font-size: .86rem; }
+
+    .screens { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
+    figure { margin: 0; }
+    .screen-frame { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: var(--shadow); }
+    .browser-bar { display: flex; gap: 6px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: #f8fafc; }
+    .browser-bar span { width: 9px; height: 9px; border-radius: 50%; background: #b8c4d1; }
+    .screen-frame img { display: block; width: 100%; height: auto; }
+    figcaption { padding: 19px 4px 0; }
+    figcaption p { margin: 0; color: var(--muted); }
+
+    .domain-list { display: grid; gap: 13px; }
+    .domain { display: grid; grid-template-columns: 145px minmax(0, 1fr) 44px; gap: 15px; align-items: center; }
+    .domain-label { color: var(--navy); font-size: .92rem; font-weight: 800; }
+    .track { height: 11px; overflow: hidden; border-radius: 999px; background: #e8eef4; }
+    .fill { width: calc(var(--value) * 1%); height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--blue)); transition: width .6s ease; }
+    .domain output { color: var(--navy); font-variant-numeric: tabular-nums; font-size: .9rem; font-weight: 850; text-align: right; }
+    .domain-reason { margin: -3px 0 5px 160px; color: var(--muted); font-size: .82rem; }
+
+    .timeline { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .timeline::before { position: absolute; top: 29px; right: 10%; left: 10%; z-index: 0; height: 2px; background: #cceae8; content: ""; }
+    .time-card { position: relative; z-index: 1; min-height: 190px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .time-card::before { display: block; width: 15px; height: 15px; margin: 0 0 19px; border: 3px solid #fff; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 2px var(--teal); content: ""; }
+    .time-card time { color: var(--teal); font-size: .82rem; font-weight: 850; }
+    .time-card p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+    .roadmap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .roadmap-card { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .roadmap-card.current { border-color: #80d5d1; box-shadow: 0 10px 24px rgba(15,159,154,.12); }
+    .card-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: .74rem; font-weight: 850; }
+    .done { color: #087b78; background: var(--soft-teal); }
+    .doing { color: #1769b0; background: var(--soft-blue); }
+    .planned { color: #5b6b7f; background: #edf2f7; }
+    .roadmap-card h3 { margin: 16px 0 7px; }
+    .roadmap-card p { min-height: 46px; margin-bottom: 16px; color: var(--muted); font-size: .86rem; }
+    .phase-progress { display: flex; gap: 12px; align-items: center; }
+    .phase-progress .track { flex: 1; }
+    .phase-progress strong { color: var(--navy); font-size: .92rem; }
+
+    .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .board-column { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .board-column h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 17px; }
+    .board-column ul { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+    .board-column li { padding: 12px; border-radius: 9px; background: #f8fafc; color: var(--ink); font-size: .88rem; }
+    .board-column li::before { margin-right: 8px; color: var(--teal); content: "•"; font-weight: 900; }
+
+    .priorities { display: grid; grid-template-columns: .8fr 1.2fr; gap: 28px; align-items: start; }
+    .priority-list { display: grid; gap: 12px; counter-reset: priorities; padding: 0; margin: 0; list-style: none; }
+    .priority-list li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .priority-list li::before { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; color: #fff; background: var(--blue); content: counter(priorities); counter-increment: priorities; font-size: .8rem; font-weight: 900; }
+    .priority-list strong { display: block; color: var(--navy); }
+    .priority-list span { color: var(--muted); font-size: .87rem; }
+    .note { padding: 24px; border-left: 4px solid var(--teal); border-radius: 0 12px 12px 0; color: var(--ink); background: var(--soft-teal); }
+    .note p:last-child { margin-bottom: 0; }
+
+    .evidence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .evidence-grid ul { margin: 0; padding-left: 20px; }
+    .evidence-grid li { margin-bottom: 9px; color: var(--muted); }
+    .evidence-grid li:last-child { margin-bottom: 0; }
+    .limit { border-color: #cad8e8; background: #f8fbff; }
+    footer { padding: 30px 0 42px; border-top: 1px solid var(--line); color: var(--muted); font-size: .84rem; }
+    footer .shell { display: flex; justify-content: space-between; gap: 20px; }
+
+    @media (max-width: 860px) {
+      .hero-grid, .priorities { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: repeat(5, minmax(145px, 1fr)); overflow-x: auto; padding-bottom: 6px; }
+      .timeline { grid-template-columns: 1fr; }
+      .timeline::before { top: 10%; bottom: 10%; left: 29px; width: 2px; height: auto; }
+      .roadmap { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 28px, 1160px); }
+      .masthead { padding: 15px 0; }
+      .topline, footer .shell { align-items: flex-start; flex-direction: column; gap: 6px; }
+      .hero { padding: 52px 0; }
+      .section { padding: 54px 0; }
+      .section-heading { display: block; }
+      .section-heading .lead { margin-top: 12px; }
+      .hero-metrics, .screens, .roadmap, .board, .evidence-grid { grid-template-columns: 1fr; }
+      .metric { min-height: 204px; }
+      .domain { grid-template-columns: 113px minmax(0, 1fr) 37px; gap: 9px; }
+      .domain-reason { margin-left: 122px; }
+      .card, .roadmap-card, .board-column { padding: 20px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+    @media print {
+      @page { margin: 14mm; }
+      body { background: #fff; font-size: 10pt; }
+      .nav { position: static; }
+      .hero, .section { padding: 25px 0; }
+      .card, .screen-frame { box-shadow: none; }
+      .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; overflow: visible; padding-bottom: 0; }
+      .flow-step { min-height: 0; }
+      .flow-step:not(:last-child)::after { display: none; }
+      .roadmap, .board { gap: 8px; }
+      .flow-step, .time-card, .roadmap-card, .board-column { break-inside: avoid; }
+      .nav, .as-of { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell topline">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">S</span> SmartDrain <span aria-hidden="true">/</span> 프로젝트 현황</div>
+      <div class="as-of">기준일 2026-08-01 · 기준 브랜치 dev · 기준 커밋 ef57ebd</div>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="보고서 목차">
+    <div class="shell">
+      <ul>
+        <li><a href="#overview">요약</a></li>
+        <li><a href="#flow">구성 방식</a></li>
+        <li><a href="#results">결과물</a></li>
+        <li><a href="#domains">영역별 진행도</a></li>
+        <li><a href="#journey">여정</a></li>
+        <li><a href="#roadmap">로드맵</a></li>
+        <li><a href="#board">기능 경계</a></li>
+        <li><a href="#priorities">다음 우선순위</a></li>
+        <li><a href="#evidence">판정 근거</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <section id="overview" class="hero" aria-labelledby="overview-title">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">SmartDrain project status</p>
+          <div class="phase-callout"><span class="phase-dot" aria-hidden="true"></span>현재 단계 · Phase 0: 기준 확정과 코드 크로스체크</div>
+          <h1 id="overview-title">배수 관리의 판단을<br>더 빠르고 선명하게.</h1>
+          <p class="lead">SmartDrain은 현장 관찰에서 AI 분석, 위험 판단, 실시간 확인, 운영 확장까지 이어지는 흐름을 목표로 구성했습니다. 현재는 코드·설정 근거를 교차 확인하고, 고도화를 위한 기준을 정리하는 단계입니다.</p>
+          <div class="facts" aria-label="보고서 기준 정보">
+            <span>기준일: 2026-08-01</span><span>브랜치: dev</span><span>커밋: ef57ebd</span>
+          </div>
+        </div>
+        <div class="hero-metrics" aria-label="대표 진행률">
+          <article class="card metric">
+            <div class="ring" style="--value:75; --ring-color:var(--teal);" role="img" aria-label="MVP 코드 근거 확보 수준 75퍼센트"><strong>75%</strong></div>
+            <p>MVP 코드 근거 확보 수준</p><small>핵심 코드·설정 확인, 최신 실행 검증은 남음</small>
+          </article>
+          <article class="card metric">
+            <div class="ring" style="--value:8; --ring-color:var(--blue);" role="img" aria-label="고도화 로드맵 실행도 8퍼센트"><strong>8%</strong></div>
+            <p>고도화 로드맵 실행도</p><small>Phase 0–5 평균 8.3%를 반올림</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="flow" class="section" aria-labelledby="flow-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">How it is composed</p><h2 id="flow-title">프로젝트를 구성한 방식</h2></div><p class="lead">기술 자체보다, 사용자가 현황을 보고 판단하고 다음 조치를 준비하는 흐름에 초점을 둡니다.</p></div>
+        <div class="flow" aria-label="SmartDrain 사용자 중심 흐름">
+          <article class="flow-step"><div class="flow-number">01</div><h3>관찰</h3><p>배수 상태와 현장 신호를 한 화면에서 확인합니다.</p></article>
+          <article class="flow-step"><div class="flow-number">02</div><h3>분석</h3><p>AI 분석 결과가 상황을 읽는 단서가 됩니다.</p></article>
+          <article class="flow-step"><div class="flow-number">03</div><h3>판단</h3><p>수위와 위험 신호를 바탕으로 우선순위를 가늠합니다.</p></article>
+          <article class="flow-step"><div class="flow-number">04</div><h3>실시간 확인</h3><p>대시보드와 상세 화면에서 변화와 근거를 확인합니다.</p></article>
+          <article class="flow-step"><div class="flow-number">05</div><h3>운영 확장</h3><p>인증, 현장 작업, 이벤트 운영은 다음 단계로 남아 있습니다.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="section" aria-labelledby="results-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">Visible outcomes</p><h2 id="results-title">현재 확인 가능한 결과물</h2></div><p class="lead">화면은 구현된 사용 경험의 단면입니다. 실제 장비 연동이나 운영 기능의 완료를 뜻하지는 않습니다.</p></div>
+        <div class="screens">
+          <figure>
+            <div class="screen-frame"><div class="browser-bar" aria-hidden="true"><span></span><span></span><span></span></div><img src="../frontend/docs/images/main-page.png" alt="배수 상태와 주요 정보를 한눈에 보여주는 SmartDrain 메인 대시보드 화면"></div>
+            <figcaption><h3>메인 대시보드</h3><p>여러 배수 지점의 상태를 한눈에 비교하고, 주의가 필요한 곳을 빠르게 찾는 진입점입니다.</p></figcaption>
+          </figure>
+          <figure>
+            <div class="screen-frame"><div class="browser-bar" aria-hidden="true"><span></span><span></span><span></span></div><img src="../frontend/docs/images/detail-page.png" alt="한 배수 지점의 상태와 분석 정보를 확인하는 SmartDrain 상세 화면"></div>
+            <figcaption><h3>상세 확인 화면</h3><p>선택한 지점의 상태와 분석 단서를 살펴보며, 다음 판단에 필요한 맥락을 확인합니다.</p></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="domains" class="section" aria-labelledby="domains-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">Progress by domain</p><h2 id="domains-title">영역별 코드·설정 근거</h2></div><p class="lead">공식 품질 지표나 최근 실행 성공률이 아닌, 저장소에서 확인한 코드·설정과 검증 증거를 읽기 쉽게 정리한 정성 요약입니다.</p></div>
+        <div class="card domain-list">
+          <div><div class="domain"><span class="domain-label">대시보드·실시간</span><div class="track" role="progressbar" aria-label="대시보드와 실시간 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75"><div class="fill" style="--value:75"></div></div><output>75%</output></div><p class="domain-reason">메인·상세 화면과 관련 코드 근거가 있으나, 최근 전체 흐름 실행은 확인하지 않았습니다.</p></div>
+          <div><div class="domain"><span class="domain-label">AI 분석</span><div class="track" role="progressbar" aria-label="AI 분석 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75"><div class="fill" style="--value:75"></div></div><output>75%</output></div><p class="domain-reason">분석 결과를 화면에 연결하는 코드 근거가 있으나, 최신 통합 실행 근거는 남아 있습니다.</p></div>
+          <div><div class="domain"><span class="domain-label">실행·배포 기반</span><div class="track" role="progressbar" aria-label="실행과 배포 기반 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><div class="fill" style="--value:50"></div></div><output>50%</output></div><p class="domain-reason">서비스를 나누어 실행할 설정 근거는 있으나, 현재 Compose smoke는 실행하지 않았습니다.</p></div>
+          <div><div class="domain"><span class="domain-label">문서·구조 정리</span><div class="track" role="progressbar" aria-label="문서와 구조 정리 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75"><div class="fill" style="--value:75"></div></div><output>75%</output></div><p class="domain-reason">구조를 정리하고 다음 작업의 기준을 남기는 흐름이 진행 중입니다.</p></div>
+          <div><div class="domain"><span class="domain-label">자동 검증</span><div class="track" role="progressbar" aria-label="자동 검증 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25"><div class="fill" style="--value:25"></div></div><output>25%</output></div><p class="domain-reason">일부 정적·개별 검증 근거는 있으나, 최근 전체 E2E 실행 확인은 남아 있습니다.</p></div>
+          <div><div class="domain"><span class="domain-label">운영 확장 기능</span><div class="track" role="progressbar" aria-label="운영 확장 기능 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" style="--value:0"></div></div><output>0%</output></div><p class="domain-reason">실제 CCTV·IoT, 인증·권한, 현장 작업, MQTT, 일일 보고서는 구현 완료로 보지 않습니다.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="journey" class="section" aria-labelledby="journey-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">Journey so far</p><h2 id="journey-title">현재까지의 여정</h2></div><p class="lead">2026-06-17부터 2026-07-06까지, 화면과 서비스 기반을 만들고 고도화 방향을 정리한 작업 묶음입니다.</p></div>
+        <div class="timeline">
+          <article class="time-card"><time datetime="2026-06-17">2026-06-17</time><h3>문제와 화면의 출발점</h3><p>배수 상태를 빠르게 읽을 수 있는 대시보드와 상세 화면의 사용 경험을 구성했습니다.</p></article>
+          <article class="time-card"><time datetime="2026-06-25">2026-06-25</time><h3>통합 흐름의 형태</h3><p>화면 이미지로 확인 가능한 메인·상세 흐름과 분석 단서를 연결했습니다.</p></article>
+          <article class="time-card"><time datetime="2026-07-06">2026-07-06</time><h3>고도화 기준 정리</h3><p>구조, 문서, 검증 근거를 교차 확인하며 Phase 0–5의 다음 순서를 세웠습니다.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap" class="section" aria-labelledby="roadmap-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">Phase 0–5 roadmap</p><h2 id="roadmap-title">고도화 로드맵</h2></div><p class="lead">로드맵 실행도는 <strong>(50 + 0 + 0 + 0 + 0 + 0) / 6 = 8.3%</strong>이며, 보고서에서는 8%로 표시합니다. 현재 위치는 Phase 0입니다.</p></div>
+        <div class="roadmap">
+          <article class="roadmap-card current"><div class="card-top"><span class="badge doing">진행</span><strong>Phase 0</strong></div><h3>기준 확정과 코드 크로스체크</h3><p>코드·문서·검증 근거를 교차 확인하고 작업 기준을 맞춥니다.</p><div class="phase-progress"><div class="track" role="progressbar" aria-label="Phase 0 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><div class="fill" style="--value:50"></div></div><strong>50%</strong></div></article>
+          <article class="roadmap-card"><div class="card-top"><span class="badge planned">예정</span><strong>Phase 1</strong></div><h3>인증·권한과 기준정보 관리</h3><p>운영 주체의 접근 경계와 기준정보를 다루는 기반을 마련합니다.</p><div class="phase-progress"><div class="track" role="progressbar" aria-label="Phase 1 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" style="--value:0"></div></div><strong>0%</strong></div></article>
+          <article class="roadmap-card"><div class="card-top"><span class="badge planned">예정</span><strong>Phase 2</strong></div><h3>작업 요청과 현장 처리</h3><p>작업 요청부터 현장 처리까지의 업무 흐름을 설계하고 연결합니다.</p><div class="phase-progress"><div class="track" role="progressbar" aria-label="Phase 2 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" style="--value:0"></div></div><strong>0%</strong></div></article>
+          <article class="roadmap-card"><div class="card-top"><span class="badge planned">예정</span><strong>Phase 3</strong></div><h3>MQTT와 이벤트 신뢰성</h3><p>상태 변화를 안정적으로 전달하고 추적할 이벤트 기반을 만듭니다.</p><div class="phase-progress"><div class="track" role="progressbar" aria-label="Phase 3 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" style="--value:0"></div></div><strong>0%</strong></div></article>
+          <article class="roadmap-card"><div class="card-top"><span class="badge planned">예정</span><strong>Phase 4</strong></div><h3>일일 보고서와 LangGraph</h3><p>일일 운영 정보를 정리하고 분석 흐름을 연결하는 단계를 준비합니다.</p><div class="phase-progress"><div class="track" role="progressbar" aria-label="Phase 4 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" style="--value:0"></div></div><strong>0%</strong></div></article>
+          <article class="roadmap-card"><div class="card-top"><span class="badge planned">예정</span><strong>Phase 5</strong></div><h3>운영 모니터링과 실제 연동</h3><p>운영 모니터링과 실제 장비·현장 연동을 검증하는 단계입니다.</p><div class="phase-progress"><div class="track" role="progressbar" aria-label="Phase 5 진행도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" style="--value:0"></div></div><strong>0%</strong></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="board" class="section" aria-labelledby="board-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">Scope at a glance</p><h2 id="board-title">완료·진행·예정 기능 경계</h2></div><p class="lead">보이는 화면과 현재 기반이 무엇을 뜻하는지, 아직 약속하지 않은 범위가 무엇인지 분리해 읽을 수 있게 정리했습니다.</p></div>
+        <div class="board">
+          <article class="board-column"><h3><span class="badge done">확인된 결과</span></h3><ul><li>메인 대시보드와 상세 확인 화면의 코드·이미지 근거</li><li>AI 분석 결과를 보여주는 화면 연결 근거</li><li>서비스별 실행·배포 설정 근거</li></ul></article>
+          <article class="board-column"><h3><span class="badge doing">진행 중</span></h3><ul><li>Phase 0 기준 확정과 코드 크로스체크</li><li>문서·구조 정리와 검증 근거 보강</li><li>최신 통합 검증을 위한 기준 정리</li></ul></article>
+          <article class="board-column"><h3><span class="badge planned">예정</span></h3><ul><li>현재 전체 E2E·Compose smoke 실행</li><li>인증·권한, 기준정보와 현장 처리</li><li>MQTT, 일일 보고서·LangGraph, 실제 연동</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="priorities" class="section" aria-labelledby="priorities-title">
+      <div class="shell priorities">
+        <div><p class="eyebrow">What comes next</p><h2 id="priorities-title">다음 실행 우선순위</h2><p class="lead">기능을 넓히기 전에 현재 기반을 최신 상태로 확인하고, 실제 운영에 필요한 경계를 차례로 세웁니다.</p></div>
+        <ol class="priority-list">
+          <li><div><strong>최신 통합 검증</strong><span>핵심 흐름을 현재 코드 기준으로 다시 실행해 확인 가능한 근거를 만듭니다.</span></div></li>
+          <li><div><strong>인증·권한</strong><span>누가 어떤 정보와 조치를 다룰 수 있는지 운영 경계를 세웁니다.</span></div></li>
+          <li><div><strong>현장 작업</strong><span>점검·조치의 실제 업무 과정을 기록하고 추적하는 흐름을 만듭니다.</span></div></li>
+          <li><div><strong>이벤트 전환</strong><span>상태 변화를 운영자가 놓치지 않도록 이벤트 흐름으로 연결합니다.</span></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="evidence" class="section" aria-labelledby="evidence-title">
+      <div class="shell">
+        <div class="section-heading"><div><p class="eyebrow">Evidence &amp; limits</p><h2 id="evidence-title">판정 근거와 한계</h2></div><p class="lead">이 보고서는 확인한 사실과 아직 확인하지 않은 조건을 구분합니다.</p></div>
+        <div class="evidence-grid">
+          <article class="card"><h3>어떤 근거를 읽었나</h3><ul><li>실제 디렉터리·라우트·테스트·배포 설정</li><li>README, 구현 현황 문서, Plans·Steps·PR 기록</li><li>고도화 통합 계획서와 최근 커밋 이력</li><li>메인 대시보드와 상세 화면 이미지</li></ul></article>
+          <article class="card limit"><h3>이 수치가 뜻하지 않는 것</h3><p class="note">퍼센트는 공식 품질 지표나 운영 준비도가 아닙니다. 모두 같은 정성 척도에서 문서화된 목표 대비 저장소의 코드·설정·검증 증거를 요약한 값이며, 최근 실행 성공률을 뜻하지 않습니다.</p><p>이 보고서를 위해 현재 전체 E2E·Compose smoke는 실행하지 않았습니다. 정적 검토에서는 Backend router import 불일치 후보가 발견되어 현재 기동이 보장되지 않습니다. 따라서 실제 CCTV·IoT 연동, 인증·권한, 현장 작업, MQTT, 일일 보고서는 구현 완료로 표현하지 않습니다.</p></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell"><span>SmartDrain 프로젝트 현황 보고서</span><span>비개발 독자를 위한 구현 근거 요약 · 2026-08-01</span></div>
+  </footer>
+</body>
+</html>
