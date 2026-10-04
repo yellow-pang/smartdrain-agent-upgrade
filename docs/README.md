@@ -37,3 +37,4 @@
 | [테스트 전략 및 E2E 검증](verification/16_테스트_전략_및_E2E_검증.md) | 자동/수동 테스트 기준 |
 | [배포 운영 런북](verification/17_배포_운영_런북.md) | Compose·Nginx·Jenkins 운영 절차 |
 | [Mac mini·OrbStack 이전 사전 분석](verification/18_mac-mini-orbstack-migration-analysis.md) | 현재 HEAD의 실행 차단 요소, AI 이미지·ARM 위험, 새 DB·네트워크 재현 조건 |
+| [공개 이미지 보안 기초 점검](steps/step-06-public-image-security-review.md) | 19개 항목의 확인 결과, 현재 문제와 수정 유예 이유, 이후 필수 검증 |
