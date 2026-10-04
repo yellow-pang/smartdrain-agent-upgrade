@@ -1,0 +1,233 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  # Manual runs verify builds only; they never publish or deploy a branch.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smartdrain-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build ${{ matrix.service }} (linux/arm64)
+    needs: ci
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            dockerfile: backend/Dockerfile
+            target: ""
+          - service: ai
+            dockerfile: ai_service/Dockerfile
+            target: runtime
+          - service: frontend
+            dockerfile: frontend/Dockerfile
+            target: runner
+    env:
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'yellow-pang/smartdrain-agent-upgrade' }}
+      IMAGE: ghcr.io/yellow-pang/smartdrain-${{ matrix.service }}
+      SERVICE: ${{ matrix.service }}
+      KAKAO_MAP_KEY: ${{ vars.COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY }}
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
+      DOCKER_BUILD_SUMMARY: "false"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Check build inputs and record available space
+        run: |
+          if [ -n "$KAKAO_MAP_KEY" ]; then
+            echo "::add-mask::$KAKAO_MAP_KEY"
+          fi
+          if [ "$PUBLISH" = true ] && [ "$SERVICE" = frontend ] && [ -z "$KAKAO_MAP_KEY" ]; then
+            echo '::error::Set the public frontend COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY repository variable before publishing.'
+            exit 1
+          fi
+          test "$(uname -m)" = aarch64
+          df -h
+          echo "BUILD_STARTED=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        if: env.PUBLISH == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build the production image once
+        id: image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/arm64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ env.IMAGE }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/yellow-pang/smartdrain-agent-upgrade
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            COMPOSE_FRONTEND_API_BASE_URL=
+            COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY=${{ matrix.service == 'frontend' && env.KAKAO_MAP_KEY || '' }}
+          cache-from: ${{ env.PUBLISH == 'true' && format('type=registry,ref={0}:buildcache-arm64', env.IMAGE) || '' }}
+          cache-to: ${{ env.PUBLISH == 'true' && format('type=registry,ref={0}:buildcache-arm64,mode=max', env.IMAGE) || '' }}
+      - name: Record the published digest
+        if: env.PUBLISH == 'true'
+        env:
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+
+          digest = os.environ["DIGEST"]
+          if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+              raise SystemExit("Build did not return an immutable image digest")
+          Path("digests").mkdir()
+          Path("digests", os.environ["SERVICE"] + ".json").write_text(json.dumps({
+              "service": os.environ["SERVICE"],
+              "image": os.environ["IMAGE"] + "@" + digest,
+              "source_sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "build_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "platform": "linux/arm64",
+          }) + "\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: env.PUBLISH == 'true'
+        with:
+          name: digest-${{ matrix.service }}-${{ github.run_id }}
+          path: digests/*.json
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Record build time and disk usage
+        if: always()
+        run: |
+          if [ -n "${BUILD_STARTED:-}" ]; then
+            echo "$SERVICE build elapsed: $(($(date +%s) - BUILD_STARTED)) seconds" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          df -h
+          docker system df
+
+  manifest:
+    name: Publish release manifest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'yellow-pang/smartdrain-agent-upgrade'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: digest-*-${{ github.run_id }}
+          path: digests
+          merge-multiple: true
+      - name: Assemble successful images from the same run and commit
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+
+          images = {}
+          build_attempts = {}
+          for service in ("backend", "ai", "frontend"):
+              value = json.loads(Path("digests", service + ".json").read_text())
+              for key, expected in {
+                  "service": service,
+                  "source_sha": os.environ["GITHUB_SHA"],
+                  "run_id": os.environ["GITHUB_RUN_ID"],
+                  "platform": "linux/arm64",
+              }.items():
+                  if value.get(key) != expected:
+                      raise SystemExit(f"Mismatched {service} digest metadata: {key}")
+              image = value["image"]
+              if not re.fullmatch(r"ghcr\.io/yellow-pang/smartdrain-" + service + r"@sha256:[0-9a-f]{64}", image):
+                  raise SystemExit(f"Unexpected image reference for {service}")
+              images[service] = image
+              attempt = value.get("build_attempt")
+              if type(attempt) is not int or not 1 <= attempt <= int(os.environ["GITHUB_RUN_ATTEMPT"]):
+                  raise SystemExit(f"Unexpected build attempt for {service}")
+              build_attempts[service] = attempt
+          manifest = {
+              "schema_version": 1,
+              "source_repository": "yellow-pang/smartdrain-agent-upgrade",
+              "source_sha": os.environ["GITHUB_SHA"],
+              "source_workflow": ".github/workflows/release.yml",
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "manifest_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "build_attempts": build_attempts,
+              "platform": "linux/arm64",
+              "images": images,
+          }
+          Path("release-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("Published images for " + manifest["source_sha"] + "\n\n")
+              for service, image in images.items():
+                  summary.write(f"- {service}: `{image}`\n")
+              summary.write("\nPublishing success does not imply deployment success.\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-manifest-${{ github.run_id }}
+          path: release-manifest.json
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 90
+
+  dispatch:
+    name: Request private Mac deployment
+    needs: manifest
+    if: vars.SMARTDRAIN_AUTO_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: release
+    env:
+      GH_TOKEN: ${{ secrets.SMARTDRAIN_DEPLOY_DISPATCH_TOKEN }}
+    steps:
+      - name: Dispatch the verified run identity without waiting for deployment
+        run: |
+          test -n "$GH_TOKEN" || { echo '::error::Missing deployment dispatch token'; exit 1; }
+          python3 - <<'PY' > "$RUNNER_TEMP/dispatch.json"
+          import json
+          import os
+          print(json.dumps({
+              "ref": "main",
+              "inputs": {
+                  "source_run_id": os.environ["GITHUB_RUN_ID"],
+                  "source_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                  "source_sha": os.environ["GITHUB_SHA"],
+              },
+          }))
+          PY
+          gh api --method POST \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            repos/yellow-pang/mac-mini-deploy/actions/workflows/deploy-smartdrain.yml/dispatches \
+            --input "$RUNNER_TEMP/dispatch.json" > "$RUNNER_TEMP/dispatch-response.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          response = json.loads(Path(os.environ["RUNNER_TEMP"], "dispatch-response.json").read_text())
+          url = response.get("html_url", "https://github.com/yellow-pang/mac-mini-deploy/actions")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(f"Mac deployment requested: {url}\n\nCheck the receiver run for the deployment result.\n")
+          PY
