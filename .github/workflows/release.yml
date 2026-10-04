@@ -42,7 +42,7 @@ jobs:
       PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'yellow-pang/smartdrain-agent-upgrade' }}
       IMAGE: ghcr.io/yellow-pang/smartdrain-${{ matrix.service }}
       SERVICE: ${{ matrix.service }}
-      KAKAO_MAP_KEY: ${{ vars.COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY }}
+      KAKAO_MAP_KEY: ${{ matrix.service == 'frontend' && secrets.COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY || '' }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
       DOCKER_BUILD_SUMMARY: "false"
     steps:
@@ -55,7 +55,7 @@ jobs:
             echo "::add-mask::$KAKAO_MAP_KEY"
           fi
           if [ "$PUBLISH" = true ] && [ "$SERVICE" = frontend ] && [ -z "$KAKAO_MAP_KEY" ]; then
-            echo '::error::Set the public frontend COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY repository variable before publishing.'
+            echo '::error::Set the frontend COMPOSE_FRONTEND_KAKAO_MAP_APP_KEY repository secret before publishing.'
             exit 1
           fi
           test "$(uname -m)" = aarch64
